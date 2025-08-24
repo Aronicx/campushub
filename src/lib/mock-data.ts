@@ -11,7 +11,7 @@ export function getStudents(filters?: { search?: string, major?: string, interes
 
     if (filters?.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
+        filteredStudents = filteredStudents.filter(s => (s.name || '').toLowerCase().includes(searchTerm));
     }
     if (filters?.major && filters.major !== 'all') {
         filteredStudents = filteredStudents.filter(s => s.major === filters.major);

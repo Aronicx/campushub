@@ -18,7 +18,7 @@ interface AuthContextType {
   postThought: (content: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = React.createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<Student | null>(null);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       localStorage.setItem('campus-hub-user', user.id);
       setCurrentUser(user);
-      toast({ title: "Login Successful", description: `Welcome back, ${user.name}!` });
+      toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
       return true;
     }
     toast({ variant: "destructive", title: "Login Failed", description: "Invalid email or password." });
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (newUser) {
         localStorage.setItem('campus-hub-user', newUser.id);
         setCurrentUser(newUser);
-        toast({ title: "Account Created!", description: `Welcome to Campus Hub, ${newUser.name}!` });
+        toast({ title: "Account Created!", description: `Welcome to Campus Hub, ${newUser.name || 'user'}!` });
         return newUser;
     }
     return null;

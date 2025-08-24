@@ -3,6 +3,7 @@ export const privateData = {
   _initialStudents: [
     {
       id: '1',
+      rollNo: 'CS101',
       name: 'Alice Johnson',
       major: 'Computer Science',
       interests: ['AI', 'Web Development', 'Photography'],
@@ -16,6 +17,7 @@ export const privateData = {
     },
     {
       id: '2',
+      rollNo: 'MKT202',
       name: 'Bob Smith',
       major: 'Marketing',
       interests: ['Digital Marketing', 'Soccer', 'Startups'],
@@ -28,6 +30,7 @@ export const privateData = {
     },
     {
       id: '3',
+      rollNo: 'FA303',
       name: 'Charlie Brown',
       major: 'Fine Arts',
       interests: ['Painting', 'Sculpture', 'History'],
@@ -40,6 +43,7 @@ export const privateData = {
     },
     {
       id: '4',
+      rollNo: 'PS404',
       name: 'Diana Prince',
       major: 'Political Science',
       interests: ['International Relations', 'Debate', 'Volunteering'],
@@ -52,6 +56,7 @@ export const privateData = {
     },
     {
       id: '5',
+      rollNo: 'ME505',
       name: 'Ethan Hunt',
       major: 'Mechanical Engineering',
       interests: ['Robotics', '3D Printing', 'Hiking'],
@@ -64,6 +69,7 @@ export const privateData = {
     },
     {
       id: '6',
+      rollNo: 'CH606',
       name: 'Fiona Glenanne',
       major: 'Chemistry',
       interests: ['Organic Chemistry', 'Research', 'Yoga'],
@@ -74,6 +80,7 @@ export const privateData = {
     },
     {
         id: '7',
+        rollNo: 'CS707',
         name: 'Grace Lee',
         major: 'Computer Science',
         interests: ['AI', 'Machine Learning', 'Data Visualization'],
@@ -86,6 +93,7 @@ export const privateData = {
       },
       {
         id: '8',
+        rollNo: 'EC808',
         name: 'Henry Wilson',
         major: 'Economics',
         interests: ['Finance', 'Startups', 'Basketball'],

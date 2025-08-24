@@ -49,11 +49,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound } from "lucide-react";
 
 
 const profileFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  name: z.string(),
+  rollNo: z.string().min(1, { message: "Roll No. is required." }),
   major: z.string().min(2, { message: "Major is required." }),
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
@@ -65,7 +66,8 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: student.name,
+      name: student.name || "",
+      rollNo: student.rollNo,
       major: student.major,
       interests: student.interests.join(", "),
       bio: student.bio,
@@ -97,6 +99,9 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                  <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="rollNo" render={({ field }) => (
+                  <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="major" render={({ field }) => (
                     <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -204,7 +209,7 @@ function ConnectionSuggester() {
         
         startSuggesting(async () => {
             const allOtherStudents = getStudents().filter(s => s.id !== currentUser.id);
-            const studentToProfileString = (s: Student) => `${s.name}, Major: ${s.major}, Interests: ${s.interests.join(', ')}`;
+            const studentToProfileString = (s: Student) => `${s.name || '(no name)'}, Major: ${s.major}, Interests: ${s.interests.join(', ')}`;
             
             const result = await suggestConnections({
                 studentProfile: studentToProfileString(currentUser),
@@ -282,17 +287,18 @@ export default function DashboardPage() {
     );
   }
 
-  const initials = currentUser.name.split(" ").map((n) => n[0]).join("");
+  const initials = (currentUser.name || "NN").split(" ").map((n) => n[0]).join("");
+  const displayName = currentUser.name || '(no name)';
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center gap-4 mb-8">
         <Avatar className="h-20 w-20">
-          <AvatarImage src={currentUser.profilePicture} alt={currentUser.name} />
+          <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="text-4xl font-bold">Welcome, {currentUser.name.split(" ")[0]}!</h1>
+          <h1 className="text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
           <p className="text-muted-foreground">This is your personal dashboard.</p>
         </div>
       </div>
@@ -313,6 +319,14 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{currentUser.rollNo}</p>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>

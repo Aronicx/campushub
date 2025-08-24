@@ -6,6 +6,7 @@ export interface Thought {
 
 export interface Student {
   id: string;
+  rollNo: string;
   name: string;
   major: string;
   interests: string[];

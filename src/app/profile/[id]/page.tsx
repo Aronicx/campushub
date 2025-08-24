@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function ProfilePage({ params }: { params: { id: string } }) {
@@ -13,10 +13,12 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     notFound();
   }
 
-  const initials = student.name
+  const initials = (student.name || "NN")
     .split(" ")
     .map((n) => n[0])
     .join("");
+  
+  const displayName = student.name || '(no name)';
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -25,19 +27,27 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         <CardContent className="p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-6 -mt-20">
             <Avatar className="h-32 w-32 border-4 border-background">
-              <AvatarImage src={student.profilePicture} alt={student.name} data-ai-hint="person student" />
+              <AvatarImage src={student.profilePicture} alt={displayName} data-ai-hint="person student" />
               <AvatarFallback className="text-4xl">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="mt-4 sm:mt-0">
-              <h1 className="text-3xl font-bold text-primary">{student.name}</h1>
+              <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
               <p className="text-lg text-muted-foreground">{student.major}</p>
             </div>
           </div>
 
           <div className="mt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{student.rollNo}</p>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>
@@ -83,7 +93,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           </div>
         ) : (
           <Card className="text-center p-8 border-dashed">
-            <p className="text-muted-foreground">{student.name} hasn't shared any thoughts yet.</p>
+            <p className="text-muted-foreground">{displayName} hasn't shared any thoughts yet.</p>
           </Card>
         )}
       </div>

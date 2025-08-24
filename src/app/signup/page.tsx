@@ -28,7 +28,8 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  name: z.string(),
+  rollNo: z.string().min(1, { message: "Roll No. is required." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z
     .string()
@@ -47,6 +48,7 @@ export default function SignupPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      rollNo: "",
       email: "",
       password: "",
       major: "",
@@ -82,6 +84,9 @@ export default function SignupPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="rollNo" render={({ field }) => (
+                <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input placeholder="e.g., CS101" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="your.email@university.edu" {...field} /></FormControl><FormMessage /></FormItem>
