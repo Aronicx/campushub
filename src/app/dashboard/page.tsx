@@ -98,7 +98,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -113,18 +113,20 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                         <TabsTrigger value="social">Socials & Contact</TabsTrigger>
                     </TabsList>
                     <TabsContent value="main" className="py-4 space-y-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="rollNo" render={({ field }) => (
-                        <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="major" render={({ field }) => (
-                            <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="interests" render={({ field }) => (
-                            <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="rollNo" render={({ field }) => (
+                            <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="major" render={({ field }) => (
+                                <FormItem className="md:col-span-2"><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="interests" render={({ field }) => (
+                                <FormItem className="md:col-span-2"><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
                         <FormField control={form.control} name="bio" render={({ field }) => (
                             <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -133,18 +135,20 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                         )} />
                     </TabsContent>
                      <TabsContent value="social" className="py-4 space-y-4">
-                        <FormField control={form.control} name="instagram" render={({ field }) => (
-                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                         <FormField control={form.control} name="snapchat" render={({ field }) => (
-                            <FormItem><FormLabel>Snapchat</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                         <FormField control={form.control} name="discord" render={({ field }) => (
-                            <FormItem><FormLabel>Discord</FormLabel><FormControl><Input placeholder="e.g., YourTag#1234" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                         <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., +1 123 456 7890" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="instagram" render={({ field }) => (
+                                <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="snapchat" render={({ field }) => (
+                                <FormItem><FormLabel>Snapchat</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="discord" render={({ field }) => (
+                                <FormItem><FormLabel>Discord</FormLabel><FormControl><Input placeholder="e.g., YourTag#1234" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                                <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., +1 123 456 7890" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
                          <FormField control={form.control} name="customLink" render={({ field }) => (
                             <FormItem><FormLabel>Free Tab</FormLabel><FormControl><Input placeholder="e.g., your personal website" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
