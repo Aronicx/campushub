@@ -7,18 +7,20 @@ import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 
 export function StudentCard({ student }: { student: Student }) {
-  const initials = student.name.split(" ").map((n) => n[0]).join("");
+  const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
+  const displayName = student.name || '(no name)';
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="flex-row gap-4 items-center">
         <Avatar>
-          <AvatarImage src={student.profilePicture} alt={student.name} data-ai-hint="person student" />
+          <AvatarImage src={student.profilePicture} alt={displayName} data-ai-hint="person student" />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-semibold text-lg">{student.name}</h3>
+          <h3 className="font-semibold text-lg">{displayName}</h3>
           <p className="text-sm text-muted-foreground">{student.major}</p>
+          <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
