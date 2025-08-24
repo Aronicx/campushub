@@ -1,0 +1,100 @@
+// This is a placeholder for the real private data.
+export const _private-data = {
+  _initialStudents: [
+    {
+      id: '1',
+      name: 'Alice Johnson',
+      major: 'Computer Science',
+      interests: ['AI', 'Web Development', 'Photography'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'Enthusiastic CS student exploring the intersection of technology and creativity. Avid photographer in my free time.',
+      email: 'alice@example.com',
+      thoughts: [
+        { id: '1-t-1', content: 'Excited to start my new AI project! The possibilities are endless.', timestamp: '2023-10-26T10:00:00Z' },
+        { id: '1-t-2', content: 'Just finished a marathon coding session. Time for a break and some photography.', timestamp: '2023-10-25T22:30:00Z' },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Bob Smith',
+      major: 'Marketing',
+      interests: ['Digital Marketing', 'Soccer', 'Startups'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'Future marketing guru. I love brainstorming startup ideas and playing soccer on weekends.',
+      email: 'bob@example.com',
+      thoughts: [
+        { id: '2-t-1', content: 'Great match today with the team! #GoStallions', timestamp: '2023-10-26T18:00:00Z' },
+      ],
+    },
+    {
+      id: '3',
+      name: 'Charlie Brown',
+      major: 'Fine Arts',
+      interests: ['Painting', 'Sculpture', 'History'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'Artist, sculptor, and history buff. I express myself through my creations.',
+      email: 'charlie@example.com',
+      thoughts: [
+        { id: '3-t-1', content: 'My new sculpture is finally taking shape. It’s a tribute to ancient civilizations.', timestamp: '2023-10-24T15:45:00Z' },
+      ],
+    },
+    {
+      id: '4',
+      name: 'Diana Prince',
+      major: 'Political Science',
+      interests: ['International Relations', 'Debate', 'Volunteering'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'Passionate about global politics and making a difference. Future diplomat in the making.',
+      email: 'diana@example.com',
+      thoughts: [
+        { id: '4-t-1', content: 'Fascinating lecture on post-war international policy today.', timestamp: '2023-10-26T14:00:00Z' },
+      ],
+    },
+    {
+      id: '5',
+      name: 'Ethan Hunt',
+      major: 'Mechanical Engineering',
+      interests: ['Robotics', '3D Printing', 'Hiking'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'Building the future, one robot at a time. When I\'m not in the lab, I\'m on a trail.',
+      email: 'ethan@example.com',
+      thoughts: [
+        { id: '5-t-1', content: 'The new 3D printed components for the robot arm are working perfectly!', timestamp: '2023-10-25T11:20:00Z' },
+      ],
+    },
+    {
+      id: '6',
+      name: 'Fiona Glenanne',
+      major: 'Chemistry',
+      interests: ['Organic Chemistry', 'Research', 'Yoga'],
+      profilePicture: 'https://placehold.co/400x400.png',
+      bio: 'In love with molecules and reactions. Balancing lab time with yoga and mindfulness.',
+      email: 'fiona@example.com',
+      thoughts: [],
+    },
+    {
+        id: '7',
+        name: 'Grace Lee',
+        major: 'Computer Science',
+        interests: ['AI', 'Machine Learning', 'Data Visualization'],
+        profilePicture: 'https://placehold.co/400x400.png',
+        bio: 'CS student focusing on AI. I believe data can tell beautiful stories. Let\'s connect and build something amazing!',
+        email: 'grace@example.com',
+        thoughts: [
+          { id: '7-t-1', content: 'Deep diving into neural networks this week. The complexity is mind-blowing!', timestamp: '2023-10-27T11:00:00Z' },
+        ],
+      },
+      {
+        id: '8',
+        name: 'Henry Wilson',
+        major: 'Economics',
+        interests: ['Finance', 'Startups', 'Basketball'],
+        profilePicture: 'https://placehold.co/400x400.png',
+        bio: 'Analyzing market trends and dreaming up the next big startup. Always down for a game of basketball.',
+        email: 'henry@example.com',
+        thoughts: [
+          { id: '8-t-1', content: 'The stock market is a rollercoaster, but that\'s what makes it exciting.', timestamp: '2023-10-26T16:30:00Z' },
+        ],
+      },
+  ]
+};
