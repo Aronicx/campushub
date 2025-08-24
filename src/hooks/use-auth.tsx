@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, addStudent, updateStudent, getStudentById, getStudentByRollNo } from '@/lib/mock-data';
+import { getStudentByEmail, addStudent, updateStudent, getStudentById, getStudentByRollNo, getStudentByName } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { useToast } from './use-toast';
 
@@ -41,10 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (identifier: string, password?: string) => {
     // In our mock data, email is student{rollNo}@example.com.
-    // We can try to find user by email or by roll number.
+    // We can try to find user by email or by roll number or by name
     let user = getStudentByEmail(identifier);
     if (!user) {
       user = getStudentByRollNo(identifier);
+    }
+    if (!user) {
+        user = getStudentByName(identifier);
     }
 
     if (user && user.password === password) {
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const postThought = (content: string) => {
       if(currentUser) {
-        const newThought = apiAddThought(currentUser.id, content);
+        const newThought = addThought(currentUser.id, content);
         if (newThought) {
             const updatedUser = getStudentById(currentUser.id);
             setCurrentUser(updatedUser!);

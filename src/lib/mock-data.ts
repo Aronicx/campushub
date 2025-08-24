@@ -34,6 +34,11 @@ export function getStudentByEmail(email: string): Student | undefined {
   return students.find(s => s.email === email);
 }
 
+export function getStudentByName(name: string): Student | undefined {
+    if (!name) return undefined;
+    return students.find(s => s.name.toLowerCase() === name.toLowerCase());
+}
+
 export function getStudentByRollNo(rollNo: string): Student | undefined {
     return students.find(s => s.rollNo === rollNo);
 }

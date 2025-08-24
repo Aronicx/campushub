@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Mail, Lock, User } from "lucide-react";
 
 const formSchema = z.object({
-  identifier: z.string().min(1, { message: "Please enter your email or roll number." }),
+  identifier: z.string().min(1, { message: "Please enter your username, email or roll number." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -69,12 +69,12 @@ export default function LoginPage() {
                 name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email or Roll No.</FormLabel>
+                    <FormLabel>Username, Email or Roll No.</FormLabel>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <FormControl>
                         <Input
-                          placeholder="your.email@university.edu or 123"
+                          placeholder="your.name or student@example.com or 123"
                           {...field}
                           className="pl-10"
                         />
