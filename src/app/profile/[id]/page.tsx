@@ -3,8 +3,46 @@ import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import type { Student } from "@/lib/types";
+
+
+function ContactInfo({ student }: { student: Student }) {
+    const contacts = [
+        { icon: Instagram, label: "Instagram", value: student.instagram },
+        { icon: MessageCircle, label: "Snapchat", value: student.snapchat },
+        { icon: Users, label: "Discord", value: student.discord },
+        { icon: Phone, label: "Phone", value: student.phoneNumber },
+        { icon: Link2, label: "Link", value: student.customLink, isLink: true },
+    ].filter(c => c.value);
+
+    if (contacts.length === 0) return null;
+
+    return (
+        <div className="mt-6">
+            <h2 className="text-2xl font-bold mb-4">Contact & Socials</h2>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {contacts.map(({icon: Icon, label, value, isLink}) => (
+                    <Card key={label}>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+                             <Icon className="h-6 w-6 text-muted-foreground" />
+                             <CardTitle className="text-lg">{label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isLink ? (
+                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{value}</a>
+                            ) : (
+                                <p className="text-muted-foreground break-all">{value}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 
 export default function ProfilePage({ params }: { params: { id: string } }) {
   const student = getStudentById(params.id);
@@ -72,6 +110,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           </div>
         </CardContent>
       </Card>
+
+      <ContactInfo student={student} />
       
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">

@@ -49,7 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2 } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -59,6 +59,11 @@ const profileFormSchema = z.object({
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
   profilePicture: z.string().url({ message: "Please enter a valid image URL." }),
+  instagram: z.string().optional(),
+  snapchat: z.string().optional(),
+  discord: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  customLink: z.string().optional(),
 });
 
 function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
@@ -72,6 +77,11 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       interests: student.interests.join(", "),
       bio: student.bio,
       profilePicture: student.profilePicture,
+      instagram: student.instagram || "",
+      snapchat: student.snapchat || "",
+      discord: student.discord || "",
+      phoneNumber: student.phoneNumber || "",
+      customLink: student.customLink || "",
     },
   });
 
@@ -88,7 +98,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -96,26 +106,52 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                 <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="rollNo" render={({ field }) => (
-                  <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="major" render={({ field }) => (
-                    <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="interests" render={({ field }) => (
-                    <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="bio" render={({ field }) => (
-                    <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="profilePicture" render={({ field }) => (
-                    <FormItem><FormLabel>Profile Picture URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <Tabs defaultValue="main">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="main">Main Info</TabsTrigger>
+                        <TabsTrigger value="social">Socials & Contact</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="main" className="py-4 space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="rollNo" render={({ field }) => (
+                        <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="major" render={({ field }) => (
+                            <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="interests" render={({ field }) => (
+                            <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="bio" render={({ field }) => (
+                            <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="profilePicture" render={({ field }) => (
+                            <FormItem><FormLabel>Profile Picture URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </TabsContent>
+                     <TabsContent value="social" className="py-4 space-y-4">
+                        <FormField control={form.control} name="instagram" render={({ field }) => (
+                            <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="snapchat" render={({ field }) => (
+                            <FormItem><FormLabel>Snapchat</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="discord" render={({ field }) => (
+                            <FormItem><FormLabel>Discord</FormLabel><FormControl><Input placeholder="e.g., YourTag#1234" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., +1 123 456 7890" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="customLink" render={({ field }) => (
+                            <FormItem><FormLabel>Free Tab</FormLabel><FormControl><Input placeholder="e.g., your personal website" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </TabsContent>
+                </Tabs>
                  <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                     <Button type="submit">Save changes</Button>
                  </DialogFooter>
             </form>
@@ -260,6 +296,41 @@ function ConnectionSuggester() {
     );
 }
 
+function ContactInfo({ student }: { student: Student }) {
+    const contacts = [
+        { icon: Instagram, label: "Instagram", value: student.instagram },
+        { icon: MessageCircle, label: "Snapchat", value: student.snapchat },
+        { icon: Users, label: "Discord", value: student.discord },
+        { icon: Phone, label: "Phone", value: student.phoneNumber },
+        { icon: Link2, label: "Link", value: student.customLink, isLink: true },
+    ].filter(c => c.value);
+
+    if (contacts.length === 0) return null;
+
+    return (
+        <div>
+            <h3 className="text-xl font-semibold mb-4">Contact & Socials</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {contacts.map(({icon: Icon, label, value, isLink}) => (
+                    <Card key={label}>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+                             <Icon className="h-6 w-6 text-muted-foreground" />
+                             <CardTitle className="text-lg">{label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isLink ? (
+                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{value}</a>
+                            ) : (
+                                <p className="text-muted-foreground break-all">{value}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 export default function DashboardPage() {
   const { currentUser, isLoading: isAuthLoading, updateProfile } = useAuth();
   const router = useRouter();
@@ -318,58 +389,61 @@ export default function DashboardPage() {
                     <ProfileEditor student={currentUser} onUpdate={updateProfile} />
                 </CardHeader>
                 <CardContent className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{currentUser.rollNo}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{currentUser.bio}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl"><BrainCircuit size={24} /> Interests</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-wrap gap-2">
-                            {currentUser.interests.map((interest) => (
-                                <Badge key={interest} variant="default" className="bg-primary/80 hover:bg-primary text-primary-foreground">
-                                    {interest}
-                                </Badge>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
-                  {currentUser.thoughts.length > 0 ? (
-                      <div className="space-y-4">
-                        {currentUser.thoughts.slice(0, 3).map((thought) => (
-                          <Card key={thought.id} className="bg-background">
-                            <CardContent className="p-4">
-                              <p>{thought.content}</p>
-                              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                                <CalendarDays size={14} /> 
-                                {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
-                              </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground">{currentUser.rollNo}</p>
                             </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <Card className="text-center p-8 border-dashed">
-                        <p className="text-muted-foreground">You haven't shared any thoughts yet.</p>
-                      </Card>
-                    )}
-                </div>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground">{currentUser.bio}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-xl"><BrainCircuit size={24} /> Interests</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-wrap gap-2">
+                                {currentUser.interests.map((interest) => (
+                                    <Badge key={interest} variant="default" className="bg-primary/80 hover:bg-primary text-primary-foreground">
+                                        {interest}
+                                    </Badge>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <ContactInfo student={currentUser} />
+
+                    <div>
+                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
+                    {currentUser.thoughts.length > 0 ? (
+                        <div className="space-y-4">
+                            {currentUser.thoughts.slice(0, 3).map((thought) => (
+                            <Card key={thought.id} className="bg-background">
+                                <CardContent className="p-4">
+                                <p>{thought.content}</p>
+                                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                    <CalendarDays size={14} /> 
+                                    {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
+                                </p>
+                                </CardContent>
+                            </Card>
+                            ))}
+                        </div>
+                        ) : (
+                        <Card className="text-center p-8 border-dashed">
+                            <p className="text-muted-foreground">You haven't shared any thoughts yet.</p>
+                        </Card>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </TabsContent>

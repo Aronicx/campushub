@@ -15,4 +15,9 @@ export interface Student {
   email: string;
   thoughts: Thought[];
   password?: string;
+  instagram?: string;
+  snapchat?: string;
+  discord?: string;
+  phoneNumber?: string;
+  customLink?: string;
 }

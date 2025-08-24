@@ -12,6 +12,11 @@ for (let i = 1; i <= 200; i++) {
     email: `student${i}@example.com`,
     thoughts: [],
     password: `password${i}`,
+    instagram: '',
+    snapchat: '',
+    discord: '',
+    phoneNumber: '',
+    customLink: '',
   });
 }
 
