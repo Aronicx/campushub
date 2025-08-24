@@ -3,7 +3,7 @@ const students = [];
 for (let i = 1; i <= 200; i++) {
   students.push({
     id: i.toString(),
-    rollNo: `R${1000 + i}`,
+    rollNo: i.toString(),
     name: '',
     major: 'Undeclared',
     interests: [],
