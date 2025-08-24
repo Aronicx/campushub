@@ -87,7 +87,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -506,3 +506,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
