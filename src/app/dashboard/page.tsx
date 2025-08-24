@@ -54,7 +54,6 @@ import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyR
 
 const profileFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
-  rollNo: z.string().min(1, { message: "Roll No. is required." }),
 });
 
 const majorFormSchema = z.object({
@@ -76,7 +75,6 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: student.name || "",
-      rollNo: student.rollNo,
     },
   });
 
@@ -102,9 +100,6 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                 <div className="space-y-4 px-1">
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="rollNo" render={({ field }) => (
-                    <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
                  <DialogFooter>
