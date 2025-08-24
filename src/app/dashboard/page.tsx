@@ -49,16 +49,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit } from "lucide-react";
 
 
 const profileFormSchema = z.object({
-  name: z.string(),
+  name: z.string().min(1, { message: "Name is required." }),
   rollNo: z.string().min(1, { message: "Roll No. is required." }),
-  major: z.string().min(2, { message: "Major is required." }),
-  interests: z.string().min(1, { message: "Please list at least one interest." }),
-  bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
 });
+
+const majorFormSchema = z.object({
+    major: z.string().min(2, { message: "Major is required." }),
+});
+
+const bioFormSchema = z.object({
+    bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
+});
+
+const interestsFormSchema = z.object({
+    interests: z.string().min(1, { message: "Please list at least one interest." }),
+});
+
 
 function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,18 +77,11 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
     defaultValues: {
       name: student.name || "",
       rollNo: student.rollNo,
-      major: student.major,
-      interests: student.interests.join(", "),
-      bio: student.bio,
     },
   });
 
   function onSubmit(values: z.infer<typeof profileFormSchema>) {
-    const updateData: Partial<Student> = {
-      ...values,
-      interests: values.interests.split(',').map(i => i.trim()),
-    };
-    onUpdate(updateData);
+    onUpdate(values);
     setIsOpen(false);
   }
 
@@ -87,7 +90,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -103,15 +106,6 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                     <FormField control={form.control} name="rollNo" render={({ field }) => (
                     <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="major" render={({ field }) => (
-                        <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="interests" render={({ field }) => (
-                        <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="bio" render={({ field }) => (
-                        <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
                 </div>
                  <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
@@ -122,6 +116,67 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       </DialogContent>
     </Dialog>
   );
+}
+
+
+function SingleFieldEditor({ title, description, schema, fieldName, initialValue, onUpdate, inputType = "input" }: { 
+    title: string;
+    description: string;
+    schema: any; 
+    fieldName: string;
+    initialValue: string;
+    onUpdate: (data: any) => void;
+    inputType?: "input" | "textarea";
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const form = useForm({
+        resolver: zodResolver(schema),
+        defaultValues: { [fieldName]: initialValue },
+    });
+
+    const onSubmit = (values: any) => {
+        onUpdate(values);
+        setIsOpen(false);
+    };
+    
+    const InputComponent = inputType === 'textarea' ? Textarea : Input;
+
+    return (
+         <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                    <Edit size={14} /> Edit
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name={fieldName}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="capitalize">{fieldName}</FormLabel>
+                                    <FormControl>
+                                        <InputComponent {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                            <Button type="submit">Save</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function DailyThoughtPoster() {
@@ -441,23 +496,64 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
+                                <CardTitle className="flex items-center justify-between text-xl">
+                                    <span className="flex items-center gap-2"><KeyRound size={24} /> Roll No.</span>
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-muted-foreground">{currentUser.rollNo}</p>
                             </CardContent>
                         </Card>
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center justify-between text-xl">
+                                     <span className="flex items-center gap-2"><BookOpen size={24} /> Major</span>
+                                     <SingleFieldEditor
+                                        title="Edit Major"
+                                        description="Update your major."
+                                        schema={majorFormSchema}
+                                        fieldName="major"
+                                        initialValue={currentUser.major}
+                                        onUpdate={updateProfile}
+                                    />
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                               <p className="text-muted-foreground break-words">{currentUser.major}</p>
+                            </CardContent>
+                        </Card>
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>
+                               <CardTitle className="flex items-center justify-between text-xl">
+                                    <span className="flex items-center gap-2"><User size={24} /> Bio</span>
+                                     <SingleFieldEditor
+                                        title="Edit Bio"
+                                        description="Update your biography."
+                                        schema={bioFormSchema}
+                                        fieldName="bio"
+                                        initialValue={currentUser.bio}
+                                        onUpdate={updateProfile}
+                                        inputType="textarea"
+                                    />
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-muted-foreground break-words">{currentUser.bio}</p>
                             </CardContent>
                         </Card>
-                         <Card className="md:col-span-2">
+                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl"><BrainCircuit size={24} /> Interests</CardTitle>
+                                 <CardTitle className="flex items-center justify-between text-xl">
+                                    <span className="flex items-center gap-2"><BrainCircuit size={24} /> Interests</span>
+                                    <SingleFieldEditor
+                                        title="Edit Interests"
+                                        description="Update your interests, separated by commas."
+                                        schema={interestsFormSchema}
+                                        fieldName="interests"
+                                        initialValue={currentUser.interests.join(", ")}
+                                        onUpdate={(data) => updateProfile({ interests: data.interests.split(',').map((i: string) => i.trim()) })}
+                                    />
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="flex flex-wrap gap-2">
                                 {currentUser.interests.map((interest) => (
