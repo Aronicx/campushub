@@ -98,7 +98,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -110,7 +110,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                 <Tabs defaultValue="main" className="space-y-4">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="main">Main Info</TabsTrigger>
-                        <TabsTrigger value="social">Socials</TabsTrigger>
+                        <TabsTrigger value="social">Socials & Contact</TabsTrigger>
                     </TabsList>
                     <TabsContent value="main">
                         <div className="space-y-4">
