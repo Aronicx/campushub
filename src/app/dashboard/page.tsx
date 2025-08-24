@@ -49,7 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2 } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -59,11 +59,6 @@ const profileFormSchema = z.object({
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
   profilePicture: z.any(),
-  instagram: z.string().optional(),
-  snapchat: z.string().optional(),
-  discord: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  customLink: z.string().optional(),
 });
 
 function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
@@ -77,11 +72,6 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       interests: student.interests.join(", "),
       bio: student.bio,
       profilePicture: student.profilePicture,
-      instagram: student.instagram || "",
-      snapchat: student.snapchat || "",
-      discord: student.discord || "",
-      phoneNumber: student.phoneNumber || "",
-      customLink: student.customLink || "",
     },
   });
 
@@ -115,7 +105,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -123,79 +113,52 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <Tabs defaultValue="main" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="main">Main Info</TabsTrigger>
-                        <TabsTrigger value="social">Socials & Contact</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="main">
-                        <div className="space-y-4 px-1">
-                            <FormField
-                                control={form.control}
-                                name="profilePicture"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Profile Picture (JPG format)</FormLabel>
-                                    <FormControl>
-                                    <Input 
-                                        type="file" 
-                                        accept="image/jpeg"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                field.onChange(e.target.files);
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setPreview(reader.result as string);
-                                                }
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                    />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <div className="space-y-4 px-1">
+                    <FormField
+                        control={form.control}
+                        name="profilePicture"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Profile Picture (JPG format)</FormLabel>
+                            <FormControl>
+                            <Input 
+                                type="file" 
+                                accept="image/jpeg"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        field.onChange(e.target.files);
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setPreview(reader.result as string);
+                                        }
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
                             />
-                             {preview && <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={preview} alt="Profile preview" /></Avatar>}
-                            <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="rollNo" render={({ field }) => (
-                            <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="major" render={({ field }) => (
-                                <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="interests" render={({ field }) => (
-                                <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="bio" render={({ field }) => (
-                                <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
-                    </TabsContent>
-                     <TabsContent value="social">
-                        <div className="space-y-4 px-1">
-                            <FormField control={form.control} name="instagram" render={({ field }) => (
-                                <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                             <FormField control={form.control} name="snapchat" render={({ field }) => (
-                                <FormItem><FormLabel>Snapchat</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                             <FormField control={form.control} name="discord" render={({ field }) => (
-                                <FormItem><FormLabel>Discord</FormLabel><FormControl><Input placeholder="e.g., YourTag#1234" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                             <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                                <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., +1 123 456 7890" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                         <FormField control={form.control} name="customLink" render={({ field }) => (
-                            <FormItem><FormLabel>Free Tab</FormLabel><FormControl><Input placeholder="e.g., your personal website" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                        {preview && <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={preview} alt="Profile preview" /></Avatar>}
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="rollNo" render={({ field }) => (
+                    <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="major" render={({ field }) => (
+                        <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="interests" render={({ field }) => (
+                        <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="bio" render={({ field }) => (
+                        <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
                  <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                     <Button type="submit">Save changes</Button>
@@ -208,7 +171,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
 }
 
 function DailyThoughtPoster() {
-    const { postThought, currentUser } = useAuth();
+    const { postThought } = useAuth();
     const [thought, setThought] = useState("");
     const [isDrafting, startDrafting] = useTransition();
     const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
@@ -342,39 +305,78 @@ function ConnectionSuggester() {
     );
 }
 
-function ContactInfo({ student }: { student: Student }) {
-    const contacts = [
-        { icon: Instagram, label: "Instagram", value: student.instagram },
-        { icon: MessageCircle, label: "Snapchat", value: student.snapchat },
-        { icon: Users, label: "Discord", value: student.discord },
-        { icon: Phone, label: "Phone", value: student.phoneNumber },
-        { icon: Link2, label: "Link", value: student.customLink, isLink: true },
-    ].filter(c => c.value);
+const socialFormSchema = z.object({
+  instagram: z.string().optional(),
+  snapchat: z.string().optional(),
+  discord: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  email: z.string().email().optional(),
+  customLink: z.string().optional(),
+});
 
-    if (contacts.length === 0) return null;
+function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (data: Partial<Student>) => void }) {
+  const form = useForm<z.infer<typeof socialFormSchema>>({
+    resolver: zodResolver(socialFormSchema),
+    defaultValues: {
+      instagram: student.instagram || "",
+      snapchat: student.snapchat || "",
+      discord: student.discord || "",
+      phoneNumber: student.phoneNumber || "",
+      email: student.email || "",
+      customLink: student.customLink || "",
+    },
+  });
+  
+  function onSubmit(values: z.infer<typeof socialFormSchema>) {
+    onUpdate(values);
+  }
 
-    return (
-        <div>
-            <h3 className="text-xl font-semibold mb-4">Contact & Socials</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {contacts.map(({icon: Icon, label, value, isLink}) => (
-                    <Card key={label}>
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                             <Icon className="h-6 w-6 text-muted-foreground" />
-                             <CardTitle className="text-lg">{label}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isLink ? (
-                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{value}</a>
-                            ) : (
-                                <p className="text-muted-foreground break-all">{value}</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+  const socialFields = [
+      { name: "instagram", icon: Instagram, placeholder: "e.g., your_username" },
+      { name: "snapchat", icon: MessageCircle, placeholder: "e.g., your_username" },
+      { name: "discord", icon: Users, placeholder: "e.g., YourTag#1234" },
+      { name: "phoneNumber", icon: Phone, placeholder: "e.g., +1 123 456 7890" },
+      { name: "email", icon: Mail, placeholder: "your.contact@email.com" },
+      { name: "customLink", icon: Link2, placeholder: "e.g., your personal website" },
+  ] as const;
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Tabs defaultValue="instagram" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            {socialFields.map(field => <TabsTrigger key={field.name} value={field.name}><field.icon /></TabsTrigger>)}
+          </TabsList>
+          {socialFields.map(field => (
+            <TabsContent key={field.name} value={field.name}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="capitalize flex items-center gap-2"><field.icon /> {field.name.replace('customLink', 'Free Tab').replace('phoneNumber', 'Phone Number')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name={field.name}
+                    render={({ field: formField }) => (
+                      <FormItem>
+                        <FormControl>
+                            <Input {...formField} placeholder={field.placeholder} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+        <div className="flex justify-end mt-4">
+            <Button type="submit">Save Socials</Button>
         </div>
-    )
+      </form>
+    </Form>
+  )
 }
 
 export default function DashboardPage() {
@@ -452,7 +454,7 @@ export default function DashboardPage() {
                                 <p className="text-muted-foreground">{currentUser.bio}</p>
                             </CardContent>
                         </Card>
-                        <Card>
+                         <Card className="md:col-span-2">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-xl"><BrainCircuit size={24} /> Interests</CardTitle>
                             </CardHeader>
@@ -466,7 +468,10 @@ export default function DashboardPage() {
                         </Card>
                     </div>
 
-                    <ContactInfo student={currentUser} />
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-semibold">Contact & Socials</h3>
+                      <SocialsEditor student={currentUser} onUpdate={updateProfile} />
+                    </div>
 
                     <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
