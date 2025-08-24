@@ -1,5 +1,5 @@
 // This is a placeholder for the real private data.
-export const _private-data = {
+export const privateData = {
   _initialStudents: [
     {
       id: '1',

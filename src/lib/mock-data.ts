@@ -1,5 +1,8 @@
 import type { Student, Thought } from './types';
-import {-private-data} from './-private-data';
+import {privateData} from './private-data';
+
+// This is a placeholder for the real private data.
+const _initialStudents = (privateData as any)._initialStudents as Student[];
 
 let students: Student[] = _initialStudents;
 
@@ -71,5 +74,3 @@ export function getUniqueInterests(): string[] {
     const interests = new Set(students.flatMap(s => s.interests));
     return Array.from(interests).sort();
 }
-// This is a placeholder for the real private data.
-const _initialStudents = (_private-data as any)._initialStudents as Student[];
