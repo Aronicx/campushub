@@ -98,7 +98,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -112,8 +112,8 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                         <TabsTrigger value="main">Main Info</TabsTrigger>
                         <TabsTrigger value="social">Socials & Contact</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="main" className="py-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TabsContent value="main" className="py-4">
+                        <div className="max-w-sm mx-auto space-y-4">
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
@@ -121,18 +121,18 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                             <FormItem><FormLabel>Roll No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="major" render={({ field }) => (
-                                <FormItem className="md:col-span-2"><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Major</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                              <FormField control={form.control} name="interests" render={({ field }) => (
-                                <FormItem className="md:col-span-2"><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Interests</FormLabel><FormControl><Input placeholder="Separated by commas" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="bio" render={({ field }) => (
+                                <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="profilePicture" render={({ field }) => (
+                                <FormItem><FormLabel>Profile Picture URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
-                        <FormField control={form.control} name="bio" render={({ field }) => (
-                            <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="profilePicture" render={({ field }) => (
-                            <FormItem><FormLabel>Profile Picture URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
                     </TabsContent>
                      <TabsContent value="social" className="py-4 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
