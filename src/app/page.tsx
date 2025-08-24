@@ -24,7 +24,7 @@ function FilterControls({ majors, interests }: { majors: string[], interests: st
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />
         </svg>
-        <Input name="search" placeholder="Search by name..." className="pl-10" />
+        <Input name="search" placeholder="Search by name or roll no..." className="pl-10" />
       </div>
       <Select name="major">
         <SelectTrigger className="w-full sm:w-[180px]">
