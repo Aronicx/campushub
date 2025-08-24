@@ -58,7 +58,7 @@ const profileFormSchema = z.object({
   major: z.string().min(2, { message: "Major is required." }),
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
-  profilePicture: z.string().url({ message: "Please enter a valid image URL." }),
+  profilePicture: z.any(),
   instagram: z.string().optional(),
   snapchat: z.string().optional(),
   discord: z.string().optional(),
@@ -85,11 +85,28 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
     },
   });
 
+  const [preview, setPreview] = useState<string | null>(student.profilePicture);
+
   function onSubmit(values: z.infer<typeof profileFormSchema>) {
-    onUpdate({
-      ...values,
+    const { profilePicture, ...otherValues } = values;
+  
+    const updateData: Partial<Student> = {
+      ...otherValues,
       interests: values.interests.split(',').map(i => i.trim()),
-    });
+    };
+
+    if (profilePicture && typeof profilePicture !== 'string' && profilePicture.length > 0) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (reader.result) {
+                onUpdate({ ...updateData, profilePicture: reader.result as string });
+            }
+        };
+        reader.readAsDataURL(profilePicture[0]);
+    } else {
+        onUpdate(updateData);
+    }
+    
     setIsOpen(false);
   }
 
@@ -98,7 +115,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -113,7 +130,35 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                         <TabsTrigger value="social">Socials & Contact</TabsTrigger>
                     </TabsList>
                     <TabsContent value="main">
-                        <div className="space-y-4">
+                        <div className="space-y-4 px-1">
+                            <FormField
+                                control={form.control}
+                                name="profilePicture"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Profile Picture (JPG format)</FormLabel>
+                                    <FormControl>
+                                    <Input 
+                                        type="file" 
+                                        accept="image/jpeg"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                field.onChange(e.target.files);
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setPreview(reader.result as string);
+                                                }
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                             {preview && <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={preview} alt="Profile preview" /></Avatar>}
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
@@ -129,13 +174,10 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                             <FormField control={form.control} name="bio" render={({ field }) => (
                                 <FormItem><FormLabel>Bio</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
-                            <FormField control={form.control} name="profilePicture" render={({ field }) => (
-                                <FormItem><FormLabel>Profile Picture URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
                         </div>
                     </TabsContent>
                      <TabsContent value="social">
-                        <div className="space-y-4">
+                        <div className="space-y-4 px-1">
                             <FormField control={form.control} name="instagram" render={({ field }) => (
                                 <FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="e.g., your_username" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
@@ -461,5 +503,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

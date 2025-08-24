@@ -37,7 +37,7 @@ const formSchema = z.object({
   major: z.string().min(2, { message: "Major is required." }),
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
-  profilePicture: z.string().url({ message: "Please enter a valid image URL." }),
+  profilePicture: z.any(),
 });
 
 export default function SignupPage() {
@@ -54,17 +54,36 @@ export default function SignupPage() {
       major: "",
       interests: "",
       bio: "",
-      profilePicture: "https://placehold.co/400x400.png",
+      profilePicture: undefined,
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const newUser = signup({
-        ...values,
+    const { profilePicture, ...otherValues } = values;
+
+    const signupData = {
+        ...otherValues,
         interests: values.interests.split(',').map(i => i.trim()),
-    });
-    if (newUser) {
-      router.push("/dashboard");
+        profilePicture: 'https://placehold.co/400x400.png'
+    };
+
+    const handleSignup = (data: typeof signupData) => {
+        const newUser = signup(data);
+        if (newUser) {
+          router.push("/dashboard");
+        }
+    }
+    
+    if (profilePicture && profilePicture.length > 0) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (reader.result) {
+                handleSignup({ ...signupData, profilePicture: reader.result as string });
+            }
+        };
+        reader.readAsDataURL(profilePicture[0]);
+    } else {
+        handleSignup(signupData);
     }
   }
 
@@ -103,9 +122,21 @@ export default function SignupPage() {
               <FormField control={form.control} name="bio" render={({ field }) => (
                   <FormItem className="md:col-span-2"><FormLabel>Bio</FormLabel><FormControl><Textarea placeholder="Tell us a little about yourself." {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-               <FormField control={form.control} name="profilePicture" render={({ field }) => (
-                  <FormItem className="md:col-span-2"><FormLabel>Profile Picture URL</FormLabel><FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+               <FormField control={form.control} name="profilePicture"
+                render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                        <FormLabel>Profile Picture (JPG format)</FormLabel>
+                        <FormControl>
+                            <Input 
+                                type="file" 
+                                accept="image/jpeg"
+                                onChange={(e) => field.onChange(e.target.files)}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full md:col-span-2">
                 Create Account
               </Button>
