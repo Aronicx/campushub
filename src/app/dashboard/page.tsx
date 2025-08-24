@@ -87,7 +87,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       <DialogTrigger asChild>
         <Button>Edit Profile</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>
@@ -238,9 +238,9 @@ function ConnectionSuggester() {
                             const studentName = suggestion.split(',')[0];
                             const student = getStudents({ search: studentName })[0];
                             return (
-                                <div key={index} className="flex items-center justify-between rounded-md border p-3">
-                                    <p>{suggestion}</p>
-                                    {student && <Button asChild size="sm" variant="outline"><Link href={`/profile/${student.id}`}>View</Link></Button>}
+                                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-3 gap-2">
+                                    <p className="flex-grow">{suggestion}</p>
+                                    {student && <Button asChild size="sm" variant="outline" className="w-full sm:w-auto"><Link href={`/profile/${student.id}`}>View</Link></Button>}
                                 </div>
                             )
                         })}
@@ -304,7 +304,7 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <Tabs defaultValue="instagram" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
                 {socialFields.map(field => <TabsTrigger key={field.name} value={field.name}><field.icon /></TabsTrigger>)}
               </TabsList>
               {socialFields.map(field => (
@@ -411,26 +411,26 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
         <Avatar className="h-20 w-20">
           <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
           <p className="text-muted-foreground">This is your personal dashboard.</p>
           <ProfilePictureUpdater onUpdate={updateProfile} />
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="profile">My Profile</TabsTrigger>
           <TabsTrigger value="thought">Daily Thought</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
             <Card>
-                <CardHeader className="flex flex-row justify-between items-start">
+                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
                         <CardTitle>Your Information</CardTitle>
                         <CardDescription>Review and edit your personal details.</CardDescription>
@@ -452,7 +452,7 @@ export default function DashboardPage() {
                                 <CardTitle className="flex items-center gap-2 text-xl"><User size={24} /> Bio</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-muted-foreground">{currentUser.bio}</p>
+                                <p className="text-muted-foreground break-words">{currentUser.bio}</p>
                             </CardContent>
                         </Card>
                          <Card className="md:col-span-2">
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                             {currentUser.thoughts.slice(0, 3).map((thought) => (
                             <Card key={thought.id} className="bg-background">
                                 <CardContent className="p-4">
-                                <p>{thought.content}</p>
+                                <p className="break-words">{thought.content}</p>
                                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                     <CalendarDays size={14} /> 
                                     {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
@@ -506,5 +506,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
