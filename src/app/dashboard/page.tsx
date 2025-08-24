@@ -49,7 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -58,7 +58,6 @@ const profileFormSchema = z.object({
   major: z.string().min(2, { message: "Major is required." }),
   interests: z.string().min(1, { message: "Please list at least one interest." }),
   bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
-  profilePicture: z.any(),
 });
 
 function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
@@ -71,32 +70,15 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
       major: student.major,
       interests: student.interests.join(", "),
       bio: student.bio,
-      profilePicture: student.profilePicture,
     },
   });
 
-  const [preview, setPreview] = useState<string | null>(student.profilePicture);
-
   function onSubmit(values: z.infer<typeof profileFormSchema>) {
-    const { profilePicture, ...otherValues } = values;
-  
     const updateData: Partial<Student> = {
-      ...otherValues,
+      ...values,
       interests: values.interests.split(',').map(i => i.trim()),
     };
-
-    if (profilePicture && typeof profilePicture !== 'string' && profilePicture.length > 0) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            if (reader.result) {
-                onUpdate({ ...updateData, profilePicture: reader.result as string });
-            }
-        };
-        reader.readAsDataURL(profilePicture[0]);
-    } else {
-        onUpdate(updateData);
-    }
-    
+    onUpdate(updateData);
     setIsOpen(false);
   }
 
@@ -115,34 +97,6 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                 <div className="space-y-4 px-1">
-                    <FormField
-                        control={form.control}
-                        name="profilePicture"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Profile Picture (JPG format)</FormLabel>
-                            <FormControl>
-                            <Input 
-                                type="file" 
-                                accept="image/jpeg"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        field.onChange(e.target.files);
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            setPreview(reader.result as string);
-                                        }
-                                        reader.readAsDataURL(file);
-                                    }
-                                }}
-                            />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                        {preview && <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={preview} alt="Profile preview" /></Avatar>}
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
@@ -341,42 +295,88 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
   ] as const;
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Tabs defaultValue="instagram" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            {socialFields.map(field => <TabsTrigger key={field.name} value={field.name}><field.icon /></TabsTrigger>)}
-          </TabsList>
-          {socialFields.map(field => (
-            <TabsContent key={field.name} value={field.name}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="capitalize flex items-center gap-2"><field.icon /> {field.name.replace('customLink', 'Free Tab').replace('phoneNumber', 'Phone Number')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name={field.name}
-                    render={({ field: formField }) => (
-                      <FormItem>
-                        <FormControl>
-                            <Input {...formField} placeholder={field.placeholder} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
-        <div className="flex justify-end mt-4">
-            <Button type="submit">Save Socials</Button>
-        </div>
-      </form>
-    </Form>
+    <Card>
+      <CardHeader>
+        <CardTitle>Contact & Socials</CardTitle>
+        <CardDescription>Add or update your contact information.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Tabs defaultValue="instagram" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                {socialFields.map(field => <TabsTrigger key={field.name} value={field.name}><field.icon /></TabsTrigger>)}
+              </TabsList>
+              {socialFields.map(field => (
+                <TabsContent key={field.name} value={field.name}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="capitalize flex items-center gap-2"><field.icon /> {field.name.replace('customLink', 'Free Tab').replace('phoneNumber', 'Phone Number')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name={field.name}
+                        render={({ field: formField }) => (
+                          <FormItem>
+                            <FormControl>
+                                <Input {...formField} placeholder={field.placeholder} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
+            <div className="flex justify-end mt-4">
+                <Button type="submit">Save Socials</Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   )
+}
+
+function ProfilePictureUpdater({ onUpdate }: { onUpdate: (data: Partial<Student>) => void }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUpdating(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          onUpdate({ profilePicture: reader.result as string });
+          setIsUpdating(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <Button asChild variant="outline" size="sm">
+        <label htmlFor="profile-picture-upload">
+          {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <Camera className="mr-2"/>}
+          Change Picture
+        </label>
+      </Button>
+      <Input
+        id="profile-picture-upload"
+        type="file"
+        accept="image/jpeg"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        onChange={handleFileChange}
+        disabled={isUpdating}
+      />
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -416,9 +416,10 @@ export default function DashboardPage() {
           <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
-        <div>
+        <div className="space-y-2">
           <h1 className="text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
           <p className="text-muted-foreground">This is your personal dashboard.</p>
+          <ProfilePictureUpdater onUpdate={updateProfile} />
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
@@ -468,10 +469,7 @@ export default function DashboardPage() {
                         </Card>
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-semibold">Contact & Socials</h3>
-                      <SocialsEditor student={currentUser} onUpdate={updateProfile} />
-                    </div>
+                    <SocialsEditor student={currentUser} onUpdate={updateProfile} />
 
                     <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
@@ -508,3 +506,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
