@@ -14,4 +14,5 @@ export interface Student {
   bio: string;
   email: string;
   thoughts: Thought[];
+  password?: string;
 }

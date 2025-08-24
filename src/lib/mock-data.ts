@@ -31,6 +31,10 @@ export function getStudentByEmail(email: string): Student | undefined {
   return students.find(s => s.email === email);
 }
 
+export function getStudentByRollNo(rollNo: string): Student | undefined {
+    return students.find(s => s.rollNo === rollNo);
+}
+
 export function addStudent(studentData: Omit<Student, 'id' | 'thoughts'>): Student {
     const newStudent: Student = {
         ...studentData,

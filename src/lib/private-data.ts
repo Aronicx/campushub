@@ -11,6 +11,7 @@ for (let i = 1; i <= 200; i++) {
     bio: '',
     email: `student${i}@example.com`,
     thoughts: [],
+    password: `password${i}`,
   });
 }
 

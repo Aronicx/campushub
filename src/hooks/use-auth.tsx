@@ -4,14 +4,14 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, addStudent, updateStudent, getStudentById, addThought as apiAddThought } from '@/lib/mock-data';
+import { getStudentByEmail, addStudent, updateStudent, getStudentById, getStudentByRollNo } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { useToast } from './use-toast';
 
 interface AuthContextType {
   currentUser: Student | null;
   isLoading: boolean;
-  login: (email: string) => boolean;
+  login: (identifier: string, password?: string) => boolean;
   logout: () => void;
   signup: (data: Omit<Student, 'id' | 'thoughts'>) => Student | null;
   updateProfile: (data: Partial<Student>) => void;
@@ -39,15 +39,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = (email: string) => {
-    const user = getStudentByEmail(email);
-    if (user) {
+  const login = (identifier: string, password?: string) => {
+    // In our mock data, email is student{rollNo}@example.com.
+    // We can try to find user by email or by roll number.
+    let user = getStudentByEmail(identifier);
+    if (!user) {
+      user = getStudentByRollNo(identifier);
+    }
+
+    if (user && user.password === password) {
       localStorage.setItem('campus-hub-user', user.id);
       setCurrentUser(user);
       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
       return true;
     }
-    toast({ variant: "destructive", title: "Login Failed", description: "Invalid email or password." });
+    
+    // For backwards compatibility, if password is not provided, we check old emails
+    if (user && !password) {
+       localStorage.setItem('campus-hub-user', user.id);
+       setCurrentUser(user);
+       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
+       return true;
+    }
+
+    toast({ variant: "destructive", title: "Login Failed", description: "Invalid identifier or password." });
     return false;
   };
 
