@@ -33,6 +33,9 @@ export function Header() {
           ) : currentUser ? (
             <>
               <Button asChild variant="ghost">
+                <Link href="/directory">Home</Link>
+              </Button>
+              <Button asChild variant="ghost">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
               <UserAvatar />
