@@ -2,49 +2,8 @@
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch } from 'firebase/firestore';
 import type { Student, Thought } from './types';
 import { db } from './firebase';
-import { privateData } from './private-data';
 
 const studentsCollection = collection(db, 'students');
-
-// This is a flag to ensure seeding only happens once per app lifecycle.
-let isSeeding = false;
-let isSeeded = false;
-
-// Function to seed the database with initial data if it's empty
-async function seedDatabase() {
-    if (isSeeding || isSeeded) return;
-    isSeeding = true;
-    
-    try {
-        const snapshot = await getDocs(studentsCollection);
-        const initialStudents = privateData._initialStudents;
-        if (snapshot.empty && initialStudents.length > 0) {
-            console.log("Seeding database with initial student data...");
-            const batch = writeBatch(db);
-            
-            initialStudents.forEach(student => {
-                const studentDocRef = doc(db, 'students', student.id);
-                batch.set(studentDocRef, student);
-            });
-            
-            await batch.commit();
-            console.log(`Database seeding complete. ${initialStudents.length} students added.`);
-        } else if (initialStudents.length === 0) {
-            console.log("No initial student data to seed.");
-        } else {
-            console.log("Database already contains data, skipping seed.");
-        }
-        isSeeded = true;
-    } catch(error) {
-        console.error("Error seeding database: ", error);
-    } finally {
-        isSeeding = false;
-    }
-}
-
-// Seed the database when the module is loaded
-seedDatabase();
-
 
 export async function getStudents(filters?: { search?: string, major?: string, interest?: string }): Promise<Student[]> {
     let q = query(studentsCollection);
