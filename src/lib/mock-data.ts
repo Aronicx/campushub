@@ -1,5 +1,5 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch } from 'firebase/firestore';
 import type { Student, Thought } from './types';
 import { db } from './firebase';
 import { privateData } from './private-data';
@@ -16,15 +16,19 @@ async function seedDatabase() {
     isSeeding = true;
     
     try {
-        const snapshot = await getDocs(query(studentsCollection, where("id", "==", "1")));
+        const snapshot = await getDocs(studentsCollection);
         if (snapshot.empty) {
             console.log("Seeding database with initial student data...");
+            const batch = writeBatch(db);
             const initialStudents = privateData._initialStudents;
-            for (const student of initialStudents) {
+            
+            initialStudents.forEach(student => {
                 const studentDocRef = doc(db, 'students', student.id);
-                await setDoc(studentDocRef, student);
-            }
-            console.log("Database seeding complete.");
+                batch.set(studentDocRef, student);
+            });
+            
+            await batch.commit();
+            console.log("Database seeding complete. 200 students added.");
         } else {
             console.log("Database already contains data, skipping seed.");
         }
