@@ -3,7 +3,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -99,6 +98,7 @@ export default function LoginPage() {
                           {...field}
                           className="pl-10"
                         />
+
                       </FormControl>
                     </div>
                     <FormMessage />
@@ -111,14 +111,6 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Button variant="link" asChild className="p-0 h-auto text-accent">
-              <Link href="/signup">Sign up</Link>
-            </Button>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
