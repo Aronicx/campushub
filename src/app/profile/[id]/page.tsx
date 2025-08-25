@@ -11,6 +11,8 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
+  DialogHeader
 } from "@/components/ui/dialog"
 
 
@@ -88,6 +90,9 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                 </Avatar>
               </DialogTrigger>
               <DialogContent className="p-0 max-w-[400px]">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>{displayName}'s Profile Picture</DialogTitle>
+                </DialogHeader>
                 <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" data-ai-hint="person student" />
               </DialogContent>
             </Dialog>
