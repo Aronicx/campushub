@@ -7,6 +7,11 @@ import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, Messag
 import { formatDistanceToNow } from "date-fns";
 import type { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 
 function ContactInfo({ student }: { student: Student }) {
@@ -73,12 +78,19 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         <div className="bg-muted h-32" />
         <CardContent className="p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-6 -mt-20">
-            <Avatar className="h-32 w-32 border-4 border-background">
-              <AvatarImage src={student.profilePicture} alt={displayName} data-ai-hint="person student" />
-              <AvatarFallback className="text-4xl">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+             <Dialog>
+              <DialogTrigger asChild>
+                <Avatar className="h-32 w-32 border-4 border-background cursor-pointer">
+                  <AvatarImage src={student.profilePicture} alt={displayName} data-ai-hint="person student" />
+                  <AvatarFallback className="text-4xl">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </DialogTrigger>
+              <DialogContent className="p-0 max-w-[400px]">
+                <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" data-ai-hint="person student" />
+              </DialogContent>
+            </Dialog>
             <div className="mt-4 sm:mt-0">
               <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
               <p className="text-lg text-muted-foreground">{student.major}</p>
