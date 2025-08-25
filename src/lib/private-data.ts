@@ -29,19 +29,20 @@ function getRandomInterests(count = 3) {
 }
 
 const students = [];
-for (let i = 1; i <= 200; i++) {
+for (let i = 0; i < 200; i++) {
   const data = studentData[i % studentData.length];
+  const rollNo = i + 1;
   students.push({
-    id: i.toString(),
-    rollNo: i.toString(),
+    id: rollNo.toString(),
+    rollNo: rollNo.toString(),
     name: `${data.name}`,
     major: data.major,
     interests: getRandomInterests(),
     profilePicture: `https://placehold.co/400x400.png`,
     bio: `A passionate student of ${data.major}, exploring the world and its wonders.`,
-    email: `student${i}@example.com`,
+    email: `student${rollNo}@example.com`,
     thoughts: [],
-    password: `password${i}`,
+    password: `password${rollNo}`,
     instagram: '',
     snapchat: '',
     discord: '',
