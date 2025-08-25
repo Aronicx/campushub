@@ -43,16 +43,6 @@ export function getStudentByRollNo(rollNo: string): Student | undefined {
     return students.find(s => s.rollNo === rollNo);
 }
 
-export function addStudent(studentData: Omit<Student, 'id' | 'thoughts'>): Student {
-    const newStudent: Student = {
-        ...studentData,
-        id: (students.length + 1).toString(),
-        thoughts: [],
-    };
-    students.unshift(newStudent);
-    return newStudent;
-}
-
 export function updateStudent(id: string, updates: Partial<Student>): Student | undefined {
     const studentIndex = students.findIndex(s => s.id === id);
     if (studentIndex > -1) {

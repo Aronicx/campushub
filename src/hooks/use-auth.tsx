@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, addStudent, updateStudent, getStudentById, getStudentByRollNo, getStudentByName } from '@/lib/mock-data';
+import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { useToast } from './use-toast';
 
@@ -13,7 +13,6 @@ interface AuthContextType {
   isLoading: boolean;
   login: (identifier: string, password?: string) => boolean;
   logout: () => void;
-  signup: (data: Omit<Student, 'id' | 'thoughts'>) => Student | null;
   updateProfile: (data: Partial<Student>) => void;
   postThought: (content: string) => void;
 }
@@ -75,22 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
   };
-
-  const signup = (data: Omit<Student, 'id' | 'thoughts'>) => {
-    const existingUser = getStudentByEmail(data.email);
-    if (existingUser) {
-        toast({ variant: "destructive", title: "Signup Failed", description: "An account with this email already exists." });
-        return null;
-    }
-    const newUser = addStudent(data);
-    if (newUser) {
-        localStorage.setItem('campus-hub-user', newUser.id);
-        setCurrentUser(newUser);
-        toast({ title: "Account Created!", description: `Welcome to Campus Hub, ${newUser.name || 'user'}!` });
-        return newUser;
-    }
-    return null;
-  };
   
   const updateProfile = (data: Partial<Student>) => {
     if (currentUser) {
@@ -114,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, signup, updateProfile, postThought }}>
+    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, updateProfile, postThought }}>
       {children}
     </AuthContext.Provider>
   );
