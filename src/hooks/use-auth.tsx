@@ -23,25 +23,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
-
-  const loadUserFromStorage = useCallback(async () => {
-    const storedUserId = localStorage.getItem('campus-hub-user');
-    if (storedUserId) {
-      const user = await getStudentById(storedUserId);
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        localStorage.removeItem('campus-hub-user');
-        setCurrentUser(null);
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
+  
   useEffect(() => {
-    // This function now only runs on the client-side after initial render.
+    const loadUserFromStorage = async () => {
+      const storedUserId = localStorage.getItem('campus-hub-user');
+      if (storedUserId) {
+        const user = await getStudentById(storedUserId);
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          localStorage.removeItem('campus-hub-user');
+          setCurrentUser(null);
+        }
+      }
+      setIsLoading(false);
+    };
+
     loadUserFromStorage();
-  }, [loadUserFromStorage]);
+  }, []);
 
 
   const login = async (identifier: string, password?: string) => {
