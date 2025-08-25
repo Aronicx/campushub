@@ -17,10 +17,10 @@ async function seedDatabase() {
     
     try {
         const snapshot = await getDocs(studentsCollection);
-        if (snapshot.empty) {
+        const initialStudents = privateData._initialStudents;
+        if (snapshot.empty && initialStudents.length > 0) {
             console.log("Seeding database with initial student data...");
             const batch = writeBatch(db);
-            const initialStudents = privateData._initialStudents;
             
             initialStudents.forEach(student => {
                 const studentDocRef = doc(db, 'students', student.id);
@@ -28,7 +28,9 @@ async function seedDatabase() {
             });
             
             await batch.commit();
-            console.log("Database seeding complete. 200 students added.");
+            console.log(`Database seeding complete. ${initialStudents.length} students added.`);
+        } else if (initialStudents.length === 0) {
+            console.log("No initial student data to seed.");
         } else {
             console.log("Database already contains data, skipping seed.");
         }
