@@ -20,7 +20,7 @@ export function Header() {
         </Link>
         <nav className="flex flex-1 items-center space-x-6 text-sm font-medium">
           <Link
-            href="/"
+            href="/directory"
             className="text-foreground/60 transition-colors hover:text-foreground/80"
           >
             Directory
