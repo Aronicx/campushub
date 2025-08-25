@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
+import { createStudent } from "@/lib/mock-data";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,30 +27,45 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useAuth } from "@/hooks/use-auth";
-import { Lock, User } from "lucide-react";
+import { KeyRound, Lock, User } from "lucide-react";
 
 const formSchema = z.object({
-  identifier: z.string().min(1, { message: "Please enter your username, email or roll number." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  rollNo: z.string().min(1, { message: "Roll number is required." }),
+  name: z.string().min(3, { message: "Username must be at least 3 characters." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      identifier: "",
+      rollNo: "",
+      name: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const loggedIn = await login(values.identifier, values.password);
-    if (loggedIn) {
-      router.push("/dashboard");
+    try {
+      await createStudent({
+        rollNo: values.rollNo,
+        name: values.name,
+        password: values.password,
+      });
+      toast({
+        title: "Account Created!",
+        description: "You can now log in with your new credentials.",
+      });
+      router.push("/login");
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Signup Failed",
+            description: error.message,
+        })
     }
   }
 
@@ -57,10 +74,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">
-            Welcome Back!
+            Create an Account
           </CardTitle>
           <CardDescription>
-            Log in to connect with your campus community.
+            Join the Campus Hub community today!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,15 +85,35 @@ export default function LoginPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="identifier"
+                name="rollNo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username or Roll No.</FormLabel>
+                    <FormLabel>Roll Number</FormLabel>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 201"
+                          {...field}
+                          className="pl-10"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <FormControl>
                         <Input
-                          placeholder="e.g., Aarav Sharma or 1"
+                          placeholder="e.g., aisha_khan"
                           {...field}
                           className="pl-10"
                         />
@@ -108,14 +145,14 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Logging in...' : 'Log In'}
+                {form.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-center">
+         <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
-                Don't have an account? <Button variant="link" className="p-0 h-auto" asChild><Link href="/signup">Create one</Link></Button>
+                Already have an account? <Button variant="link" className="p-0 h-auto" asChild><Link href="/login">Log in</Link></Button>
             </p>
         </CardFooter>
       </Card>

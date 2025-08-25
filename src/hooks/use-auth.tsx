@@ -62,19 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const login = async (identifier: string, password?: string) => {
-    let user = await getStudentByEmail(identifier);
+    // Try finding user by name first, then by roll number
+    let user = await getStudentByName(identifier);
     if (!user) {
       user = await getStudentByRollNo(identifier);
     }
-    if (!user) {
-      user = await getStudentByName(identifier);
-    }
-
+    
     if (user && user.password === password) {
       localStorage.setItem('campus-hub-user', user.id);
       setCurrentUser(user);
       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
-      router.push("/dashboard");
       return true;
     }
     

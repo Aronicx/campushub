@@ -127,6 +127,38 @@ export async function addThought(studentId: string, content: string): Promise<Th
     return undefined;
 }
 
+export async function createStudent(data: { rollNo: string; name: string; password?: string; }): Promise<Student> {
+    const { rollNo, name, password } = data;
+
+    // Check for uniqueness
+    const rollNoExists = await getStudentByRollNo(rollNo);
+    if (rollNoExists) {
+        throw new Error("A user with this roll number already exists.");
+    }
+    const nameExists = await getStudentByName(name);
+    if (nameExists) {
+        throw new Error("A user with this name already exists.");
+    }
+
+    const newStudent: Student = {
+        id: rollNo, // Use rollNo as the document ID for simplicity
+        rollNo,
+        name,
+        password,
+        major: "Undeclared",
+        interests: [],
+        profilePicture: 'https://placehold.co/400x400.png',
+        bio: `A new member of the Campus Hub community!`,
+        email: `${name.toLowerCase().replace(/\s/g, '.')}@example.com`,
+        thoughts: [],
+    };
+    
+    const studentDocRef = doc(db, 'students', newStudent.id);
+    await setDoc(studentDocRef, newStudent);
+    
+    return newStudent;
+}
+
 
 export async function getUniqueMajors(): Promise<string[]> {
     const snapshot = await getDocs(studentsCollection);
