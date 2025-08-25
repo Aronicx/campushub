@@ -1,3 +1,4 @@
+
 // A simple, mock authentication hook that uses localStorage.
 // In a real app, you would replace this with a proper authentication solution.
 "use client";
@@ -27,18 +28,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // This effect should only run on the client side
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const storedUserId = localStorage.getItem('campus-hub-user');
-      if (storedUserId) {
-        const user = getStudentById(storedUserId);
-        setCurrentUser(user || null);
-      }
-    } catch (error) {
-      console.error("Could not access localStorage:", error);
+    // We are checking for window to ensure it's client-side.
+    if (typeof window !== 'undefined') {
+        try {
+            const storedUserId = localStorage.getItem('campus-hub-user');
+            if (storedUserId) {
+                const user = getStudentById(storedUserId);
+                setCurrentUser(user || null);
+            }
+        } catch (error) {
+            console.error("Could not access localStorage:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }
-    setIsLoading(false);
   }, []);
 
   const login = (identifier: string, password?: string) => {
