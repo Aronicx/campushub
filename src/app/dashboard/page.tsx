@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -251,22 +252,31 @@ function DailyThoughtPoster() {
 function ConnectionSuggester() {
     const { currentUser } = useAuth();
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [isLoading, startSuggesting] = useTransition();
+    const [isLoading, setIsLoading] = useState(false);
+    const [otherStudents, setOtherStudents] = useState<Student[]>([]);
 
-    const handleGetSuggestions = () => {
+     useEffect(() => {
+        if (currentUser) {
+            getStudents().then(students => {
+                setOtherStudents(students.filter(s => s.id !== currentUser.id));
+            });
+        }
+    }, [currentUser]);
+
+
+    const handleGetSuggestions = async () => {
         if (!currentUser) return;
         
-        startSuggesting(async () => {
-            const allOtherStudents = getStudents().filter(s => s.id !== currentUser.id);
-            const studentToProfileString = (s: Student) => `${s.name || '(no name)'}, Major: ${s.major}, Interests: ${s.interests.join(', ')}`;
-            
-            const result = await suggestConnections({
-                studentProfile: studentToProfileString(currentUser),
-                otherStudentProfiles: allOtherStudents.map(studentToProfileString),
-                numberOfSuggestions: 3,
-            });
-            setSuggestions(result);
+        setIsLoading(true);
+        const studentToProfileString = (s: Student) => `${s.name || '(no name)'}, Major: ${s.major}, Interests: ${s.interests.join(', ')}`;
+        
+        const result = await suggestConnections({
+            studentProfile: studentToProfileString(currentUser),
+            otherStudentProfiles: otherStudents.map(studentToProfileString),
+            numberOfSuggestions: 3,
         });
+        setSuggestions(result);
+        setIsLoading(false);
     };
 
     return (
@@ -285,8 +295,8 @@ function ConnectionSuggester() {
                 ) : suggestions.length > 0 ? (
                     <div className="space-y-2">
                         {suggestions.map((suggestion, index) => {
-                            const studentName = suggestion.split(',')[0];
-                            const student = getStudents({ search: studentName })[0];
+                             const studentName = suggestion.split(',')[0];
+                             const student = otherStudents.find(s => s.name === studentName);
                             return (
                                 <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-3 gap-2">
                                     <p className="flex-grow">{suggestion}</p>

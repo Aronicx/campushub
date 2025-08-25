@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -42,8 +43,9 @@ export default function LoginPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (login(values.identifier, values.password)) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const loggedIn = await login(values.identifier, values.password);
+    if (loggedIn) {
       router.push("/dashboard");
     }
   }
@@ -104,8 +106,8 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Log In
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Logging in...' : 'Log In'}
               </Button>
             </form>
           </Form>

@@ -1,8 +1,8 @@
-import { getStudents, getUniqueMajors, getUniqueInterests } from "@/lib/mock-data";
+
+import { getStudents } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Suspense } from 'react';
 import type { Student } from "@/lib/types";
-import { Header } from "@/components/header";
 
 function StudentList({ students }: { students: Student[] }) {
   if (students.length === 0) {
@@ -18,8 +18,8 @@ function StudentList({ students }: { students: Student[] }) {
   );
 }
 
-export default function NotFound() {
-  const students = getStudents();
+export default async function NotFound() {
+  const students = await getStudents();
   
   return (
     <div className="container mx-auto px-4 py-8">

@@ -1,3 +1,4 @@
+
 import { getStudents, getUniqueMajors, getUniqueInterests } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Input } from "@/components/ui/input";
@@ -62,14 +63,14 @@ function StudentList({ students }: { students: Student[] }) {
   );
 }
 
-export default function StudentDirectoryPage({
+export default async function StudentDirectoryPage({
   searchParams,
 }: {
   searchParams: { search?: string, major?: string, interest?: string }
 }) {
-  const students = getStudents(searchParams);
-  const majors = getUniqueMajors();
-  const interests = getUniqueInterests();
+  const students = await getStudents(searchParams);
+  const majors = await getUniqueMajors();
+  const interests = await getUniqueInterests();
 
   return (
     <div className="container mx-auto px-4 py-8">

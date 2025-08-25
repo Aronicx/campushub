@@ -1,9 +1,7 @@
 
-// A simple, mock authentication hook that uses localStorage.
-// In a real app, you would replace this with a proper authentication solution.
 "use client";
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
@@ -12,10 +10,10 @@ import { useToast } from './use-toast';
 interface AuthContextType {
   currentUser: Student | null;
   isLoading: boolean;
-  login: (identifier: string, password?: string) => boolean;
+  login: (identifier: string, password?: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (data: Partial<Student>) => void;
-  postThought: (content: string) => void;
+  updateProfile: (data: Partial<Student>) => Promise<void>;
+  postThought: (content: string) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -26,31 +24,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // This effect runs only on the client side, after the component has mounted.
-    // This prevents hydration errors by ensuring server and client have the same initial render.
+  const loadUserFromStorage = useCallback(async () => {
     try {
-        const storedUserId = localStorage.getItem('campus-hub-user');
-        if (storedUserId) {
-            const user = getStudentById(storedUserId);
-            setCurrentUser(user || null);
-        }
+      const storedUserId = localStorage.getItem('campus-hub-user');
+      if (storedUserId) {
+        const user = await getStudentById(storedUserId);
+        setCurrentUser(user || null);
+      }
     } catch (error) {
-        console.error("Could not access localStorage:", error);
+      console.error("Could not access localStorage or fetch user:", error);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, []);
 
-  const login = (identifier: string, password?: string) => {
-    // In our mock data, email is student{rollNo}@example.com.
-    // We can try to find user by email or by roll number or by name
-    let user = getStudentByEmail(identifier);
+  useEffect(() => {
+    loadUserFromStorage();
+  }, [loadUserFromStorage]);
+
+  const login = async (identifier: string, password?: string) => {
+    let user = await getStudentByEmail(identifier);
     if (!user) {
-      user = getStudentByRollNo(identifier);
+      user = await getStudentByRollNo(identifier);
     }
     if (!user) {
-        user = getStudentByName(identifier);
+      user = await getStudentByName(identifier);
     }
 
     if (user && user.password === password) {
@@ -60,14 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
     
-    // For backwards compatibility, if password is not provided, we check old emails
-    if (user && !password) {
-       localStorage.setItem('campus-hub-user', user.id);
-       setCurrentUser(user);
-       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
-       return true;
-    }
-
     toast({ variant: "destructive", title: "Login Failed", description: "Invalid identifier or password." });
     return false;
   };
@@ -79,9 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
   };
   
-  const updateProfile = (data: Partial<Student>) => {
+  const updateProfile = async (data: Partial<Student>) => {
     if (currentUser) {
-        const updatedUser = updateStudent(currentUser.id, data);
+        const updatedUser = await updateStudent(currentUser.id, data);
         if (updatedUser) {
             setCurrentUser(updatedUser);
             toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
@@ -89,12 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const postThought = (content: string) => {
+  const postThought = async (content: string) => {
       if(currentUser) {
-        const newThought = addThought(currentUser.id, content);
+        const newThought = await addThought(currentUser.id, content);
         if (newThought) {
-            const updatedUser = getStudentById(currentUser.id);
-            setCurrentUser(updatedUser!);
+            const updatedUser = await getStudentById(currentUser.id);
+            if (updatedUser) {
+              //Firestore's arrayUnion does not guarantee order, so we need to sort client-side.
+              updatedUser.thoughts.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+              setCurrentUser(updatedUser);
+            }
             toast({ title: "Thought Posted!", description: "Your daily thought is now live." });
         }
       }

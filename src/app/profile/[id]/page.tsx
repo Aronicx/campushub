@@ -1,3 +1,4 @@
+
 import { getStudentById } from "@/lib/mock-data";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,8 +54,8 @@ function ContactInfo({ student }: { student: Student }) {
 }
 
 
-export default function ProfilePage({ params }: { params: { id: string } }) {
-  const student = getStudentById(params.id);
+export default async function ProfilePage({ params }: { params: { id: string } }) {
+  const student = await getStudentById(params.id);
 
   if (!student) {
     notFound();
@@ -90,8 +91,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                 </Avatar>
               </DialogTrigger>
               <DialogContent className="p-0 max-w-[400px]">
-                <DialogHeader className="sr-only">
-                  <DialogTitle>{displayName}'s Profile Picture</DialogTitle>
+                <DialogHeader>
+                    <DialogTitle className="sr-only">{displayName}'s Profile Picture</DialogTitle>
                 </DialogHeader>
                 <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" data-ai-hint="person student" />
               </DialogContent>
