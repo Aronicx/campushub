@@ -26,6 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // This effect should only run on the client side
+    if (typeof window === 'undefined') return;
+    
     try {
       const storedUserId = localStorage.getItem('campus-hub-user');
       if (storedUserId) {
