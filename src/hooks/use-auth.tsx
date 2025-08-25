@@ -25,21 +25,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   
   useEffect(() => {
+    let isMounted = true;
     const loadUserFromStorage = async () => {
-      const storedUserId = localStorage.getItem('campus-hub-user');
-      if (storedUserId) {
-        const user = await getStudentById(storedUserId);
-        if (user) {
-          setCurrentUser(user);
-        } else {
-          localStorage.removeItem('campus-hub-user');
-          setCurrentUser(null);
+      setIsLoading(true);
+      try {
+        const storedUserId = localStorage.getItem('campus-hub-user');
+        if (storedUserId) {
+          const user = await getStudentById(storedUserId);
+          if (isMounted) {
+            if (user) {
+              setCurrentUser(user);
+            } else {
+              localStorage.removeItem('campus-hub-user');
+              setCurrentUser(null);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load user from storage", error);
+        if (isMounted) {
+            setCurrentUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
-      setIsLoading(false);
     };
 
     loadUserFromStorage();
+
+    return () => {
+      isMounted = false;
+    }
   }, []);
 
 
@@ -56,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('campus-hub-user', user.id);
       setCurrentUser(user);
       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });
+      router.push("/dashboard");
       return true;
     }
     
@@ -94,9 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
   }
+  
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought };
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, updateProfile, postThought }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
