@@ -24,23 +24,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const loadUserFromStorage = useCallback(async () => {
-    try {
-      const storedUserId = localStorage.getItem('campus-hub-user');
-      if (storedUserId) {
-        const user = await getStudentById(storedUserId);
-        setCurrentUser(user || null);
-      }
-    } catch (error) {
-      console.error("Could not access localStorage or fetch user:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
+    const loadUserFromStorage = async () => {
+      try {
+        const storedUserId = localStorage.getItem('campus-hub-user');
+        if (storedUserId) {
+          const user = await getStudentById(storedUserId);
+          setCurrentUser(user || null);
+        }
+      } catch (error) {
+        console.error("Could not access localStorage or fetch user:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadUserFromStorage();
-  }, [loadUserFromStorage]);
+  }, []);
 
   const login = async (identifier: string, password?: string) => {
     let user = await getStudentByEmail(identifier);
