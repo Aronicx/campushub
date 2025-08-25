@@ -1,5 +1,5 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, orderBy } from 'firebase/firestore';
 import type { Student, Thought } from './types';
 import { db } from './firebase';
 import { privateData } from './private-data';
@@ -16,7 +16,7 @@ async function seedDatabase() {
     isSeeding = true;
     
     try {
-        const snapshot = await getDocs(studentsCollection);
+        const snapshot = await getDocs(query(studentsCollection, where("id", "==", "1")));
         if (snapshot.empty) {
             console.log("Seeding database with initial student data...");
             const initialStudents = privateData._initialStudents;
@@ -49,6 +49,10 @@ export async function getStudents(filters?: { search?: string, major?: string, i
     
     const snapshot = await getDocs(q);
     let students: Student[] = snapshot.docs.map(doc => doc.data() as Student);
+    
+    // Sort by roll number numerically
+    students.sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10));
+
 
     if (filters?.search) {
         const searchTerm = filters.search.toLowerCase();
