@@ -27,20 +27,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect should only run on the client side
-    // We are checking for window to ensure it's client-side.
-    if (typeof window !== 'undefined') {
-        try {
-            const storedUserId = localStorage.getItem('campus-hub-user');
-            if (storedUserId) {
-                const user = getStudentById(storedUserId);
-                setCurrentUser(user || null);
-            }
-        } catch (error) {
-            console.error("Could not access localStorage:", error);
-        } finally {
-            setIsLoading(false);
+    // This effect runs only on the client side, after the component has mounted.
+    // This prevents hydration errors by ensuring server and client have the same initial render.
+    try {
+        const storedUserId = localStorage.getItem('campus-hub-user');
+        if (storedUserId) {
+            const user = getStudentById(storedUserId);
+            setCurrentUser(user || null);
         }
+    } catch (error) {
+        console.error("Could not access localStorage:", error);
+    } finally {
+        setIsLoading(false);
     }
   }, []);
 
