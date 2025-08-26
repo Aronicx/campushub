@@ -50,7 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2 } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -198,9 +198,6 @@ function PasswordEditor() {
     const { changePassword } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const form = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
@@ -486,7 +483,7 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
   )
 }
 
-function ProfilePictureUpdater({ onUpdate }: { onUpdate: (data: Partial<Student>) => void }) {
+function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -497,29 +494,40 @@ function ProfilePictureUpdater({ onUpdate }: { onUpdate: (data: Partial<Student>
       reader.onloadend = () => {
         if (reader.result) {
           onUpdate({ profilePicture: reader.result as string });
-          setIsUpdating(false);
         }
+        setIsUpdating(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleRemovePicture = () => {
+    onUpdate({ profilePicture: "" });
+  }
+
   return (
-    <div className="relative">
-      <Button asChild variant="outline" size="sm">
-        <label htmlFor="profile-picture-upload">
-          {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <Camera className="mr-2"/>}
-          Change Picture
-        </label>
-      </Button>
-      <Input
-        id="profile-picture-upload"
-        type="file"
-        accept="image/jpeg"
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        onChange={handleFileChange}
-        disabled={isUpdating}
-      />
+    <div className="flex items-center gap-2">
+      <div className="relative">
+        <Button asChild variant="outline" size="sm">
+          <label htmlFor="profile-picture-upload" className="cursor-pointer">
+            {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <Camera className="mr-2"/>}
+            Change Picture
+          </label>
+        </Button>
+        <Input
+          id="profile-picture-upload"
+          type="file"
+          accept="image/jpeg,image/png"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          onChange={handleFileChange}
+          disabled={isUpdating}
+        />
+      </div>
+       {student.profilePicture && (
+         <Button onClick={handleRemovePicture} variant="destructive" size="sm">
+          <Trash2 className="mr-2" /> Remove
+        </Button>
+      )}
     </div>
   );
 }
@@ -564,7 +572,7 @@ export default function DashboardPage() {
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
           <p className="text-muted-foreground">This is your personal dashboard.</p>
-          <ProfilePictureUpdater onUpdate={updateProfile} />
+          <ProfilePictureUpdater student={currentUser} onUpdate={updateProfile} />
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
