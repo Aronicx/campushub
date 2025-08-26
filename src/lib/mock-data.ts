@@ -108,7 +108,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         password,
         major: "Undeclared",
         interests: [],
-        profilePicture: 'https://placehold.co/400x400.png',
+        profilePicture: 'https://placehold.co/256x256.png',
         bio: `A new member of the Campus Hub community!`,
         email: `${name.toLowerCase().replace(/\s/g, '.')}@example.com`,
         thoughts: [],

@@ -12,6 +12,8 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { getStudents } from "@/lib/mock-data";
 import type { Student } from "@/lib/types";
+import { resizeAndCompressImage } from "@/lib/utils";
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -486,18 +488,18 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
 function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setIsUpdating(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          onUpdate({ profilePicture: reader.result as string });
-        }
+      try {
+        const compressedImage = await resizeAndCompressImage(file, 256, 256);
+        onUpdate({ profilePicture: compressedImage });
+      } catch (error) {
+        console.error("Failed to process image:", error);
+      } finally {
         setIsUpdating(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -517,13 +519,13 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
         <Input
           id="profile-picture-upload"
           type="file"
-          accept="image/jpeg,image/png"
+          accept="image/jpeg,image/png,image/webp"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           onChange={handleFileChange}
           disabled={isUpdating}
         />
       </div>
-       {student.profilePicture && (
+       {student.profilePicture && !student.profilePicture.includes('placehold.co') && (
          <Button onClick={handleRemovePicture} variant="destructive" size="sm">
           <Trash2 className="mr-2" /> Remove
         </Button>
@@ -710,6 +712,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
-    
