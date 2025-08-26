@@ -14,6 +14,7 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (data: Partial<Student>) => Promise<void>;
   postThought: (content: string) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -110,8 +111,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
   }
+
+  const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    if (!currentUser) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to change your password.' });
+      return false;
+    }
+    if (currentUser.password !== oldPassword) {
+      toast({ variant: 'destructive', title: 'Error', description: 'The current password you entered is incorrect.' });
+      return false;
+    }
+    try {
+      const updatedUser = await updateStudent(currentUser.id, { password: newPassword });
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+        toast({ title: 'Success', description: 'Your password has been changed successfully.' });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to change password.' });
+      return false;
+    }
+  };
   
-  const value = { currentUser, isLoading, login, logout, updateProfile, postThought };
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword };
 
   return (
     <AuthContext.Provider value={value}>

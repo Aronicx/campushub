@@ -50,7 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -67,6 +67,15 @@ const bioFormSchema = z.object({
 
 const interestsFormSchema = z.object({
     interests: z.string().min(1, { message: "Please list at least one interest." }),
+});
+
+const passwordFormSchema = z.object({
+    currentPassword: z.string().min(1, { message: "Current password is required." }),
+    newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
+    confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmPassword"],
 });
 
 
@@ -167,6 +176,74 @@ function SingleFieldEditor({ title, description, schema, fieldName, initialValue
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                             <Button type="submit">Save</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function PasswordEditor() {
+    const { changePassword } = useAuth();
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const form = useForm<z.infer<typeof passwordFormSchema>>({
+        resolver: zodResolver(passwordFormSchema),
+        defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+    });
+
+    async function onSubmit(values: z.infer<typeof passwordFormSchema>) {
+        setIsSubmitting(true);
+        const success = await changePassword(values.currentPassword, values.newPassword);
+        setIsSubmitting(false);
+        if (success) {
+            setIsOpen(false);
+            form.reset();
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline">Change Password</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                        Enter your current password and a new password below.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField control={form.control} name="currentPassword" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Current Password</FormLabel>
+                                <FormControl><Input type="password" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="newPassword" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>New Password</FormLabel>
+                                <FormControl><Input type="password" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Confirm New Password</FormLabel>
+                                <FormControl><Input type="password" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Password
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -571,6 +648,16 @@ export default function DashboardPage() {
                     </div>
 
                     <SocialsEditor student={currentUser} onUpdate={updateProfile} />
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Lock /> Security</CardTitle>
+                            <CardDescription>Manage your password settings.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <PasswordEditor />
+                        </CardContent>
+                    </Card>
 
                     <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
