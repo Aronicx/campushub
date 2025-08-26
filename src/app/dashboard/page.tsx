@@ -55,6 +55,8 @@ import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyR
 
 const profileFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
+  email: z.string().email({ message: "Please enter a valid email." }),
+  phoneNumber: z.string().optional(),
 });
 
 const majorFormSchema = z.object({
@@ -85,6 +87,8 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: student.name || "",
+      email: student.email || "",
+      phoneNumber: student.phoneNumber || "",
     },
   });
 
@@ -110,6 +114,12 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                 <div className="space-y-4 px-1">
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                        <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
                  <DialogFooter>
@@ -188,6 +198,10 @@ function PasswordEditor() {
     const { changePassword } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     const form = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
         defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
@@ -400,8 +414,6 @@ const socialFormSchema = z.object({
   instagram: z.string().optional(),
   snapchat: z.string().optional(),
   discord: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  email: z.string().email().optional(),
   customLink: z.string().optional(),
 });
 
@@ -412,8 +424,6 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
       instagram: student.instagram || "",
       snapchat: student.snapchat || "",
       discord: student.discord || "",
-      phoneNumber: student.phoneNumber || "",
-      email: student.email || "",
       customLink: student.customLink || "",
     },
   });
@@ -426,8 +436,6 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
       { name: "instagram", icon: Instagram, placeholder: "e.g., your_username" },
       { name: "snapchat", icon: MessageCircle, placeholder: "e.g., your_username" },
       { name: "discord", icon: Users, placeholder: "e.g., YourTag#1234" },
-      { name: "phoneNumber", icon: Phone, placeholder: "e.g., +1 123 456 7890" },
-      { name: "email", icon: Mail, placeholder: "your.contact@email.com" },
       { name: "customLink", icon: Link2, placeholder: "e.g., your personal website" },
   ] as const;
 
@@ -441,7 +449,7 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <Tabs defaultValue="instagram" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                 {socialFields.map(field => <TabsTrigger key={field.name} value={field.name}><field.icon /></TabsTrigger>)}
               </TabsList>
               {socialFields.map(field => (
@@ -694,3 +702,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
