@@ -84,7 +84,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
              <Dialog>
               <DialogTrigger asChild>
                 <Avatar className="h-32 w-32 border-4 border-background cursor-pointer">
-                  <AvatarImage src={student.profilePicture} alt={displayName} />
+                  <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
                   <AvatarFallback className="text-4xl">
                     {initials}
                   </AvatarFallback>
@@ -94,7 +94,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                 <DialogHeader>
                     <DialogTitle className="sr-only">{displayName}'s Profile Picture</DialogTitle>
                 </DialogHeader>
-                <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" />
+                {student.profilePicture && <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" />}
               </DialogContent>
             </Dialog>
             <div className="mt-4 sm:mt-0">
@@ -179,3 +179,5 @@ export default async function ProfilePage({ params }: { params: { id: string } }
     </div>
   );
 }
+
+    

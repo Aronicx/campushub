@@ -15,7 +15,7 @@ export function StudentCard({ student }: { student: Student }) {
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="flex-row gap-4 items-center">
         <Avatar>
-          <AvatarImage src={student.profilePicture} alt={displayName} />
+          <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div>
@@ -43,3 +43,5 @@ export function StudentCard({ student }: { student: Student }) {
     </Card>
   );
 }
+
+    

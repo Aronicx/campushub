@@ -571,7 +571,7 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
         <Avatar className="h-20 w-20">
-          <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
+          <AvatarImage src={currentUser.profilePicture || undefined} alt={currentUser.name || 'User'} />
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
         <div className="space-y-2">
@@ -715,3 +715,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

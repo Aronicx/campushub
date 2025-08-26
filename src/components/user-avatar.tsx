@@ -35,7 +35,7 @@ export function UserAvatar() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             <AvatarImage
-              src={currentUser.profilePicture}
+              src={currentUser.profilePicture || undefined}
               alt={currentUser.name || 'User'}
             />
             <AvatarFallback>{initials}</AvatarFallback>
@@ -67,3 +67,5 @@ export function UserAvatar() {
     </DropdownMenu>
   );
 }
+
+    
