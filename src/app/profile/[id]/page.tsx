@@ -1,6 +1,7 @@
 
 import { getStudentById } from "@/lib/mock-data";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -90,11 +91,15 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                   </AvatarFallback>
                 </Avatar>
               </DialogTrigger>
-              <DialogContent className="p-0 max-w-[400px]">
+              <DialogContent className="p-0 max-w-sm sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="sr-only">{displayName}'s Profile Picture</DialogTitle>
                 </DialogHeader>
-                {student.profilePicture && <img src={student.profilePicture} alt={displayName} className="w-full h-auto rounded-lg" />}
+                {student.profilePicture && (
+                  <div className="relative aspect-square">
+                    <Image src={student.profilePicture} alt={displayName} fill className="object-cover rounded-lg" />
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
             <div className="mt-4 sm:mt-0">
@@ -179,5 +184,3 @@ export default async function ProfilePage({ params }: { params: { id: string } }
     </div>
   );
 }
-
-    
