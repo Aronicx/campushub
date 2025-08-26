@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,7 +15,7 @@ export function StudentCard({ student }: { student: Student }) {
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="flex-row gap-4 items-center">
         <Avatar>
-          <AvatarImage src={student.profilePicture} alt={displayName} data-ai-hint="person student" />
+          <AvatarImage src={student.profilePicture} alt={displayName} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div>

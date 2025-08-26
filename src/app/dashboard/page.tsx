@@ -200,6 +200,9 @@ function PasswordEditor() {
     const { changePassword } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const form = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
@@ -504,8 +507,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
   };
 
   const handleRemovePicture = () => {
-    // Revert to the default placeholder image
-    onUpdate({ profilePicture: "https://placehold.co/256x256.png" });
+    onUpdate({ profilePicture: "" });
   }
 
   return (
@@ -526,7 +528,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
           disabled={isUpdating}
         />
       </div>
-       {student.profilePicture && !student.profilePicture.includes('placehold.co') && (
+       {student.profilePicture && (
          <Button onClick={handleRemovePicture} variant="destructive" size="sm">
           <Trash2 className="mr-2 h-4 w-4" /> Remove
         </Button>
@@ -713,5 +715,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

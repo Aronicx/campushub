@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -36,7 +37,6 @@ export function UserAvatar() {
             <AvatarImage
               src={currentUser.profilePicture}
               alt={currentUser.name || 'User'}
-              data-ai-hint="profile picture"
             />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
