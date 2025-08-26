@@ -19,38 +19,45 @@ export function resizeAndCompressImage(
       if (typeof e.target?.result === 'string') {
         img.src = e.target.result;
       } else {
-        reject(new Error("Failed to read file."));
+        return reject(new Error("Failed to read file."));
       }
     };
     reader.onerror = reject;
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      let { width, height } = img;
-
-      if (width > height) {
-        if (width > maxWidth) {
-          height = Math.round(height * (maxWidth / width));
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width = Math.round(width * (maxHeight / height));
-          height = maxHeight;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
+      
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
+      
       const ctx = canvas.getContext("2d");
 
       if (!ctx) {
         return reject(new Error("Could not get canvas context."));
       }
+      
+      // Draw the image onto the canvas, cropping to fit
+      const sourceX = 0;
+      const sourceY = 0;
+      const sourceWidth = img.width;
+      const sourceHeight = img.height;
+      const destX = 0;
+      const destY = 0;
+      const destWidth = maxWidth;
+      const destHeight = maxHeight;
 
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Resolve with the compressed image as a WebP data URL
+      ctx.drawImage(
+        img,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        destX,
+        destY,
+        destWidth,
+        destHeight
+      );
+      
       resolve(canvas.toDataURL("image/webp", quality));
     };
 
@@ -58,3 +65,5 @@ export function resizeAndCompressImage(
     reader.readAsDataURL(file);
   });
 }
+
+    
