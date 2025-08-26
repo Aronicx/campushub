@@ -570,7 +570,7 @@ export default function DashboardPage() {
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold">Welcome, {displayName.split(" ")[0]}!</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">{displayName}</h1>
           <p className="text-muted-foreground">This is your personal dashboard.</p>
           <ProfilePictureUpdater student={currentUser} onUpdate={updateProfile} />
         </div>
@@ -711,4 +711,5 @@ export default function DashboardPage() {
   );
 }
 
+    
     
