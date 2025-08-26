@@ -504,15 +504,16 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
   };
 
   const handleRemovePicture = () => {
-    onUpdate({ profilePicture: "" });
+    // Revert to the default placeholder image
+    onUpdate({ profilePicture: "https://placehold.co/256x256.png" });
   }
 
   return (
     <div className="flex items-center gap-2">
       <div className="relative">
         <Button asChild variant="outline" size="sm">
-          <label htmlFor="profile-picture-upload" className="cursor-pointer">
-            {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <Camera className="mr-2"/>}
+          <label htmlFor="profile-picture-upload" className="cursor-pointer flex items-center">
+            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4"/>}
             Change Picture
           </label>
         </Button>
@@ -527,7 +528,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
       </div>
        {student.profilePicture && !student.profilePicture.includes('placehold.co') && (
          <Button onClick={handleRemovePicture} variant="destructive" size="sm">
-          <Trash2 className="mr-2" /> Remove
+          <Trash2 className="mr-2 h-4 w-4" /> Remove
         </Button>
       )}
     </div>
@@ -712,7 +713,5 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
 
     

@@ -12,7 +12,7 @@ export function resizeAndCompressImage(
   quality = 0.7
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = document.createElement("img");
+    const img = new Image();
     const reader = new FileReader();
 
     reader.onload = (e) => {
@@ -27,8 +27,22 @@ export function resizeAndCompressImage(
     img.onload = () => {
       const canvas = document.createElement("canvas");
       
-      canvas.width = maxWidth;
-      canvas.height = maxHeight;
+      let { width, height } = img;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
       
       const ctx = canvas.getContext("2d");
 
@@ -36,27 +50,7 @@ export function resizeAndCompressImage(
         return reject(new Error("Could not get canvas context."));
       }
       
-      // Draw the image onto the canvas, cropping to fit
-      const sourceX = 0;
-      const sourceY = 0;
-      const sourceWidth = img.width;
-      const sourceHeight = img.height;
-      const destX = 0;
-      const destY = 0;
-      const destWidth = maxWidth;
-      const destHeight = maxHeight;
-
-      ctx.drawImage(
-        img,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        destX,
-        destY,
-        destWidth,
-        destHeight
-      );
+      ctx.drawImage(img, 0, 0, width, height);
       
       resolve(canvas.toDataURL("image/webp", quality));
     };
