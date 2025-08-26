@@ -96,9 +96,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                     <DialogTitle className="sr-only">{displayName}'s Profile Picture</DialogTitle>
                 </DialogHeader>
                 {student.profilePicture && (
-                  <div className="relative aspect-square">
-                    <Image src={student.profilePicture} alt={displayName} fill className="object-cover rounded-lg" />
-                  </div>
+                   <Image src={student.profilePicture} alt={displayName} width={400} height={400} className="object-cover rounded-lg" />
                 )}
               </DialogContent>
             </Dialog>
