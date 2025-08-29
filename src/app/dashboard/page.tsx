@@ -705,7 +705,7 @@ export default function ProfilePage() {
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="profile">My Profile</TabsTrigger>
           <TabsTrigger value="posts">My Posts</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
@@ -828,4 +828,5 @@ export default function ProfilePage() {
   );
 }
 
+    
     
