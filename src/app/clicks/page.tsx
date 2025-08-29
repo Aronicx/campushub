@@ -4,152 +4,16 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
-import { getRecentClicks, addClick, getClicksByAuthor, cleanupExpiredClicks, toggleClickLike } from "@/lib/mock-data";
-import type { Click, Student } from "@/lib/types";
-import { resizeAndCompressImage } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { getRecentClicks, toggleClickLike, cleanupExpiredClicks } from "@/lib/mock-data";
+import type { Click } from "@/lib/types";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, X, Loader2, ImagePlus, Heart, Users, TrendingUp } from "lucide-react";
+import { Loader2, ImagePlus, Heart, Users, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
-function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) => void }) {
-    const { currentUser } = useAuth();
-    const { toast } = useToast();
-    const [file, setFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [userClickCount, setUserClickCount] = useState(0);
-    const [isOpen, setIsOpen] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (!currentUser || !isOpen) return;
-        getClicksByAuthor(currentUser.id).then(clicks => {
-            setUserClickCount(clicks.length);
-        });
-    }, [currentUser, isOpen]);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit, server can handle larger files now
-                toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 10MB.' });
-                return;
-            }
-            setFile(selectedFile);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result as string);
-            };
-            reader.readAsDataURL(selectedFile);
-        }
-    };
-
-    const handleUpload = async () => {
-        if (!file || !currentUser) return;
-        setIsUploading(true);
-        try {
-            const compressedDataUrl = await resizeAndCompressImage(file, 1080, 1920, 0.8);
-            const newClick = await addClick(currentUser, compressedDataUrl);
-            onUploadSuccess(newClick);
-            toast({ title: 'Click posted!', description: 'Your image is now visible to others.' });
-            handleClose();
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Upload Failed', description: error.message });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleClose = () => {
-        setFile(null);
-        setPreview(null);
-        setIsUploading(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-        setIsOpen(false);
-    }
-    
-    if (!currentUser) return null;
-
-    const clicksLeft = 10 - userClickCount;
-    const canUpload = clicksLeft > 0;
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Upload className="mr-2" /> Share a Click
-                </Button>
-            </DialogTrigger>
-            <DialogContent onInteractOutside={(e) => {if(isUploading) e.preventDefault()}}>
-                <DialogHeader>
-                    <DialogTitle>Share a Click</DialogTitle>
-                    <DialogDescription>
-                        Upload an image to share with the campus. It will disappear in 24 hours.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">You have {clicksLeft} clicks left for today.</p>
-                        <Progress value={(userClickCount / 10) * 100} className="w-full h-2" />
-                    </div>
-
-                    {!preview ? (
-                        <div 
-                            className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/30 rounded-lg p-10 cursor-pointer hover:bg-muted/50"
-                             onClick={() => fileInputRef.current?.click()}
-                        >
-                            <ImagePlus className="h-10 w-10 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">Click to browse or drag & drop</p>
-                            <p className="text-xs text-muted-foreground/80">PNG, JPG, WEBP up to 1MB</p>
-                            <Input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/png, image/jpeg, image/webp"
-                                className="hidden"
-                                onChange={handleFileChange}
-                                disabled={!canUpload || isUploading}
-                            />
-                        </div>
-                    ) : (
-                        <div className="relative">
-                            <Image src={preview} alt="Image preview" width={500} height={500} className="rounded-md object-contain max-h-[400px]" />
-                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setPreview(null); setFile(null); }} disabled={isUploading}>
-                                <X size={16}/>
-                            </Button>
-                        </div>
-                    )}
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="ghost" onClick={handleClose} disabled={isUploading}>Cancel</Button></DialogClose>
-                    <Button onClick={handleUpload} disabled={!file || !canUpload || isUploading}>
-                        {isUploading ? <><Loader2 className="mr-2 animate-spin" /> Uploading...</> : <>Post Click</>}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 function ClickCard({ click, currentUserId, onLikeToggle }: { click: Click, currentUserId?: string, onLikeToggle: (clickId: string) => void }) {
     const isLiked = currentUserId ? (click.likes || []).includes(currentUserId) : false;
@@ -204,7 +68,7 @@ function ClickReel({ clicks, currentUserId, onLikeToggle, sortMode }: { clicks: 
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
                 <ImagePlus size={64} className="mb-4" />
                 <h3 className="text-xl font-semibold">No Clicks Yet</h3>
-                <p>Be the first one to share a moment!</p>
+                <p>Share a moment from your Profile page!</p>
             </div>
         )
     }
@@ -243,10 +107,6 @@ export default function ClicksPage() {
              fetchClicks();
         }
     }, [fetchClicks]);
-
-    const handleUploadSuccess = (newClick: Click) => {
-        setClicks(prevClicks => [newClick, ...prevClicks]);
-    }
     
     const handleLikeToggle = async (clickId: string) => {
         if (!currentUser) return;
@@ -287,10 +147,6 @@ export default function ClicksPage() {
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    
-                    <div className="absolute right-4 top-4">
-                        {currentUser && <UploadDialog onUploadSuccess={handleUploadSuccess} />}
-                    </div>
                 </div>
             </header>
             
