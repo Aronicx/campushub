@@ -21,6 +21,12 @@ export function Header() {
         </Link>
         <nav className="flex flex-1 items-center space-x-6 text-sm font-medium">
           <Link
+            href="/thought-bubbles"
+            className="text-foreground/60 transition-colors hover:text-foreground/80"
+          >
+            Thought Bubbles
+          </Link>
+          <Link
             href="/directory"
             className="text-foreground/60 transition-colors hover:text-foreground/80"
           >
@@ -34,10 +40,7 @@ export function Header() {
           ) : currentUser ? (
             <>
               <Button asChild variant="ghost">
-                <Link href="/directory">Home</Link>
-              </Button>
-              <Button asChild variant="ghost">
-                <Link href="/dashboard">Profile</Link>
+                <Link href="/profile">Profile</Link>
               </Button>
               <UserAvatar />
             </>
@@ -45,6 +48,9 @@ export function Header() {
             <>
               <Button asChild variant="ghost">
                 <Link href="/login">Log In</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">Sign Up</Link>
               </Button>
             </>
           )}

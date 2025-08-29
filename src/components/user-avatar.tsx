@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Trash2 } from "lucide-react";
+import { LayoutDashboard, LogOut, Trash2, Users } from "lucide-react";
 
 export function UserAvatar() {
   const { currentUser, logout, deleteProfile } = useAuth();
@@ -70,9 +70,15 @@ export function UserAvatar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-            <Link href="/dashboard">
+            <Link href="/profile">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 <span>Profile</span>
+            </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+            <Link href="/directory">
+                <Users className="mr-2 h-4 w-4" />
+                <span>Directory</span>
             </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -110,5 +116,3 @@ export function UserAvatar() {
     </>
   );
 }
-
-    

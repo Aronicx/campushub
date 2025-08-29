@@ -537,7 +537,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
   );
 }
 
-export default function DashboardPage() {
+export default function ProfilePage() {
   const { currentUser, isLoading: isAuthLoading, updateProfile } = useAuth();
   const router = useRouter();
 

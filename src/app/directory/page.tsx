@@ -1,4 +1,5 @@
 
+
 import { getStudents, getUniqueMajors, getUniqueInterests } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Input } from "@/components/ui/input";
