@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 
 import { useAuth } from "@/hooks/use-auth";
 import { getStudents, getClicksByAuthor, addClick } from "@/lib/mock-data";
@@ -55,7 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 import { suggestConnections } from "@/ai/flows/suggest-connections";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, CalendarDays, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -139,7 +138,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
 }
 
 
-function SingleFieldEditor({ title, description, schema, fieldName, initialValue, onUpdate, inputType = "input" }: { 
+function SingleFieldEditor({ title, description, schema, fieldName, initialValue, onUpdate, inputType = "input" | "textarea" }: { 
     title: string;
     description: string;
     schema: any; 
@@ -692,14 +691,6 @@ export default function ProfilePage() {
   const initials = (currentUser.name || "NN").split(" ").map((n) => n[0]).join("");
   const displayName = currentUser.name || '(no name)';
 
-  const recentThoughts = currentUser.thoughts
-    .filter(thought => {
-        const thoughtDate = new Date(thought.timestamp);
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        return thoughtDate > oneDayAgo;
-    })
-    .slice(0, 3);
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
@@ -720,16 +711,16 @@ export default function ProfilePage() {
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <div>
-                        <CardTitle>Your Information</CardTitle>
-                        <CardDescription>Review and edit your personal details.</CardDescription>
-                    </div>
-                    <ProfileEditor student={currentUser} onUpdate={updateProfile} />
-                </CardHeader>
-                <CardContent className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <CardTitle>Your Information</CardTitle>
+                            <CardDescription>Review and edit your personal details.</CardDescription>
+                        </div>
+                        <ProfileEditor student={currentUser} onUpdate={updateProfile} />
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between text-xl">
@@ -799,44 +790,21 @@ export default function ProfilePage() {
                                 ))}
                             </CardContent>
                         </Card>
-                    </div>
+                    </CardContent>
+                </Card>
 
-                    <SocialsEditor student={currentUser} onUpdate={updateProfile} />
+                <SocialsEditor student={currentUser} onUpdate={updateProfile} />
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Lock /> Security</CardTitle>
-                            <CardDescription>Manage your password settings.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <PasswordEditor />
-                        </CardContent>
-                    </Card>
-
-                    <div>
-                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
-                    {recentThoughts.length > 0 ? (
-                        <div className="space-y-4">
-                            {recentThoughts.map((thought) => (
-                            <Card key={thought.id} className="bg-background">
-                                <CardContent className="p-4">
-                                <p className="break-words">{thought.content}</p>
-                                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                                    <CalendarDays size={14} /> 
-                                    {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
-                                </p>
-                                </CardContent>
-                            </Card>
-                            ))}
-                        </div>
-                        ) : (
-                        <Card className="text-center p-8 border-dashed">
-                            <p className="text-muted-foreground">You haven't shared any thoughts in the last 24 hours.</p>
-                        </Card>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Lock /> Security</CardTitle>
+                        <CardDescription>Manage your password settings.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <PasswordEditor />
+                    </CardContent>
+                </Card>
+            </div>
         </TabsContent>
         <TabsContent value="posts" className="mt-6 space-y-6">
             <DailyThoughtPoster />
@@ -859,3 +827,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
