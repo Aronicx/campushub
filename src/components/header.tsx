@@ -38,6 +38,12 @@ export function Header() {
           >
             Chat
           </Link>
+          <Link
+            href="/clicks"
+            className="text-foreground/60 transition-colors hover:text-foreground/80"
+          >
+            Clicks
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-2">

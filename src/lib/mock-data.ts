@@ -1,10 +1,12 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy } from 'firebase/firestore';
-import type { Student, Thought, Comment, ChatMessage } from './types';
-import { db } from './firebase';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
+import type { Student, Thought, Comment, ChatMessage, Click } from './types';
+import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
 const chatMessagesCollection = collection(db, 'chatMessages');
+const clicksCollection = collection(db, 'clicks');
 
 
 export async function getStudents(filters?: { search?: string, major?: string, interest?: string }): Promise<Student[]> {
@@ -303,4 +305,86 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
     });
 
     return unsubscribe;
+}
+
+// Clicks functionality
+
+export async function getRecentClicks(): Promise<Click[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const q = query(clicksCollection, where("timestamp", ">=", twentyFourHoursAgo.toISOString()), orderBy("timestamp", "desc"));
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+}
+
+export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const q = query(clicksCollection, where("authorId", "==", authorId), where("timestamp", ">=", twentyFourHoursAgo.toISOString()));
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+}
+
+export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
+    // Check user's click count for the last 24 hours
+    const userClicks = await getClicksByAuthor(author.id);
+    if (userClicks.length >= 10) {
+        throw new Error("You have reached the maximum of 10 Clicks per day.");
+    }
+
+    // Upload to storage
+    const timestamp = Date.now();
+    const storagePath = `clicks/${author.id}/${timestamp}.webp`;
+    const storageRef = ref(storage, storagePath);
+    const uploadResult = await uploadString(storageRef, imageDataUrl, 'data_url');
+    const imageUrl = await getDownloadURL(uploadResult.ref);
+
+    // Add to Firestore
+    const newClickDoc = doc(clicksCollection);
+    const newClick: Click = {
+        id: newClickDoc.id,
+        authorId: author.id,
+        authorName: author.name,
+        authorProfilePicture: author.profilePicture,
+        imageUrl,
+        storagePath,
+        timestamp: new Date().toISOString(),
+    };
+
+    await setDoc(newClickDoc, newClick);
+    return newClick;
+}
+
+export async function deleteClick(click: Click): Promise<void> {
+    // Delete from storage
+    const storageRef = ref(storage, click.storagePath);
+    await deleteObject(storageRef);
+
+    // Delete from Firestore
+    const clickDocRef = doc(db, 'clicks', click.id);
+    await deleteDoc(clickDocRef);
+}
+
+export async function cleanupExpiredClicks(): Promise<void> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const q = query(clicksCollection, where("timestamp", "<", twentyFourHoursAgo.toISOString()));
+    
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return;
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(async (doc) => {
+        const click = doc.data() as Click;
+        // Delete from storage first
+        try {
+            const storageRef = ref(storage, click.storagePath);
+            await deleteObject(storageRef);
+        } catch(error) {
+            console.error(`Failed to delete from storage: ${click.storagePath}`, error)
+        }
+        // Then delete from firestore
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
 }

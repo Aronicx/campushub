@@ -43,3 +43,13 @@ export interface ChatMessage {
     content: string;
     timestamp: number; // Use Firestore server timestamp
 }
+
+export interface Click {
+  id: string; // document id
+  authorId: string;
+  authorName: string;
+  authorProfilePicture?: string;
+  imageUrl: string;
+  storagePath: string;
+  timestamp: string; // ISO string
+}
