@@ -24,7 +24,7 @@ export function Header() {
             href="/thought-bubbles"
             className="text-foreground/60 transition-colors hover:text-foreground/80"
           >
-            Thought Bubbles
+            Bubbles
           </Link>
           <Link
             href="/directory"
