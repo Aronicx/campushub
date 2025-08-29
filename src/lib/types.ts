@@ -52,4 +52,5 @@ export interface Click {
   imageUrl: string;
   storagePath: string;
   timestamp: string; // ISO string
+  likes: string[]; // Array of student IDs who liked the click
 }

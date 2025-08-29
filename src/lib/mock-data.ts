@@ -314,18 +314,39 @@ export async function getRecentClicks(): Promise<Click[]> {
     const q = query(clicksCollection, where("timestamp", ">=", twentyFourHoursAgo.toISOString()), orderBy("timestamp", "desc"));
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+    const clicksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+
+    // Attach student rollNo for sorting by "All"
+    const students = await getStudents();
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    return clicksData.map(click => {
+        const author = studentMap.get(click.authorId);
+        return {
+            ...click,
+            authorRollNo: author ? parseInt(author.rollNo, 10) : Infinity,
+        };
+    });
 }
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).getTime();
-    const q = query(clicksCollection, where("authorId", "==", authorId));
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // This query might need an index. If it fails, we need to filter client-side.
+    const q = query(clicksCollection, 
+        where("authorId", "==", authorId),
+        where("timestamp", ">=", twentyFourHoursAgo.toISOString())
+    );
     
-    const snapshot = await getDocs(q);
-    const clicks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-
-    // Filter by timestamp client-side to avoid complex index
-    return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyFourHoursAgo);
+    try {
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+    } catch (error) {
+        console.warn("Firestore query failed, falling back to client-side filtering for getClicksByAuthor. Consider adding a composite index.", error);
+        // Fallback to client-side filtering if index is missing
+        const allUserClicks = await getDocs(query(clicksCollection, where("authorId", "==", authorId)));
+        const clicks = allUserClicks.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+        return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyFourHoursAgo.getTime());
+    }
 }
 
 
@@ -353,11 +374,39 @@ export async function addClick(author: Student, imageDataUrl: string): Promise<C
         imageUrl,
         storagePath,
         timestamp: new Date().toISOString(),
+        likes: [],
     };
 
     await setDoc(newClickDoc, newClick);
     return newClick;
 }
+
+export async function toggleClickLike(clickId: string, likerId: string): Promise<boolean> {
+    const clickRef = doc(db, 'clicks', clickId);
+    const clickSnap = await getDoc(clickRef);
+
+    if (!clickSnap.exists()) {
+        throw new Error("Click not found");
+    }
+
+    const click = clickSnap.data() as Click;
+    const isLiked = (click.likes || []).includes(likerId);
+
+    if (isLiked) {
+        // Unlike
+        await updateDoc(clickRef, {
+            likes: arrayRemove(likerId)
+        });
+        return false;
+    } else {
+        // Like
+        await updateDoc(clickRef, {
+            likes: arrayUnion(likerId)
+        });
+        return true;
+    }
+}
+
 
 export async function deleteClick(click: Click): Promise<void> {
     // Delete from storage
@@ -372,30 +421,30 @@ export async function deleteClick(click: Click): Promise<void> {
 export async function cleanupExpiredClicks(): Promise<void> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    // We get all clicks and filter on the client to avoid needing an index.
-    // This is not ideal for large datasets but avoids the indexing error.
     const allClicksSnapshot = await getDocs(clicksCollection);
 
     const expiredClicks = allClicksSnapshot.docs.filter(doc => {
         const click = doc.data() as Click;
-        return new Date(click.timestamp) < twentyFourHoursAgo;
+        return new Date(click.timestamp).getTime() < twentyFourHoursAgo.getTime();
     });
 
     if (expiredClicks.length === 0) return;
 
     const batch = writeBatch(db);
-    expiredClicks.forEach(async (doc) => {
+    for (const doc of expiredClicks) {
         const click = doc.data() as Click;
         // Delete from storage first
         try {
-            const storageRef = ref(storage, click.storagePath);
-            await deleteObject(storageRef);
-        } catch(error) {
+            if (click.storagePath) {
+                const storageRef = ref(storage, click.storagePath);
+                await deleteObject(storageRef);
+            }
+        } catch (error) {
             console.error(`Failed to delete from storage: ${click.storagePath}`, error)
         }
         // Then delete from firestore
         batch.delete(doc.ref);
-    });
+    };
 
     await batch.commit();
 }

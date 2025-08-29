@@ -4,13 +4,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
-import { getRecentClicks, addClick, getClicksByAuthor, cleanupExpiredClicks } from "@/lib/mock-data";
+import { getRecentClicks, addClick, getClicksByAuthor, cleanupExpiredClicks, toggleClickLike } from "@/lib/mock-data";
 import type { Click, Student } from "@/lib/types";
 import { resizeAndCompressImage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,8 +25,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, X, Loader2, ImagePlus } from "lucide-react";
+import { Upload, X, Loader2, ImagePlus, Heart, Users, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) => void }) {
@@ -40,7 +41,7 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser || !isOpen) return;
         getClicksByAuthor(currentUser.id).then(clicks => {
             setUserClickCount(clicks.length);
         });
@@ -49,8 +50,8 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
-            if (selectedFile.size > 1024 * 1024) { // 1MB limit
-                toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 1MB.' });
+            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit, server can handle larger files now
+                toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 10MB.' });
                 return;
             }
             setFile(selectedFile);
@@ -97,7 +98,7 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button>
-                    <Upload className="mr-2" /> Upload Click
+                    <Upload className="mr-2" /> Share a Click
                 </Button>
             </DialogTrigger>
             <DialogContent onInteractOutside={(e) => {if(isUploading) e.preventDefault()}}>
@@ -150,40 +151,79 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     )
 }
 
-function ClicksGrid({ clicks }: { clicks: Click[] }) {
-    if (clicks.length === 0) {
+function ClickCard({ click, currentUserId, onLikeToggle }: { click: Click, currentUserId?: string, onLikeToggle: (clickId: string) => void }) {
+    const isLiked = currentUserId ? (click.likes || []).includes(currentUserId) : false;
+
+    const handleLikeClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (currentUserId) {
+            onLikeToggle(click.id);
+        }
+    };
+    
+    return (
+        <div className="h-full w-full snap-center relative flex-shrink-0">
+            <Image 
+                src={click.imageUrl} 
+                alt={`Click by ${click.authorName}`} 
+                fill 
+                className="object-contain" 
+                data-ai-hint="user content"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+            <div className="absolute top-0 left-0 p-4 bg-gradient-to-b from-black/50 to-transparent w-full">
+                <Link href={`/profile/${click.authorId}`} className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border-2 border-primary">
+                        <AvatarImage src={click.authorProfilePicture} />
+                        <AvatarFallback>{click.authorName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-md font-semibold text-white truncate">{click.authorName}</p>
+                </Link>
+            </div>
+            <div className="absolute bottom-0 right-0 p-4 flex flex-col items-center gap-4">
+                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full bg-black/30 hover:bg-black/50 text-white" onClick={handleLikeClick} disabled={!currentUserId}>
+                    <Heart className={cn("h-7 w-7 transition-all", isLiked ? "text-red-500 fill-current" : "text-white")} />
+                </Button>
+                <span className="text-white font-bold text-lg drop-shadow-md">{(click.likes || []).length}</span>
+            </div>
+        </div>
+    )
+}
+
+function ClickReel({ clicks, currentUserId, onLikeToggle, sortMode }: { clicks: Click[], currentUserId?: string, onLikeToggle: (clickId: string) => void, sortMode: 'all' | 'rank' }) {
+    const sortedClicks = [...clicks].sort((a, b) => {
+        if (sortMode === 'rank') {
+            return (b.likes?.length || 0) - (a.likes?.length || 0);
+        }
+        // @ts-ignore
+        return (a.authorRollNo || 0) - (b.authorRollNo || 0);
+    });
+
+    if (sortedClicks.length === 0) {
         return (
-            <Card className="text-center p-8 border-dashed col-span-full">
-                <p className="text-muted-foreground">No Clicks from the last 24 hours. Be the first to share one!</p>
-            </Card>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+                <ImagePlus size={64} className="mb-4" />
+                <h3 className="text-xl font-semibold">No Clicks Yet</h3>
+                <p>Be the first one to share a moment!</p>
+            </div>
         )
     }
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {clicks.map(click => (
-                <Card key={click.id} className="group relative overflow-hidden aspect-[9/16]">
-                    <Image src={click.imageUrl} alt={`Click by ${click.authorName}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint="user content" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-3 w-full">
-                         <Link href={`/profile/${click.authorId}`} className="flex items-center gap-2">
-                             <Avatar className="h-8 w-8 border-2 border-primary">
-                                <AvatarImage src={click.authorProfilePicture} />
-                                <AvatarFallback>{click.authorName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <p className="text-sm font-semibold text-white truncate">{click.authorName}</p>
-                         </Link>
-                    </div>
-                </Card>
+         <div className="h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
+            {sortedClicks.map(click => (
+                <ClickCard key={click.id} click={click} currentUserId={currentUserId} onLikeToggle={onLikeToggle} />
             ))}
         </div>
     )
 }
 
+
 export default function ClicksPage() {
     const { currentUser } = useAuth();
     const [clicks, setClicks] = useState<Click[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [sortMode, setSortMode] = useState<'all' | 'rank'>('all');
     const hasRunCleanup = useRef(false);
 
     const fetchClicks = useCallback(async () => {
@@ -194,11 +234,9 @@ export default function ClicksPage() {
     }, []);
 
     useEffect(() => {
-        // Run cleanup only once per component mount
         if (!hasRunCleanup.current) {
             cleanupExpiredClicks().then(() => {
                 hasRunCleanup.current = true;
-                // Fetch clicks after cleanup
                 fetchClicks();
             });
         } else {
@@ -209,24 +247,62 @@ export default function ClicksPage() {
     const handleUploadSuccess = (newClick: Click) => {
         setClicks(prevClicks => [newClick, ...prevClicks]);
     }
+    
+    const handleLikeToggle = async (clickId: string) => {
+        if (!currentUser) return;
+        
+        // Optimistic update
+        setClicks(prev => prev.map(click => {
+            if (click.id === clickId) {
+                const isLiked = (click.likes || []).includes(currentUser.id);
+                const newLikes = isLiked
+                    ? (click.likes || []).filter(id => id !== currentUser.id)
+                    : [...(click.likes || []), currentUser.id];
+                return { ...click, likes: newLikes };
+            }
+            return click;
+        }));
+
+        try {
+            await toggleClickLike(clickId, currentUser.id);
+        } catch (error) {
+            console.error("Failed to toggle like on click:", error);
+            // Revert on error
+            fetchClicks();
+        }
+    }
+
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                <div className="text-center sm:text-left">
-                    <h1 className="text-4xl font-bold tracking-tight text-primary">Clicks</h1>
-                    <p className="mt-2 text-lg text-muted-foreground">A 24-hour gallery of campus life.</p>
+        <div className="h-[calc(100vh-4rem)] w-full flex flex-col bg-black">
+            <header className="absolute top-0 left-0 w-full p-4 z-10">
+                <div className="container mx-auto flex justify-between items-center">
+                    <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as any)} className="w-auto mx-auto bg-black/20 rounded-full p-1 border border-white/20">
+                        <TabsList className="bg-transparent">
+                            <TabsTrigger value="all" className="text-white/80 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-full">
+                                <Users className="mr-2"/> All
+                            </TabsTrigger>
+                            <TabsTrigger value="rank" className="text-white/80 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-full">
+                                <TrendingUp className="mr-2" /> Rank
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    
+                    <div className="absolute right-4 top-4">
+                        {currentUser && <UploadDialog onUploadSuccess={handleUploadSuccess} />}
+                    </div>
                 </div>
-                {currentUser && <UploadDialog onUploadSuccess={handleUploadSuccess} />}
-            </div>
+            </header>
             
-            {isLoading ? (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                     {[...Array(10)].map((_, i) => <Skeleton key={i} className="rounded-lg aspect-[9/16]" />)}
-                 </div>
-            ) : (
-                <ClicksGrid clicks={clicks} />
-            )}
+            <main className="flex-1 relative">
+                 {isLoading ? (
+                    <div className="h-full w-full flex items-center justify-center">
+                       <Loader2 className="h-10 w-10 text-white animate-spin" />
+                    </div>
+                ) : (
+                    <ClickReel clicks={clicks} currentUserId={currentUser?.id} onLikeToggle={handleLikeToggle} sortMode={sortMode}/>
+                )}
+            </main>
         </div>
     );
 }
