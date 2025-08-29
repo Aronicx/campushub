@@ -1,13 +1,14 @@
 
-import { getStudents } from "@/lib/mock-data";
+"use client"
+import { getStudents, toggleLikeThought } from "@/lib/mock-data";
 import type { Student, Thought } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ThoughtCard } from "@/components/thought-card";
+import { Card } from "@/components/ui/card";
 
-interface ThoughtWithAuthor extends Thought {
+export interface ThoughtWithAuthor extends Thought {
   author: {
     id: string;
     name: string;
@@ -15,21 +16,79 @@ interface ThoughtWithAuthor extends Thought {
   }
 }
 
-export default async function ThoughtBubblesPage() {
-  const students = await getStudents();
+export default function ThoughtBubblesPage() {
+  const [thoughts, setThoughts] = useState<ThoughtWithAuthor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { currentUser } = useAuth();
   
-  const allThoughts: ThoughtWithAuthor[] = students
-    .flatMap(student => 
-      student.thoughts.map(thought => ({
-        ...thought,
-        author: {
-          id: student.id,
-          name: student.name || `User ${student.rollNo}`,
-          profilePicture: student.profilePicture,
+  useEffect(() => {
+    async function fetchThoughts() {
+        setIsLoading(true);
+        const students = await getStudents();
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const allThoughts: ThoughtWithAuthor[] = students
+            .flatMap(student => 
+            student.thoughts
+                .filter(thought => new Date(thought.timestamp) > twentyFourHoursAgo)
+                .map(thought => ({
+                    ...thought,
+                    author: {
+                        id: student.id,
+                        name: student.name || `User ${student.rollNo}`,
+                        profilePicture: student.profilePicture,
+                    }
+                }))
+            )
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        
+        setThoughts(allThoughts);
+        setIsLoading(false);
+    }
+    fetchThoughts();
+  }, []);
+
+  const handleLikeToggle = async (authorId: string, thoughtId: string) => {
+    if (!currentUser) return;
+
+    // Optimistically update the UI
+    const newThoughts = thoughts.map(thought => {
+        if (thought.id === thoughtId) {
+            const newLikes = thought.likes.includes(currentUser.id)
+                ? thought.likes.filter(id => id !== currentUser!.id)
+                : [...thought.likes, currentUser.id];
+            return { ...thought, likes: newLikes };
         }
-      }))
-    )
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        return thought;
+    });
+    setThoughts(newThoughts);
+
+    // Call the backend
+    try {
+        await toggleLikeThought(authorId, thoughtId, currentUser.id);
+    } catch (error) {
+        console.error("Failed to toggle like:", error);
+        // Revert the optimistic update on error
+        setThoughts(thoughts);
+    }
+  };
+
+
+  if (isLoading) {
+      return (
+         <div className="container mx-auto max-w-2xl px-4 py-8">
+            <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold tracking-tight text-primary">Thought Bubbles</h1>
+                <p className="mt-2 text-lg text-muted-foreground">A live feed of thoughts from around campus.</p>
+            </div>
+            <div className="space-y-6">
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+            </div>
+        </div>
+      )
+  }
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
@@ -39,37 +98,18 @@ export default async function ThoughtBubblesPage() {
       </div>
       
       <div className="space-y-6">
-        {allThoughts.length > 0 ? (
-          allThoughts.map(thought => {
-             const initials = (thought.author.name || "NN").split(" ").map((n) => n[0]).join("");
-            return (
-                <Card key={thought.id}>
-                    <CardHeader className="p-4">
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={thought.author.profilePicture || undefined} alt={thought.author.name} />
-                                <AvatarFallback>{initials}</AvatarFallback>
-                            </Avatar>
-                            <Link href={`/profile/${thought.author.id}`} className="font-semibold hover:underline">
-                                {thought.author.name}
-                            </Link>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                        <p className="text-card-foreground break-words">{thought.content}</p>
-                    </CardContent>
-                    <CardFooter className="px-4 py-2 bg-muted/50">
-                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <CalendarDays size={14} /> 
-                            {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
-                        </p>
-                    </CardFooter>
-                </Card>
-            )
-          })
+        {thoughts.length > 0 ? (
+          thoughts.map(thought => (
+            <ThoughtCard 
+                key={thought.id}
+                thought={thought}
+                currentUserId={currentUser?.id}
+                onLikeToggle={handleLikeToggle}
+            />
+          ))
         ) : (
           <Card className="text-center p-8 border-dashed">
-            <p className="text-muted-foreground">No thoughts have been shared yet. Be the first!</p>
+            <p className="text-muted-foreground">No thoughts have been shared in the last 24 hours. Be the first!</p>
           </Card>
         )}
       </div>

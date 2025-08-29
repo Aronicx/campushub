@@ -2,6 +2,7 @@ export interface Thought {
   id: string;
   content: string;
   timestamp: string;
+  likes: string[];
 }
 
 export interface Student {

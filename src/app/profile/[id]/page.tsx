@@ -76,6 +76,13 @@ export default async function ProfilePage({ params }: { params: { id: string } }
     { icon: Link2, href: student.customLink },
   ].filter(link => link.href);
 
+  const recentThoughts = student.thoughts
+    .filter(thought => {
+        const thoughtDate = new Date(thought.timestamp);
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return thoughtDate > oneDayAgo;
+    });
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-lg">
@@ -96,7 +103,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                     <DialogTitle className="sr-only">{displayName}'s Profile Picture</DialogTitle>
                 </DialogHeader>
                 {student.profilePicture && (
-                   <Image src={student.profilePicture} alt={displayName} width={400} height={400} className="object-cover rounded-lg" />
+                   <Image src={student.profilePicture} alt={displayName} width={400} height={400} className="object-cover rounded-lg" data-ai-hint="profile picture" />
                 )}
               </DialogContent>
             </Dialog>
@@ -157,11 +164,11 @@ export default async function ProfilePage({ params }: { params: { id: string } }
       
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <BookOpen /> Daily Thoughts
+            <BookOpen /> Recent Daily Thoughts
         </h2>
-        {student.thoughts.length > 0 ? (
+        {recentThoughts.length > 0 ? (
           <div className="space-y-4">
-            {student.thoughts.map((thought) => (
+            {recentThoughts.map((thought) => (
               <Card key={thought.id}>
                 <CardContent className="p-4">
                   <p>{thought.content}</p>
@@ -175,7 +182,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
           </div>
         ) : (
           <Card className="text-center p-8 border-dashed">
-            <p className="text-muted-foreground">{displayName} hasn't shared any thoughts yet.</p>
+            <p className="text-muted-foreground">{displayName} hasn't shared any thoughts in the last 24 hours.</p>
           </Card>
         )}
       </div>

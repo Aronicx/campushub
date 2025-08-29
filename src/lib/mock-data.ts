@@ -78,6 +78,7 @@ export async function addThought(studentId: string, content: string): Promise<Th
             id: `${studentId}-thought-${Date.now()}`,
             content,
             timestamp: new Date().toISOString(),
+            likes: [],
         };
         const docRef = doc(db, 'students', studentId);
         await updateDoc(docRef, {
@@ -136,4 +137,36 @@ export async function getUniqueInterests(): Promise<string[]> {
     const snapshot = await getDocs(studentsCollection);
     const interests = new Set(snapshot.docs.flatMap(d => (d.data() as Student).interests));
     return Array.from(interests).sort();
+}
+
+export async function toggleLikeThought(authorId: string, thoughtId: string, likerId: string): Promise<Thought | undefined> {
+    const authorRef = doc(db, 'students', authorId);
+    const authorSnap = await getDoc(authorRef);
+
+    if (!authorSnap.exists()) {
+        throw new Error("Author not found");
+    }
+
+    const author = authorSnap.data() as Student;
+    const thoughtIndex = author.thoughts.findIndex(t => t.id === thoughtId);
+
+    if (thoughtIndex === -1) {
+        throw new Error("Thought not found");
+    }
+
+    const thought = author.thoughts[thoughtIndex];
+    const likeIndex = thought.likes.indexOf(likerId);
+
+    if (likeIndex > -1) {
+        // User has already liked the thought, so unlike it.
+        thought.likes.splice(likeIndex, 1);
+    } else {
+        // User has not liked the thought, so like it.
+        thought.likes.push(likerId);
+    }
+    
+    // Update the entire thoughts array in Firestore
+    await updateDoc(authorRef, { thoughts: author.thoughts });
+    
+    return thought;
 }

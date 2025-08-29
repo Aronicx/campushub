@@ -297,7 +297,7 @@ function DailyThoughtPoster() {
         <Card>
             <CardHeader>
                 <CardTitle>Share a Daily Thought</CardTitle>
-                <CardDescription>What's on your mind today?</CardDescription>
+                <CardDescription>What's on your mind today? This thought will vanish in 24 hours.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Textarea 
@@ -567,6 +567,14 @@ export default function ProfilePage() {
   const initials = (currentUser.name || "NN").split(" ").map((n) => n[0]).join("");
   const displayName = currentUser.name || '(no name)';
 
+  const recentThoughts = currentUser.thoughts
+    .filter(thought => {
+        const thoughtDate = new Date(thought.timestamp);
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return thoughtDate > oneDayAgo;
+    })
+    .slice(0, 3);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
@@ -682,9 +690,9 @@ export default function ProfilePage() {
 
                     <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><BookOpen /> Your Recent Thoughts</h3>
-                    {currentUser.thoughts.length > 0 ? (
+                    {recentThoughts.length > 0 ? (
                         <div className="space-y-4">
-                            {currentUser.thoughts.slice(0, 3).map((thought) => (
+                            {recentThoughts.map((thought) => (
                             <Card key={thought.id} className="bg-background">
                                 <CardContent className="p-4">
                                 <p className="break-words">{thought.content}</p>
@@ -698,7 +706,7 @@ export default function ProfilePage() {
                         </div>
                         ) : (
                         <Card className="text-center p-8 border-dashed">
-                            <p className="text-muted-foreground">You haven't shared any thoughts yet.</p>
+                            <p className="text-muted-foreground">You haven't shared any thoughts in the last 24 hours.</p>
                         </Card>
                         )}
                     </div>
