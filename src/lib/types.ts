@@ -15,6 +15,7 @@ export interface Student {
   bio: string;
   email: string;
   thoughts: Thought[];
+  likedBy: string[];
   password?: string;
   instagram?: string;
   snapchat?: string;

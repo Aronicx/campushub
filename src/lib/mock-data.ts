@@ -1,5 +1,5 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove } from 'firebase/firestore';
 import type { Student, Thought } from './types';
 import { db } from './firebase';
 
@@ -113,6 +113,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         bio: `A new member of the Campus Hub community!`,
         email: `${name.toLowerCase().replace(/\s/g, '.')}@example.com`,
         thoughts: [],
+        likedBy: [],
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -169,4 +170,30 @@ export async function toggleLikeThought(authorId: string, thoughtId: string, lik
     await updateDoc(authorRef, { thoughts: author.thoughts });
     
     return thought;
+}
+
+export async function toggleProfileLike(studentId: string, likerId: string): Promise<boolean> {
+    const studentRef = doc(db, 'students', studentId);
+    const studentSnap = await getDoc(studentRef);
+
+    if (!studentSnap.exists()) {
+        throw new Error("Student not found");
+    }
+
+    const student = studentSnap.data() as Student;
+    const isLiked = student.likedBy.includes(likerId);
+
+    if (isLiked) {
+        // Unlike
+        await updateDoc(studentRef, {
+            likedBy: arrayRemove(likerId)
+        });
+        return false;
+    } else {
+        // Like
+        await updateDoc(studentRef, {
+            likedBy: arrayUnion(likerId)
+        });
+        return true;
+    }
 }
