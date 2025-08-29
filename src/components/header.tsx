@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -36,7 +37,7 @@ export function Header() {
                 <Link href="/directory">Home</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard">Profile</Link>
               </Button>
               <UserAvatar />
             </>

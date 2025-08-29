@@ -576,7 +576,7 @@ export default function DashboardPage() {
         </Avatar>
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-bold">{displayName}</h1>
-          <p className="text-muted-foreground">This is your personal dashboard.</p>
+          <p className="text-muted-foreground">This is your personal profile.</p>
           <ProfilePictureUpdater student={currentUser} onUpdate={updateProfile} />
         </div>
       </div>
