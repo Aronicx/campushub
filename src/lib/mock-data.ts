@@ -1,5 +1,5 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import type { Student, Thought } from './types';
 import { db } from './firebase';
 
@@ -118,6 +118,11 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
     await setDoc(studentDocRef, newStudent);
     
     return newStudent;
+}
+
+export async function deleteStudent(studentId: string): Promise<void> {
+    const docRef = doc(db, 'students', studentId);
+    await deleteDoc(docRef);
 }
 
 

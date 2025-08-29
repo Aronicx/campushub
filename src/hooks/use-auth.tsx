@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought } from '@/lib/mock-data';
+import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { useToast } from './use-toast';
 
@@ -15,6 +15,7 @@ interface AuthContextType {
   updateProfile: (data: Partial<Student>) => Promise<void>;
   postThought: (content: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+  deleteProfile: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -134,8 +135,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   };
+
+  const deleteProfile = async () => {
+    if (!currentUser) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to delete your profile.' });
+      return;
+    }
+    try {
+      await deleteStudent(currentUser.id);
+      logout();
+      toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
+      router.push('/signup');
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete your account.' });
+    }
+  };
   
-  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword };
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile };
 
   return (
     <AuthContext.Provider value={value}>
