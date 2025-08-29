@@ -70,7 +70,7 @@ export function UserAvatar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-            <Link href="/profile">
+            <Link href="/dashboard">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 <span>Profile</span>
             </Link>

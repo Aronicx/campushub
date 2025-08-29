@@ -40,7 +40,7 @@ export function Header() {
           ) : currentUser ? (
             <>
               <Button asChild variant="ghost">
-                <Link href="/profile">Profile</Link>
+                <Link href="/dashboard">Profile</Link>
               </Button>
               <UserAvatar />
             </>
