@@ -32,6 +32,12 @@ export function Header() {
           >
             Directory
           </Link>
+           <Link
+            href="/chat"
+            className="text-foreground/60 transition-colors hover:text-foreground/80"
+          >
+            Chat
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-2">

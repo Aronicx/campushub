@@ -34,3 +34,12 @@ export interface Student {
   phoneNumber?: string;
   customLink?: string;
 }
+
+export interface ChatMessage {
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorProfilePicture?: string;
+    content: string;
+    timestamp: number; // Use Firestore server timestamp
+}

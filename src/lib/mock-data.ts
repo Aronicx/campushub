@@ -1,9 +1,11 @@
 
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove } from 'firebase/firestore';
-import type { Student, Thought, Comment } from './types';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy } from 'firebase/firestore';
+import type { Student, Thought, Comment, ChatMessage } from './types';
 import { db } from './firebase';
 
 const studentsCollection = collection(db, 'students');
+const chatMessagesCollection = collection(db, 'chatMessages');
+
 
 export async function getStudents(filters?: { search?: string, major?: string, interest?: string }): Promise<Student[]> {
     let q = query(studentsCollection);
@@ -263,4 +265,42 @@ export async function deleteComment(authorId: string, thoughtId: string, comment
 
     await updateDoc(authorRef, { thoughts: author.thoughts });
     return thought.comments;
+}
+
+
+export async function addChatMessage(user: Student, content: string): Promise<void> {
+  if (!content.trim()) return;
+
+  await addDoc(chatMessagesCollection, {
+    authorId: user.id,
+    authorName: user.name,
+    authorProfilePicture: user.profilePicture || '',
+    content: content.trim(),
+    timestamp: serverTimestamp(),
+  });
+}
+
+export function onNewMessage(callback: (messages: ChatMessage[]) => void): () => void {
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const q = query(chatMessagesCollection, orderBy('timestamp', 'asc'), where('timestamp', '>=', new Date(fiveMinutesAgo)));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const messages: ChatMessage[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const timestamp = data.timestamp?.toMillis() || Date.now();
+            
+            // Additional client-side filter for safety
+            if (timestamp >= fiveMinutesAgo) {
+                messages.push({
+                    id: doc.id,
+                    ...data,
+                    timestamp: timestamp
+                } as ChatMessage);
+            }
+        });
+        callback(messages);
+    });
+
+    return unsubscribe;
 }
