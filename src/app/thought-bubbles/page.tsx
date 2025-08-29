@@ -1,7 +1,7 @@
 
 "use client"
 import { getStudents, toggleLikeThought } from "@/lib/mock-data";
-import type { Student, Thought } from "@/lib/types";
+import type { Student, Thought, Comment } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,10 +29,11 @@ export default function ThoughtBubblesPage() {
 
         const allThoughts: ThoughtWithAuthor[] = students
             .flatMap(student => 
-            student.thoughts
+            (student.thoughts || [])
                 .filter(thought => new Date(thought.timestamp) > twentyFourHoursAgo)
                 .map(thought => ({
                     ...thought,
+                    comments: thought.comments || [],
                     author: {
                         id: student.id,
                         name: student.name || `User ${student.rollNo}`,
@@ -73,6 +74,14 @@ export default function ThoughtBubblesPage() {
     }
   };
 
+  const handleCommentUpdate = (thoughtId: string, updatedComments: Comment[]) => {
+      setThoughts(prevThoughts => 
+          prevThoughts.map(thought =>
+              thought.id === thoughtId ? { ...thought, comments: updatedComments } : thought
+          )
+      );
+  };
+
 
   if (isLoading) {
       return (
@@ -104,7 +113,9 @@ export default function ThoughtBubblesPage() {
                 key={thought.id}
                 thought={thought}
                 currentUserId={currentUser?.id}
+                currentUser={currentUser}
                 onLikeToggle={handleLikeToggle}
+                onCommentUpdate={handleCommentUpdate}
             />
           ))
         ) : (

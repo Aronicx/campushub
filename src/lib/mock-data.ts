@@ -1,6 +1,6 @@
 
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove } from 'firebase/firestore';
-import type { Student, Thought } from './types';
+import type { Student, Thought, Comment } from './types';
 import { db } from './firebase';
 
 const studentsCollection = collection(db, 'students');
@@ -79,6 +79,7 @@ export async function addThought(studentId: string, content: string): Promise<Th
             content,
             timestamp: new Date().toISOString(),
             likes: [],
+            comments: [],
         };
         const docRef = doc(db, 'students', studentId);
         await updateDoc(docRef, {
@@ -181,7 +182,7 @@ export async function toggleProfileLike(studentId: string, likerId: string): Pro
     }
 
     const student = studentSnap.data() as Student;
-    const isLiked = student.likedBy.includes(likerId);
+    const isLiked = (student.likedBy || []).includes(likerId);
 
     if (isLiked) {
         // Unlike
@@ -196,4 +197,70 @@ export async function toggleProfileLike(studentId: string, likerId: string): Pro
         });
         return true;
     }
+}
+
+export async function addOrUpdateComment(
+    authorId: string,
+    thoughtId: string,
+    commenter: { id: string; name: string; profilePicture?: string },
+    content: string
+): Promise<Comment[] | undefined> {
+    const authorRef = doc(db, 'students', authorId);
+    const authorSnap = await getDoc(authorRef);
+
+    if (!authorSnap.exists()) {
+        throw new Error("Author not found");
+    }
+
+    const author = authorSnap.data() as Student;
+    const thoughtIndex = author.thoughts.findIndex(t => t.id === thoughtId);
+
+    if (thoughtIndex === -1) {
+        throw new Error("Thought not found");
+    }
+
+    const thought = author.thoughts[thoughtIndex];
+    const commentIndex = thought.comments.findIndex(c => c.authorId === commenter.id);
+
+    if (commentIndex > -1) {
+        // Update existing comment
+        thought.comments[commentIndex].content = content;
+        thought.comments[commentIndex].timestamp = new Date().toISOString();
+    } else {
+        // Add new comment
+        const newComment: Comment = {
+            id: `${thoughtId}-${commenter.id}`,
+            authorId: commenter.id,
+            authorName: commenter.name,
+            authorProfilePicture: commenter.profilePicture,
+            content,
+            timestamp: new Date().toISOString(),
+        };
+        thought.comments.push(newComment);
+    }
+
+    await updateDoc(authorRef, { thoughts: author.thoughts });
+    return thought.comments.sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}
+
+export async function deleteComment(authorId: string, thoughtId: string, commenterId: string): Promise<Comment[] | undefined> {
+    const authorRef = doc(db, 'students', authorId);
+    const authorSnap = await getDoc(authorRef);
+
+    if (!authorSnap.exists()) {
+        throw new Error("Author not found");
+    }
+
+    const author = authorSnap.data() as Student;
+    const thoughtIndex = author.thoughts.findIndex(t => t.id === thoughtId);
+
+    if (thoughtIndex === -1) {
+        throw new Error("Thought not found");
+    }
+
+    const thought = author.thoughts[thoughtIndex];
+    thought.comments = thought.comments.filter(c => c.authorId !== commenterId);
+
+    await updateDoc(authorRef, { thoughts: author.thoughts });
+    return thought.comments;
 }

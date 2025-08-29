@@ -1,8 +1,19 @@
+
+export interface Comment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorProfilePicture?: string;
+  content: string;
+  timestamp: string;
+}
+
 export interface Thought {
   id: string;
   content: string;
   timestamp: string;
   likes: string[];
+  comments: Comment[];
 }
 
 export interface Student {
