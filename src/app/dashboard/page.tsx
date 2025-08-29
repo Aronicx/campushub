@@ -52,7 +52,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
-import { suggestConnections } from "@/ai/flows/suggest-connections";
 
 import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus } from "lucide-react";
 
@@ -342,76 +341,6 @@ function DailyThoughtPoster() {
             </CardFooter>
         </Card>
     )
-}
-
-function ConnectionSuggester() {
-    const { currentUser } = useAuth();
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [otherStudents, setOtherStudents] = useState<Student[]>([]);
-
-     useEffect(() => {
-        if (currentUser) {
-            getStudents().then(students => {
-                setOtherStudents(students.filter(s => s.id !== currentUser.id));
-            });
-        }
-    }, [currentUser]);
-
-
-    const handleGetSuggestions = async () => {
-        if (!currentUser) return;
-        
-        setIsLoading(true);
-        const studentToProfileString = (s: Student) => `${s.name || '(no name)'}, Major: ${s.major}, Interests: ${s.interests.join(', ')}`;
-        
-        const result = await suggestConnections({
-            studentProfile: studentToProfileString(currentUser),
-            otherStudentProfiles: otherStudents.map(studentToProfileString),
-            numberOfSuggestions: 3,
-        });
-        setSuggestions(result);
-        setIsLoading(false);
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>AI Connection Suggestions</CardTitle>
-                <CardDescription>Find students with similar interests.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                    </div>
-                ) : suggestions.length > 0 ? (
-                    <div className="space-y-2">
-                        {suggestions.map((suggestion, index) => {
-                             const studentName = suggestion.split(',')[0];
-                             const student = otherStudents.find(s => s.name === studentName);
-                            return (
-                                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-3 gap-2">
-                                    <p className="flex-grow">{suggestion}</p>
-                                    {student && <Button asChild size="sm" variant="outline" className="w-full sm:w-auto"><Link href={`/profile/${student.id}`}>View</Link></Button>}
-                                </div>
-                            )
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-4">Click the button to get AI-powered connection suggestions!</div>
-                )}
-            </CardContent>
-            <CardFooter>
-                <Button onClick={handleGetSuggestions} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                    Get Suggestions
-                </Button>
-            </CardFooter>
-        </Card>
-    );
 }
 
 const socialFormSchema = z.object({
@@ -705,10 +634,9 @@ export default function ProfilePage() {
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
           <TabsTrigger value="profile">My Profile</TabsTrigger>
           <TabsTrigger value="posts">My Posts</TabsTrigger>
-          <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
             <div className="space-y-6">
@@ -806,27 +734,23 @@ export default function ProfilePage() {
                 </Card>
             </div>
         </TabsContent>
-        <TabsContent value="posts" className="mt-6 space-y-6">
-            <DailyThoughtPoster />
-            <Card>
-                <CardHeader>
-                    <CardTitle>Share a Daily Click</CardTitle>
-                    <CardDescription>Share a photo with campus. It will disappear in 24 hours.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <UploadDialog onUploadSuccess={() => {
-                        // Optionally refetch user's clicks or give other feedback
-                    }}/>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="connections" className="mt-6">
-            <ConnectionSuggester />
+        <TabsContent value="posts" className="mt-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <DailyThoughtPoster />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Share a Daily Click</CardTitle>
+                        <CardDescription>Share a photo with campus. It will disappear in 24 hours.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <UploadDialog onUploadSuccess={() => {
+                            // Optionally refetch user's clicks or give other feedback
+                        }}/>
+                    </CardContent>
+                </Card>
+            </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-    
-    
