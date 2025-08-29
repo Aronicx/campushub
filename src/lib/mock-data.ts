@@ -318,12 +318,16 @@ export async function getRecentClicks(): Promise<Click[]> {
 }
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const q = query(clicksCollection, where("authorId", "==", authorId), where("timestamp", ">=", twentyFourHoursAgo.toISOString()));
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).getTime();
+    const q = query(clicksCollection, where("authorId", "==", authorId));
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+    const clicks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+
+    // Filter by timestamp client-side to avoid complex index
+    return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyFourHoursAgo);
 }
+
 
 export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
     // Check user's click count for the last 24 hours
@@ -367,13 +371,20 @@ export async function deleteClick(click: Click): Promise<void> {
 
 export async function cleanupExpiredClicks(): Promise<void> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const q = query(clicksCollection, where("timestamp", "<", twentyFourHoursAgo.toISOString()));
     
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return;
+    // We get all clicks and filter on the client to avoid needing an index.
+    // This is not ideal for large datasets but avoids the indexing error.
+    const allClicksSnapshot = await getDocs(clicksCollection);
+
+    const expiredClicks = allClicksSnapshot.docs.filter(doc => {
+        const click = doc.data() as Click;
+        return new Date(click.timestamp) < twentyFourHoursAgo;
+    });
+
+    if (expiredClicks.length === 0) return;
 
     const batch = writeBatch(db);
-    snapshot.docs.forEach(async (doc) => {
+    expiredClicks.forEach(async (doc) => {
         const click = doc.data() as Click;
         // Delete from storage first
         try {
