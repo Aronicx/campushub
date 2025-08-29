@@ -634,7 +634,7 @@ export default function ProfilePage() {
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 data-[state=active]:bg-card data-[state=active]:text-card-foreground">
           <TabsTrigger value="profile">My Profile</TabsTrigger>
           <TabsTrigger value="posts">My Posts</TabsTrigger>
         </TabsList>
