@@ -13,18 +13,18 @@ import { cn } from "@/lib/utils";
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
-  onLikeToggle: (studentId: string) => void;
+  onLikeToggle?: (studentId: string) => void;
 }
 
 export function StudentCard({ student, currentUserId, onLikeToggle }: StudentCardProps) {
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
-  const isLiked = currentUserId ? student.likedBy.includes(currentUserId) : false;
+  const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if(currentUserId) {
+    if(currentUserId && onLikeToggle) {
         onLikeToggle(student.id);
     }
   }
@@ -58,19 +58,21 @@ export function StudentCard({ student, currentUserId, onLikeToggle }: StudentCar
            </Button>
         </CardFooter>
       </Link>
-       <div className="border-t p-3 flex justify-end">
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleLikeClick} 
-                disabled={!currentUserId || currentUserId === student.id}
-                className="flex items-center gap-1.5"
-                aria-label={isLiked ? "Unlike profile" : "Like profile"}
-            >
-                <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
-                <span className="text-muted-foreground font-normal">{student.likedBy.length}</span>
-            </Button>
-       </div>
+       {onLikeToggle && (
+         <div className="border-t p-3 flex justify-end">
+              <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLikeClick} 
+                  disabled={!currentUserId || currentUserId === student.id}
+                  className="flex items-center gap-1.5"
+                  aria-label={isLiked ? "Unlike profile" : "Like profile"}
+              >
+                  <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
+                  <span className="text-muted-foreground font-normal">{(student.likedBy || []).length}</span>
+              </Button>
+        </div>
+       )}
     </Card>
   );
 }
