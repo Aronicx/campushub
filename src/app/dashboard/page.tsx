@@ -528,7 +528,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
           disabled={isUpdating}
         />
       </div>
-       {student.profilePicture && (
+       {student.profilePicture && !student.profilePicture.includes('picsum.photos') && (
          <Button onClick={handleRemovePicture} variant="destructive" size="sm">
           <Trash2 className="mr-2 h-4 w-4" /> Remove
         </Button>
