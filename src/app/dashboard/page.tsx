@@ -87,16 +87,6 @@ const interestsFormSchema = z.object({
     interests: z.string().min(1, { message: "Please list at least one interest." }),
 });
 
-const passwordFormSchema = z.object({
-    currentPassword: z.string().min(1, { message: "Current password is required." }),
-    newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
-    confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords do not match.",
-    path: ["confirmPassword"],
-});
-
-
 function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
   const [isOpen, setIsOpen] = useState(false);
   const form = useForm<z.infer<typeof profileFormSchema>>({
@@ -202,78 +192,6 @@ function SingleFieldEditor({ title, description, schema, fieldName, initialValue
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                             <Button type="submit">Save</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function PasswordEditor() {
-    const { changePassword } = useAuth();
-    const [isOpen, setIsOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    const form = useForm<z.infer<typeof passwordFormSchema>>({
-        resolver: zodResolver(passwordFormSchema),
-        defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
-    });
-
-    async function onSubmit(values: z.infer<typeof passwordFormSchema>) {
-        setIsSubmitting(true);
-        const success = await changePassword(values.currentPassword, values.newPassword);
-        setIsSubmitting(false);
-        if (success) {
-            setIsOpen(false);
-            form.reset();
-        }
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline">Change Password</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Change Password</DialogTitle>
-                    <DialogDescription>
-                        Enter your current password and a new password below.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField control={form.control} name="currentPassword" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Current Password</FormLabel>
-                                <FormControl><Input type="password" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="newPassword" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>New Password</FormLabel>
-                                <FormControl><Input type="password" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Confirm New Password</FormLabel>
-                                <FormControl><Input type="password" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Password
-                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -388,7 +306,7 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contact & Socials</CardTitle>
+        <CardTitle>Contact &amp; Socials</CardTitle>
         <CardDescription>Add or update your contact information.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -565,7 +483,7 @@ function UploadDialog({ userClickCount, onUploadSuccess }: { userClickCount: num
                              onClick={() => fileInputRef.current?.click()}
                         >
                             <ImagePlus className="h-10 w-10 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">Click to browse or drag & drop</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Click to browse or drag &amp; drop</p>
                             <p className="text-xs text-muted-foreground/80">PNG, JPG, WEBP up to 2MB</p>
                             <Input
                                 ref={fileInputRef}
@@ -814,29 +732,6 @@ export default function ProfilePage() {
                 </Card>
 
                 <SocialsEditor student={currentUser} onUpdate={updateProfile} />
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Lock /> Security & Privacy</CardTitle>
-                        <CardDescription>Manage your password and profile privacy settings.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <PasswordEditor />
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                               <Label htmlFor="private-profile" className="text-base">Private Profile</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    If enabled, you will have to approve follow requests.
-                                </p>
-                            </div>
-                            <Switch
-                                id="private-profile"
-                                checked={currentUser.isPrivate}
-                                onCheckedChange={(checked) => updateProfile({ isPrivate: checked })}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </TabsContent>
         <TabsContent value="posts" className="mt-6">
