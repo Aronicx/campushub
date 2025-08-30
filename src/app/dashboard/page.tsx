@@ -544,7 +544,7 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
                 <DialogHeader>
                     <DialogTitle>Share a Click</DialogTitle>
                     <DialogDescription>
-                        Upload an image to share with the campus. It will disappear in 24 hours.
+                        Upload an image to share with the campus. It will disappear in 20 hours.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
@@ -634,7 +634,7 @@ export default function ProfilePage() {
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 data-[state=active]:bg-card data-[state=active]:text-card-foreground">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 data-[state=active]:bg-background data-[state=active]:text-foreground">
           <TabsTrigger value="profile">My Profile</TabsTrigger>
           <TabsTrigger value="posts">My Posts</TabsTrigger>
         </TabsList>
@@ -740,7 +740,7 @@ export default function ProfilePage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Share a Daily Click</CardTitle>
-                        <CardDescription>Share a photo with campus. It will disappear in 24 hours.</CardDescription>
+                        <CardDescription>Share a photo with campus. It will disappear in 20 hours.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <UploadDialog onUploadSuccess={() => {
@@ -754,3 +754,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
