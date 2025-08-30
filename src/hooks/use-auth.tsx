@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent } from '@/lib/mock-data';
-import type { Student } from '@/lib/types';
+import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent, markNotificationsAsRead } from '@/lib/mock-data';
+import type { Student, Notification } from '@/lib/types';
 import { useToast } from './use-toast';
 
 interface AuthContextType {
@@ -17,6 +17,7 @@ interface AuthContextType {
   postThought: (content: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   deleteProfile: () => Promise<void>;
+  markNotificationsAsRead: (notificationIds: string[]) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -157,8 +158,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete your account.' });
     }
   };
+
+  const markUserNotificationsAsRead = async (notificationIds: string[]) => {
+    if (!currentUser) return;
+    try {
+        await markNotificationsAsRead(currentUser.id, notificationIds);
+        // Optimistically update the user context
+        const updatedNotifications = currentUser.notifications.map(n => 
+            notificationIds.includes(n.id) ? { ...n, read: true } : n
+        );
+        setCurrentUser({ ...currentUser, notifications: updatedNotifications });
+    } catch (error) {
+        console.error("Failed to mark notifications as read:", error);
+    }
+  }
   
-  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile, updateProfileFollowing };
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile, updateProfileFollowing, markNotificationsAsRead: markUserNotificationsAsRead };
 
   return (
     <AuthContext.Provider value={value}>

@@ -16,6 +16,20 @@ export interface Thought {
   comments: Comment[];
 }
 
+export interface Notification {
+    id: string;
+    type: 'follow' | 'thought_like' | 'click_like' | 'profile_like';
+    message: string;
+    link: string; // e.g., /profile/[id], /thought-bubbles#thought-[id]
+    timestamp: string;
+    read: boolean;
+    fromUser: {
+        id: string;
+        name: string;
+        profilePicture?: string;
+    }
+}
+
 export interface Student {
   id: string;
   rollNo: string;
@@ -29,6 +43,7 @@ export interface Student {
   following: string[];
   followers: string[];
   likedBy: string[];
+  notifications: Notification[];
   password?: string;
   instagram?: string;
   snapchat?: string;

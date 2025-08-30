@@ -7,9 +7,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Icons } from "./icons";
 import { UserAvatar } from "./user-avatar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Droplets, Users, BookUser, MessagesSquare, Camera, User } from "lucide-react";
+import { Droplets, Users, BookUser, MessagesSquare, Camera, User, Bell } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Notifications } from "./notifications";
 
 const navLinks = [
     { href: "/thought-bubbles", icon: Droplets, label: "Bubbles" },
@@ -67,6 +68,7 @@ export function Header() {
             <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
           ) : currentUser ? (
             <>
+                <Notifications />
                 <TooltipProvider>
                      <Tooltip>
                         <TooltipTrigger asChild>

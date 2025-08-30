@@ -1,13 +1,25 @@
 
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Student, Thought, Comment, ChatMessage, Click } from './types';
+import type { Student, Thought, Comment, ChatMessage, Click, Notification } from './types';
 import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
 const chatMessagesCollection = collection(db, 'chatMessages');
 const clicksCollection = collection(db, 'clicks');
 
+async function addNotification(userId: string, notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
+    const userRef = doc(db, 'students', userId);
+    const newNotification: Notification = {
+        ...notification,
+        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2,9)}`,
+        timestamp: new Date().toISOString(),
+        read: false,
+    };
+    await updateDoc(userRef, {
+        notifications: arrayUnion(newNotification)
+    });
+}
 
 export async function getStudents(filters?: { search?: string }): Promise<Student[]> {
     let q = query(studentsCollection);
@@ -167,6 +179,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         following: [],
         followers: [],
         likedBy: [],
+        notifications: [],
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -183,18 +196,34 @@ export async function deleteStudent(studentId: string): Promise<void> {
 export async function toggleProfileLike(targetUserId: string, currentUserId: string): Promise<void> {
     const targetUserRef = doc(db, 'students', targetUserId);
     const targetUserSnap = await getDoc(targetUserRef);
+    const currentUserSnap = await getDoc(doc(db, 'students', currentUserId));
 
-    if (!targetUserSnap.exists()) {
-        throw new Error("Target user not found.");
+
+    if (!targetUserSnap.exists() || !currentUserSnap.exists()) {
+        throw new Error("User not found.");
     }
 
     const targetUserData = targetUserSnap.data() as Student;
+    const currentUserData = currentUserSnap.data() as Student;
     const isLiked = (targetUserData.likedBy || []).includes(currentUserId);
 
     if (isLiked) {
         await updateDoc(targetUserRef, { likedBy: arrayRemove(currentUserId) });
     } else {
         await updateDoc(targetUserRef, { likedBy: arrayUnion(currentUserId) });
+        // Add notification
+        if (targetUserId !== currentUserId) {
+            await addNotification(targetUserId, {
+                type: 'profile_like',
+                message: `${currentUserData.name} liked your profile.`,
+                link: `/profile/${currentUserId}`,
+                fromUser: {
+                    id: currentUserData.id,
+                    name: currentUserData.name,
+                    profilePicture: currentUserData.profilePicture
+                }
+            })
+        }
     }
 }
 
@@ -202,12 +231,15 @@ export async function toggleProfileLike(targetUserId: string, currentUserId: str
 export async function toggleLikeThought(authorId: string, thoughtId: string, likerId: string): Promise<Thought | undefined> {
     const authorRef = doc(db, 'students', authorId);
     const authorSnap = await getDoc(authorRef);
+    const likerSnap = await getDoc(doc(db, 'students', likerId));
 
-    if (!authorSnap.exists()) {
-        throw new Error("Author not found");
+
+    if (!authorSnap.exists() || !likerSnap.exists()) {
+        throw new Error("User not found");
     }
 
     const author = authorSnap.data() as Student;
+    const liker = likerSnap.data() as Student;
     const thoughtIndex = author.thoughts.findIndex(t => t.id === thoughtId);
 
     if (thoughtIndex === -1) {
@@ -223,6 +255,18 @@ export async function toggleLikeThought(authorId: string, thoughtId: string, lik
     } else {
         // User has not liked the thought, so like it.
         thought.likes.push(likerId);
+        if (authorId !== likerId) {
+            await addNotification(authorId, {
+                type: 'thought_like',
+                message: `${liker.name} liked your thought.`,
+                link: `/thought-bubbles#${thoughtId}`,
+                fromUser: {
+                    id: liker.id,
+                    name: liker.name,
+                    profilePicture: liker.profilePicture
+                }
+            })
+        }
     }
     
     // Update the entire thoughts array in Firestore
@@ -251,6 +295,20 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
         // Follow
         batch.update(currentUserRef, { following: arrayUnion(targetUserId) });
         batch.update(targetUserRef, { followers: arrayUnion(currentUserId) });
+        
+        // Add notification
+         if (targetUserId !== currentUserId) {
+            await addNotification(targetUserId, {
+                type: 'follow',
+                message: `${currentUserData.name} started following you.`,
+                link: `/profile/${currentUserId}`,
+                fromUser: {
+                    id: currentUserData.id,
+                    name: currentUserData.name,
+                    profilePicture: currentUserData.profilePicture
+                }
+            })
+        }
     }
 
     await batch.commit();
@@ -432,12 +490,14 @@ export async function addClick(author: Student, imageDataUrl: string): Promise<C
 export async function toggleClickLike(clickId: string, likerId: string): Promise<boolean> {
     const clickRef = doc(db, 'clicks', clickId);
     const clickSnap = await getDoc(clickRef);
+    const likerSnap = await getDoc(doc(db, 'students', likerId));
 
-    if (!clickSnap.exists()) {
-        throw new Error("Click not found");
+    if (!clickSnap.exists() || !likerSnap.exists()) {
+        throw new Error("Click or Liker not found");
     }
 
     const click = clickSnap.data() as Click;
+    const liker = likerSnap.data() as Student;
     const isLiked = (click.likes || []).includes(likerId);
 
     if (isLiked) {
@@ -451,6 +511,18 @@ export async function toggleClickLike(clickId: string, likerId: string): Promise
         await updateDoc(clickRef, {
             likes: arrayUnion(likerId)
         });
+        if (click.authorId !== likerId) {
+            await addNotification(click.authorId, {
+                type: 'click_like',
+                message: `${liker.name} liked your click.`,
+                link: `/clicks#${click.id}`,
+                 fromUser: {
+                    id: liker.id,
+                    name: liker.name,
+                    profilePicture: liker.profilePicture
+                }
+            });
+        }
         return true;
     }
 }
@@ -508,4 +580,23 @@ export async function cleanupExpiredClicks(): Promise<void> {
     };
 
     await batch.commit();
+}
+
+export async function markNotificationsAsRead(userId: string, notificationIds: string[]): Promise<void> {
+    const userRef = doc(db, 'students', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        throw new Error("User not found");
+    }
+
+    const user = userSnap.data() as Student;
+    const updatedNotifications = user.notifications.map(notif => {
+        if (notificationIds.includes(notif.id)) {
+            return { ...notif, read: true };
+        }
+        return notif;
+    });
+
+    await updateDoc(userRef, { notifications: updatedNotifications });
 }
