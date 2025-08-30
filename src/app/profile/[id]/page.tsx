@@ -105,11 +105,12 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
   const { currentUser, updateProfileFollowing } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { id } = params;
 
   useEffect(() => {
       async function fetchStudent() {
           setIsLoading(true);
-          const studentData = await getStudentById(params.id);
+          const studentData = await getStudentById(id);
           if (!studentData) {
               notFound();
           }
@@ -117,7 +118,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           setIsLoading(false);
       }
       fetchStudent();
-  }, [params.id]);
+  }, [id]);
 
   const handleFollowToggle = async () => {
         if (!currentUser || !student) return;
@@ -145,7 +146,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         } catch (error) {
             console.error("Failed to toggle follow", error);
              // Revert optimistic updates on error
-            const studentData = await getStudentById(params.id);
+            const studentData = await getStudentById(id);
             setStudent(studentData || null);
             const userRefreshed = await getStudentById(currentUser.id);
             if(userRefreshed) updateProfileFollowing(userRefreshed.following);
@@ -170,7 +171,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
             await toggleProfileLike(student.id, currentUser.id);
         } catch (error) {
              console.error("Failed to toggle like", error);
-             const studentData = await getStudentById(params.id);
+             const studentData = await getStudentById(id);
              setStudent(studentData || null);
         }
     }
@@ -301,3 +302,5 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
+    
