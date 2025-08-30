@@ -2,7 +2,7 @@
 'use client'
 
 import { getStudentById, toggleFollow, toggleProfileLike } from "@/lib/mock-data";
-import { notFound, useRouter } from "next/navigation";
+import { notFound, useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,14 +101,16 @@ function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Stud
 }
 
 
-export default function ProfilePage({ params }: { params: { id: string } }) {
+export default function ProfilePage() {
   const { currentUser, updateProfileFollowing } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { id } = params;
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
       async function fetchStudent() {
+          if (!id) return;
           setIsLoading(true);
           const studentData = await getStudentById(id);
           if (!studentData) {
@@ -302,5 +304,3 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     </div>
   );
 }
-
-    
