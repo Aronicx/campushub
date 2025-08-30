@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getStudents, toggleFollow, toggleProfileLike } from "@/lib/mock-data";
+import { getStudents, toggleFollow, toggleProfileLike, cancelFollowRequest } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Input } from "@/components/ui/input";
 import { Suspense, useEffect, useState, useTransition } from 'react';
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 function FilterControls() {
   const searchParams = useSearchParams();
@@ -68,7 +69,7 @@ function FilterControls() {
   );
 }
 
-function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void }) {
+function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle, onCancelRequest }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void, onCancelRequest: (studentId: string) => void }) {
   if (students.length === 0) {
     return <p className="text-center text-muted-foreground mt-8">No students found.</p>;
   }
@@ -76,7 +77,7 @@ function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle }: 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {students.map((student) => (
-        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} onLikeToggle={onLikeToggle} />
+        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} onLikeToggle={onLikeToggle} onCancelRequest={onCancelRequest} />
       ))}
     </div>
   );
@@ -86,7 +87,8 @@ function StudentDirectoryContent() {
   const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const { currentUser, refreshCurrentUser } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchData() {
@@ -103,24 +105,27 @@ function StudentDirectoryContent() {
 
   const handleFollowToggle = async (studentId: string) => {
       if (!currentUser) return;
-      
-      // Optimistically update the UI
-      setStudents(prevStudents => 
-          prevStudents.map(student => {
-              if (student.id === studentId) {
-                  const isFollowing = (student.followers || []).includes(currentUser.id);
-                  const newFollowers = isFollowing
-                      ? (student.followers || []).filter(id => id !== currentUser.id)
-                      : [...(student.followers || []), currentUser.id];
-                  return { ...student, followers: newFollowers };
-              }
-              return student;
-          })
-      );
-      
-      // Call the backend to update the follow status
-      await toggleFollow(currentUser.id, studentId);
+      try {
+        await toggleFollow(currentUser.id, studentId);
+        await refreshCurrentUser();
+        toast({ title: "Follow Request Sent" });
+      } catch (error) {
+          console.error("Failed to toggle follow", error);
+          toast({ variant: "destructive", title: "Error", description: "Could not send follow request." });
+      }
   };
+
+  const handleCancelRequest = async (studentId: string) => {
+    if (!currentUser) return;
+    try {
+        await cancelFollowRequest(currentUser.id, studentId);
+        await refreshCurrentUser();
+        toast({ title: "Follow Request Canceled" });
+    } catch (error) {
+        console.error("Failed to cancel request", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not cancel follow request." });
+    }
+  }
   
     const handleLikeToggle = async (studentId: string) => {
         if (!currentUser) return;
@@ -155,7 +160,7 @@ function StudentDirectoryContent() {
             {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
         </div>
       ) : (
-        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} />
+        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onCancelRequest={handleCancelRequest} />
       )}
     </div>
   );

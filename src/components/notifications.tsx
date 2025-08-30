@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, UserPlus, Heart, MessageSquare } from "lucide-react";
+import { Bell, UserPlus, Heart, MessageSquare, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,44 +12,52 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Notification } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { RequestActions } from "./request-actions";
 
 const NOTIFICATION_LIMIT = 20;
 
 const iconMap = {
     follow: <UserPlus className="h-5 w-5 text-blue-500" />,
+    follow_request: <UserPlus className="h-5 w-5 text-blue-500" />,
+    follow_accepted: <UserCheck className="h-5 w-5 text-green-500" />,
     thought_like: <Heart className="h-5 w-5 text-red-500" />,
     click_like: <Heart className="h-5 w-5 text-pink-500" />,
     profile_like: <Heart className="h-5 w-5 text-yellow-500" />,
 };
 
-function NotificationItem({ notification }: { notification: Notification }) {
+function NotificationItem({ notification, onActionHandled }: { notification: Notification; onActionHandled: () => void; }) {
     const initials = (notification.fromUser.name || "NN").split(" ").map((n) => n[0]).join("");
     return (
-        <Link href={notification.link} className="block hover:bg-muted/50 rounded-md">
-            <div className={cn(
-                "flex items-start gap-3 p-3 transition-colors",
-                !notification.read && "bg-primary/10"
-            )}>
-                 <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={notification.fromUser.profilePicture} alt={notification.fromUser.name} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                    <p className="text-sm text-card-foreground break-words">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                    </p>
-                </div>
-                <div className="flex-shrink-0 self-center">
-                    {iconMap[notification.type]}
-                </div>
+        <div className={cn(
+            "p-3 transition-colors",
+            !notification.read && "bg-primary/10"
+        )}>
+            <div className="flex items-start gap-3">
+                <Link href={notification.link} className="flex items-start gap-3 flex-1 hover:bg-muted/50 rounded-md -m-1 p-1">
+                    <Avatar className="h-10 w-10 border">
+                        <AvatarImage src={notification.fromUser.profilePicture} alt={notification.fromUser.name} />
+                        <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <p className="text-sm text-card-foreground break-words">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                        </p>
+                    </div>
+                     <div className="flex-shrink-0 self-center">
+                        {iconMap[notification.type]}
+                    </div>
+                </Link>
             </div>
-        </Link>
+            {notification.type === 'follow_request' && (
+                <RequestActions notification={notification} onActionHandled={onActionHandled} />
+            )}
+        </div>
     )
 }
 
 export function Notifications() {
-    const { currentUser, markNotificationsAsRead } = useAuth();
+    const { currentUser, markNotificationsAsRead, refreshCurrentUser } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
 
     const sortedNotifications = useMemo(() => {
@@ -66,7 +74,7 @@ export function Notifications() {
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
         if (open && unreadCount > 0) {
-            const unreadIds = sortedNotifications.filter(n => !n.read).map(n => n.id);
+            const unreadIds = sortedNotifications.filter(n => !n.read && n.type !== 'follow_request').map(n => n.id);
             if (unreadIds.length > 0) {
                 markNotificationsAsRead(unreadIds);
             }
@@ -74,6 +82,10 @@ export function Notifications() {
     };
     
     if (!currentUser) return null;
+
+    const handleActionHandled = () => {
+        refreshCurrentUser();
+    }
 
     return (
         <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -95,7 +107,7 @@ export function Notifications() {
                     {sortedNotifications.length > 0 ? (
                         <div className="divide-y">
                             {sortedNotifications.map(notification => (
-                                <NotificationItem key={notification.id} notification={notification} />
+                                <NotificationItem key={notification.id} notification={notification} onActionHandled={handleActionHandled} />
                             ))}
                         </div>
                     ) : (

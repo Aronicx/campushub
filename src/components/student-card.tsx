@@ -7,20 +7,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck, Heart, Users } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
   onFollowToggle?: (studentId: string) => void;
   onLikeToggle?: (studentId: string) => void;
+  onCancelRequest?: (studentId: string) => void;
 }
 
-export function StudentCard({ student, currentUserId, onFollowToggle, onLikeToggle }: StudentCardProps) {
+export function StudentCard({ student, currentUserId, onFollowToggle, onLikeToggle, onCancelRequest }: StudentCardProps) {
+  const { currentUser } = useAuth();
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
-  const isFollowing = currentUserId ? (student.followers || []).includes(currentUserId) : false;
+  
+  const isFollowing = currentUser ? (currentUser.following || []).includes(student.id) : false;
+  const hasSentRequest = currentUser ? (currentUser.sentFollowRequests || []).includes(student.id) : false;
   const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
 
   const handleFollowClick = (e: React.MouseEvent) => {
@@ -30,6 +35,14 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
         onFollowToggle(student.id);
     }
   }
+
+  const handleCancelRequestClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentUserId && onCancelRequest) {
+      onCancelRequest(student.id);
+    }
+  };
   
   const handleLikeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -38,6 +51,30 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
       onLikeToggle(student.id);
     }
   };
+
+  const FollowButton = () => {
+    if (!onFollowToggle || !currentUserId || currentUserId === student.id) return null;
+
+    if (isFollowing) {
+        return (
+            <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8" aria-label="Unfollow">
+                <UserCheck className="text-primary"/>
+            </Button>
+        )
+    }
+    if (hasSentRequest) {
+        return (
+            <Button variant="ghost" size="icon" onClick={handleCancelRequestClick} disabled={!currentUserId || !onCancelRequest} className="h-8 w-8" aria-label="Cancel follow request">
+                <UserMinus className="text-muted-foreground"/>
+            </Button>
+        )
+    }
+    return (
+        <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8" aria-label="Follow">
+            <UserPlus className="text-muted-foreground"/>
+        </Button>
+    )
+  }
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
@@ -55,18 +92,7 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
           <p className="text-sm text-muted-foreground leading-tight">{student.major}</p>
           <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
         </div>
-        {onFollowToggle && currentUserId && currentUserId !== student.id && (
-          <Button 
-              variant="ghost"
-              size="icon" 
-              onClick={handleFollowClick} 
-              disabled={!currentUserId}
-              className="h-8 w-8"
-              aria-label={isFollowing ? "Unfollow profile" : "Follow profile"}
-          >
-              {isFollowing ? <UserCheck className="text-primary"/> : <UserPlus className="text-muted-foreground"/>}
-          </Button>
-       )}
+        <FollowButton />
       </CardHeader>
       <CardContent className="px-4 pb-4 flex-grow">
           <div className="flex flex-wrap gap-2">

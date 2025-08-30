@@ -180,6 +180,8 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         followers: [],
         likedBy: [],
         notifications: [],
+        pendingFollowRequests: [],
+        sentFollowRequests: []
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -285,32 +287,80 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
     const currentUserData = currentUserSnap.data() as Student;
     const isFollowing = (currentUserData.following || []).includes(targetUserId);
 
-    const batch = writeBatch(db);
-
     if (isFollowing) {
-        // Unfollow
+        // Unfollow logic
+        const batch = writeBatch(db);
         batch.update(currentUserRef, { following: arrayRemove(targetUserId) });
         batch.update(targetUserRef, { followers: arrayRemove(currentUserId) });
-    } else {
-        // Follow
-        batch.update(currentUserRef, { following: arrayUnion(targetUserId) });
-        batch.update(targetUserRef, { followers: arrayUnion(currentUserId) });
-        
-        // Add notification
-         if (targetUserId !== currentUserId) {
-            await addNotification(targetUserId, {
-                type: 'follow',
-                message: `${currentUserData.name} started following you.`,
-                link: `/profile/${currentUserId}`,
-                fromUser: {
-                    id: currentUserData.id,
-                    name: currentUserData.name,
-                    profilePicture: currentUserData.profilePicture
-                }
-            })
-        }
+        await batch.commit();
+        return;
     }
 
+    // Follow Request Logic
+    await updateDoc(currentUserRef, { sentFollowRequests: arrayUnion(targetUserId) });
+    await updateDoc(targetUserRef, { pendingFollowRequests: arrayUnion(currentUserId) });
+    
+    await addNotification(targetUserId, {
+        type: 'follow_request',
+        message: `${currentUserData.name} wants to follow you.`,
+        link: `/profile/${currentUserId}`, // Link to requester's profile
+        fromUser: {
+            id: currentUserData.id,
+            name: currentUserData.name,
+            profilePicture: currentUserData.profilePicture
+        }
+    });
+}
+
+export async function handleFollowRequest(requesterId: string, recipientId: string, action: 'accept' | 'reject') {
+    const requesterRef = doc(db, 'students', requesterId);
+    const recipientRef = doc(db, 'students', recipientId);
+    const requesterSnap = await getDoc(requesterRef);
+    const recipientSnap = await getDoc(recipientRef);
+
+    if (!requesterSnap.exists() || !recipientSnap.exists()) {
+        throw new Error("User not found");
+    }
+
+    const requesterData = requesterSnap.data() as Student;
+    const recipientData = recipientSnap.data() as Student;
+
+    const batch = writeBatch(db);
+
+    // Always remove the requests from both users' pending/sent arrays
+    batch.update(recipientRef, { pendingFollowRequests: arrayRemove(requesterId) });
+    batch.update(requesterRef, { sentFollowRequests: arrayRemove(recipientId) });
+
+    if (action === 'accept') {
+        // Add to following/followers lists
+        batch.update(recipientRef, { followers: arrayUnion(requesterId) });
+        batch.update(requesterRef, { following: arrayUnion(recipientId) });
+    }
+
+    await batch.commit();
+    
+    // Send a notification back to the requester if accepted
+    if (action === 'accept') {
+        await addNotification(requesterId, {
+            type: 'follow_accepted',
+            message: `${recipientData.name} accepted your follow request.`,
+            link: `/profile/${recipientId}`,
+            fromUser: {
+                id: recipientData.id,
+                name: recipientData.name,
+                profilePicture: recipientData.profilePicture,
+            }
+        });
+    }
+}
+
+export async function cancelFollowRequest(currentUserId: string, targetUserId: string): Promise<void> {
+    const currentUserRef = doc(db, 'students', currentUserId);
+    const targetUserRef = doc(db, 'students', targetUserId);
+
+    const batch = writeBatch(db);
+    batch.update(currentUserRef, { sentFollowRequests: arrayRemove(targetUserId) });
+    batch.update(targetUserRef, { pendingFollowRequests: arrayRemove(currentUserId) });
     await batch.commit();
 }
 
@@ -591,12 +641,15 @@ export async function markNotificationsAsRead(userId: string, notificationIds: s
     }
 
     const user = userSnap.data() as Student;
+    
+    // Also remove any accepted/rejected follow_request notifications
     const updatedNotifications = user.notifications.map(notif => {
         if (notificationIds.includes(notif.id)) {
             return { ...notif, read: true };
         }
         return notif;
-    });
+    }).filter(notif => notif.type !== 'follow_request' || notificationIds.includes(notif.id) === false);
+
 
     await updateDoc(userRef, { notifications: updatedNotifications });
 }

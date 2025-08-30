@@ -1,13 +1,13 @@
 
 'use client'
 
-import { getStudentById, toggleFollow, toggleProfileLike } from "@/lib/mock-data";
+import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest } from "@/lib/mock-data";
 import { notFound, useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 
 function ContactInfo({ student }: { student: Student }) {
@@ -60,7 +61,7 @@ function ContactInfo({ student }: { student: Student }) {
     )
 }
 
-function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Student, onFollowToggle: () => void, onLikeToggle: () => void }) {
+function FollowButton({ student, onFollowToggle, onLikeToggle, onCancelRequest }: { student: Student, onFollowToggle: () => void, onLikeToggle: () => void, onCancelRequest: () => void }) {
     const { currentUser } = useAuth();
     const router = useRouter();
 
@@ -69,6 +70,7 @@ function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Stud
     }
 
     const isFollowing = (currentUser.following || []).includes(student.id);
+    const hasSentRequest = (currentUser.sentFollowRequests || []).includes(student.id);
     const isLiked = (student.likedBy || []).includes(currentUser.id);
 
     const handleFollow = () => {
@@ -76,7 +78,11 @@ function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Stud
             router.push('/login');
             return;
         }
-        onFollowToggle();
+        if(hasSentRequest) {
+            onCancelRequest();
+        } else {
+            onFollowToggle();
+        }
     }
     
      const handleLike = () => {
@@ -86,13 +92,32 @@ function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Stud
         }
         onLikeToggle();
     }
+    
+    let followButton;
+    if (isFollowing) {
+        followButton = (
+             <Button onClick={handleFollow} variant="secondary">
+                <UserCheck className="mr-2" /> Following
+            </Button>
+        )
+    } else if (hasSentRequest) {
+        followButton = (
+            <Button onClick={handleFollow} variant="outline">
+                <UserMinus className="mr-2" /> Requested
+            </Button>
+        )
+    } else {
+        followButton = (
+            <Button onClick={handleFollow} variant="default">
+                <UserPlus className="mr-2" /> Follow
+            </Button>
+        )
+    }
+
 
     return (
         <div className="flex items-center gap-2">
-            <Button onClick={handleFollow} variant={isFollowing ? "secondary" : "default"}>
-                {isFollowing ? <UserCheck className="mr-2" /> : <UserPlus className="mr-2" />}
-                {isFollowing ? "Following" : "Follow"}
-            </Button>
+            {followButton}
              <Button onClick={handleLike} variant="outline" size="icon">
                 <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
             </Button>
@@ -102,11 +127,12 @@ function FollowButton({ student, onFollowToggle, onLikeToggle }: { student: Stud
 
 
 export default function ProfilePage() {
-  const { currentUser, updateProfileFollowing } = useAuth();
+  const { currentUser, refreshCurrentUser } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const { toast } = useToast();
 
   useEffect(() => {
       async function fetchStudent() {
@@ -124,34 +150,29 @@ export default function ProfilePage() {
 
   const handleFollowToggle = async () => {
         if (!currentUser || !student) return;
-
-        const originalIsFollowing = (currentUser.following || []).includes(student.id);
-        
-        // Optimistically update student state for follower count
-        setStudent(prevStudent => {
-            if (!prevStudent) return null;
-            const currentFollowers = prevStudent.followers || [];
-            const newFollowers = originalIsFollowing 
-                ? currentFollowers.filter(id => id !== currentUser.id)
-                : [...currentFollowers, currentUser.id];
-            return {...prevStudent, followers: newFollowers};
-        });
-
-        // Optimistically update auth context state
-        const newFollowing = originalIsFollowing
-            ? currentUser.following.filter(id => id !== student.id)
-            : [...currentUser.following, student.id];
-        updateProfileFollowing(newFollowing);
-
         try {
             await toggleFollow(currentUser.id, student.id);
+            await refreshCurrentUser();
+            const refreshedStudent = await getStudentById(student.id);
+            setStudent(refreshedStudent || null);
+             toast({ title: "Follow Request Sent!" });
         } catch (error) {
-            console.error("Failed to toggle follow", error);
-             // Revert optimistic updates on error
-            const studentData = await getStudentById(id);
-            setStudent(studentData || null);
-            const userRefreshed = await getStudentById(currentUser.id);
-            if(userRefreshed) updateProfileFollowing(userRefreshed.following);
+             console.error("Failed to toggle follow", error);
+             toast({ variant: "destructive", title: "Error", description: "Failed to send follow request." });
+        }
+    }
+    
+    const handleCancelRequest = async () => {
+        if (!currentUser || !student) return;
+        try {
+            await cancelFollowRequest(currentUser.id, student.id);
+            await refreshCurrentUser();
+            const refreshedStudent = await getStudentById(student.id);
+            setStudent(refreshedStudent || null);
+            toast({ title: "Follow Request Canceled" });
+        } catch (error) {
+            console.error("Failed to cancel follow request", error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to cancel follow request." });
         }
     }
     
@@ -236,7 +257,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 <div className="mt-4 sm:mt-0">
-                    <FollowButton student={student} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} />
+                    <FollowButton student={student} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onCancelRequest={handleCancelRequest} />
                 </div>
             </div>
           </div>

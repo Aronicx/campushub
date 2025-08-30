@@ -18,7 +18,7 @@ export interface Thought {
 
 export interface Notification {
     id: string;
-    type: 'follow' | 'thought_like' | 'click_like' | 'profile_like';
+    type: 'follow' | 'thought_like' | 'click_like' | 'profile_like' | 'follow_request' | 'follow_accepted';
     message: string;
     link: string; // e.g., /profile/[id], /thought-bubbles#thought-[id]
     timestamp: string;
@@ -50,6 +50,8 @@ export interface Student {
   discord?: string;
   phoneNumber?: string;
   customLink?: string;
+  pendingFollowRequests: string[]; // IDs of users who want to follow this student
+  sentFollowRequests: string[]; // IDs of users this student has requested to follow
 }
 
 export interface ChatMessage {

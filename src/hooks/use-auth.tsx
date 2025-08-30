@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent, markNotificationsAsRead } from '@/lib/mock-data';
+import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent, markNotificationsAsRead as markNotificationsAsReadBackend } from '@/lib/mock-data';
 import type { Student, Notification } from '@/lib/types';
 import { useToast } from './use-toast';
 
@@ -18,6 +18,7 @@ interface AuthContextType {
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   deleteProfile: () => Promise<void>;
   markNotificationsAsRead: (notificationIds: string[]) => Promise<void>;
+  refreshCurrentUser: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -27,6 +28,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+
+  const refreshCurrentUser = useCallback(async () => {
+    if (currentUser?.id) {
+      const user = await getStudentById(currentUser.id);
+      if (user) {
+        setCurrentUser(user);
+      }
+    }
+  }, [currentUser?.id]);
   
   useEffect(() => {
     let isMounted = true;
@@ -162,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const markUserNotificationsAsRead = async (notificationIds: string[]) => {
     if (!currentUser) return;
     try {
-        await markNotificationsAsRead(currentUser.id, notificationIds);
+        await markNotificationsAsReadBackend(currentUser.id, notificationIds);
         // Optimistically update the user context
         const updatedNotifications = currentUser.notifications.map(n => 
             notificationIds.includes(n.id) ? { ...n, read: true } : n
@@ -173,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
   
-  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile, updateProfileFollowing, markNotificationsAsRead: markUserNotificationsAsRead };
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile, updateProfileFollowing, markNotificationsAsRead: markUserNotificationsAsRead, refreshCurrentUser };
 
   return (
     <AuthContext.Provider value={value}>
