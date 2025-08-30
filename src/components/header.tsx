@@ -19,34 +19,36 @@ export function Header() {
             Campus Hub
           </span>
         </Link>
-        <nav className="flex flex-1 items-center space-x-6 text-sm font-medium">
-          <Link
-            href="/thought-bubbles"
-            className="text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            Bubbles
-          </Link>
-          <Link
-            href="/directory"
-            className="text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            Directory
-          </Link>
-           <Link
-            href="/chat"
-            className="text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            Chat
-          </Link>
-          <Link
-            href="/clicks"
-            className="text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            Clicks
-          </Link>
-        </nav>
+        <div className="flex-1 min-w-0 overflow-x-auto">
+            <nav className="flex items-center space-x-6 text-sm font-medium">
+              <Link
+                href="/thought-bubbles"
+                className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
+              >
+                Bubbles
+              </Link>
+              <Link
+                href="/directory"
+                className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
+              >
+                Directory
+              </Link>
+               <Link
+                href="/chat"
+                className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
+              >
+                Chat
+              </Link>
+              <Link
+                href="/clicks"
+                className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
+              >
+                Clicks
+              </Link>
+            </nav>
+        </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 pl-4">
           {isLoading ? (
             <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
           ) : currentUser ? (
