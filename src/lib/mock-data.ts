@@ -283,8 +283,8 @@ export async function addChatMessage(user: Student, content: string): Promise<vo
 }
 
 export function onNewMessage(callback: (messages: ChatMessage[]) => void): () => void {
-    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-    const q = query(chatMessagesCollection, orderBy('timestamp', 'asc'), where('timestamp', '>=', new Date(fiveMinutesAgo)));
+    const eightMinutesAgo = Date.now() - (8 * 60 * 1000);
+    const q = query(chatMessagesCollection, orderBy('timestamp', 'asc'), where('timestamp', '>=', new Date(eightMinutesAgo)));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const messages: ChatMessage[] = [];
@@ -293,7 +293,7 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
             const timestamp = data.timestamp?.toMillis() || Date.now();
             
             // Additional client-side filter for safety
-            if (timestamp >= fiveMinutesAgo) {
+            if (timestamp >= eightMinutesAgo) {
                 messages.push({
                     id: doc.id,
                     ...data,
@@ -310,8 +310,8 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
 // Clicks functionality
 
 export async function getRecentClicks(): Promise<Click[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const q = query(clicksCollection, where("timestamp", ">=", twentyFourHoursAgo.toISOString()), orderBy("timestamp", "desc"));
+    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
+    const q = query(clicksCollection, where("timestamp", ">=", twentyHoursAgo.toISOString()), orderBy("timestamp", "desc"));
     
     const snapshot = await getDocs(q);
     const clicksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
@@ -330,11 +330,11 @@ export async function getRecentClicks(): Promise<Click[]> {
 }
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
     // This query might need an index. If it fails, we need to filter client-side.
     const q = query(clicksCollection, 
         where("authorId", "==", authorId),
-        where("timestamp", ">=", twentyFourHoursAgo.toISOString())
+        where("timestamp", ">=", twentyHoursAgo.toISOString())
     );
     
     try {
@@ -345,13 +345,13 @@ export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
         // Fallback to client-side filtering if index is missing
         const allUserClicks = await getDocs(query(clicksCollection, where("authorId", "==", authorId)));
         const clicks = allUserClicks.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-        return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyFourHoursAgo.getTime());
+        return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyHoursAgo.getTime());
     }
 }
 
 
 export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
-    // Check user's click count for the last 24 hours
+    // Check user's click count for the last 20 hours
     const userClicks = await getClicksByAuthor(author.id);
     if (userClicks.length >= 10) {
         throw new Error("You have reached the maximum of 10 Clicks per day.");
@@ -419,13 +419,13 @@ export async function deleteClick(click: Click): Promise<void> {
 }
 
 export async function cleanupExpiredClicks(): Promise<void> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
     
     const allClicksSnapshot = await getDocs(clicksCollection);
 
     const expiredClicks = allClicksSnapshot.docs.filter(doc => {
         const click = doc.data() as Click;
-        return new Date(click.timestamp).getTime() < twentyFourHoursAgo.getTime();
+        return new Date(click.timestamp).getTime() < twentyHoursAgo.getTime();
     });
 
     if (expiredClicks.length === 0) return;

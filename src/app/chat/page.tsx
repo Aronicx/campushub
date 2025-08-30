@@ -15,7 +15,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const MESSAGE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
+const MESSAGE_EXPIRATION_MS = 8 * 60 * 1000; // 8 minutes
 
 function MessageItem({ message }: { message: ChatMessage }) {
     const initials = (message.authorName || "NN").split(" ").map((n) => n[0]).join("");
@@ -117,7 +117,7 @@ export default function ChatPage() {
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold tracking-tight text-primary">Global Chat</CardTitle>
                     <CardDescription className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Clock size={14}/> Messages disappear 5 minutes after they are sent.
+                        <Clock size={14}/> Messages disappear 8 minutes after they are sent.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-2">
