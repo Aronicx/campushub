@@ -1,12 +1,13 @@
 
 "use client"
-import { getStudents, toggleLikeThought } from "@/lib/mock-data";
+import { getStudents, toggleLikeThought, deleteThought, updateThought } from "@/lib/mock-data";
 import type { Student, Thought, Comment } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThoughtCard } from "@/components/thought-card";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ThoughtWithAuthor extends Thought {
   author: {
@@ -20,6 +21,7 @@ export default function ThoughtBubblesPage() {
   const [thoughts, setThoughts] = useState<ThoughtWithAuthor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
+  const { toast } = useToast();
   
   useEffect(() => {
     async function fetchThoughts() {
@@ -53,6 +55,7 @@ export default function ThoughtBubblesPage() {
     if (!currentUser) return;
 
     // Optimistically update the UI
+    const originalThoughts = thoughts;
     const newThoughts = thoughts.map(thought => {
         if (thought.id === thoughtId) {
             const newLikes = thought.likes.includes(currentUser.id)
@@ -70,7 +73,7 @@ export default function ThoughtBubblesPage() {
     } catch (error) {
         console.error("Failed to toggle like:", error);
         // Revert the optimistic update on error
-        setThoughts(thoughts);
+        setThoughts(originalThoughts);
     }
   };
 
@@ -81,6 +84,34 @@ export default function ThoughtBubblesPage() {
           )
       );
   };
+  
+  const handleThoughtDelete = async (authorId: string, thoughtId: string) => {
+      if (!currentUser || currentUser.id !== authorId) return;
+      const originalThoughts = thoughts;
+      setThoughts(prev => prev.filter(t => t.id !== thoughtId));
+      try {
+          await deleteThought(authorId, thoughtId);
+          toast({ title: "Thought Deleted", description: "Your thought has been removed." });
+      } catch (error) {
+          console.error("Failed to delete thought:", error);
+          setThoughts(originalThoughts);
+          toast({ variant: 'destructive', title: "Error", description: "Failed to delete thought." });
+      }
+  }
+
+  const handleThoughtUpdate = async (authorId: string, thoughtId: string, newContent: string) => {
+    if (!currentUser || currentUser.id !== authorId) return;
+    const originalThoughts = thoughts;
+    setThoughts(prev => prev.map(t => t.id === thoughtId ? { ...t, content: newContent } : t));
+    try {
+        await updateThought(authorId, thoughtId, newContent);
+        toast({ title: "Thought Updated", description: "Your thought has been successfully updated." });
+    } catch (error) {
+        console.error("Failed to update thought:", error);
+        setThoughts(originalThoughts);
+        toast({ variant: 'destructive', title: "Error", description: "Failed to update thought." });
+    }
+  }
 
 
   if (isLoading) {
@@ -116,6 +147,8 @@ export default function ThoughtBubblesPage() {
                 currentUser={currentUser}
                 onLikeToggle={handleLikeToggle}
                 onCommentUpdate={handleCommentUpdate}
+                onThoughtDelete={handleThoughtDelete}
+                onThoughtUpdate={handleThoughtUpdate}
             />
           ))
         ) : (

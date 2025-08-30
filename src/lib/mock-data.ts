@@ -94,6 +94,43 @@ export async function addThought(studentId: string, content: string): Promise<Th
     return undefined;
 }
 
+export async function updateThought(studentId: string, thoughtId: string, newContent: string): Promise<Thought | undefined> {
+    const authorRef = doc(db, 'students', studentId);
+    const authorSnap = await getDoc(authorRef);
+
+    if (!authorSnap.exists()) {
+        throw new Error("Author not found");
+    }
+
+    const author = authorSnap.data() as Student;
+    const thoughtIndex = author.thoughts.findIndex(t => t.id === thoughtId);
+
+    if (thoughtIndex === -1) {
+        throw new Error("Thought not found");
+    }
+
+    author.thoughts[thoughtIndex].content = newContent;
+    
+    await updateDoc(authorRef, { thoughts: author.thoughts });
+    
+    return author.thoughts[thoughtIndex];
+}
+
+export async function deleteThought(studentId: string, thoughtId: string): Promise<void> {
+    const authorRef = doc(db, 'students', studentId);
+    const authorSnap = await getDoc(authorRef);
+
+    if (!authorSnap.exists()) {
+        throw new Error("Author not found");
+    }
+
+    const author = authorSnap.data() as Student;
+    const updatedThoughts = author.thoughts.filter(t => t.id !== thoughtId);
+    
+    await updateDoc(authorRef, { thoughts: updatedThoughts });
+}
+
+
 export async function createStudent(data: { rollNo: string; name: string; password?: string; }): Promise<Student> {
     const { rollNo, name, password } = data;
 

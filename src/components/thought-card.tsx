@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { CalendarDays, Heart, MessageSquare, Trash2, Edit, Send, X } from "lucide-react";
+import { CalendarDays, Heart, MessageSquare, Trash2, Edit, Send, X, Check, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ interface ThoughtCardProps {
     currentUser?: Student | null;
     onLikeToggle: (authorId: string, thoughtId: string) => void;
     onCommentUpdate: (thoughtId: string, updatedComments: Comment[]) => void;
+    onThoughtDelete: (authorId: string, thoughtId: string) => void;
+    onThoughtUpdate: (authorId: string, thoughtId: string, newContent: string) => void;
 }
 
 function CommentItem({ comment, thought, currentUser, onCommentUpdate }: {
@@ -188,20 +190,44 @@ function CommentForm({ thought, currentUser, onCommentUpdate }: {
 
 }
 
-export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle, onCommentUpdate }: ThoughtCardProps) {
+export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle, onCommentUpdate, onThoughtDelete, onThoughtUpdate }: ThoughtCardProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [editContent, setEditContent] = useState(thought.content);
+    const [isPending, startTransition] = useTransition();
+
     const initials = (thought.author.name || "NN").split(" ").map((n) => n[0]).join("");
     const isLiked = currentUserId ? thought.likes.includes(currentUserId) : false;
+    const isAuthor = currentUserId === thought.author.id;
 
     const handleLikeClick = () => {
         if (currentUserId) {
             onLikeToggle(thought.author.id, thought.id);
         }
     }
+    
+    const handleUpdateThought = () => {
+        if (!editContent.trim() || editContent === thought.content) {
+            setIsEditing(false);
+            return;
+        };
+        startTransition(() => {
+            onThoughtUpdate(thought.author.id, thought.id, editContent);
+            setIsEditing(false);
+        })
+    }
+    
+    const handleDeleteThought = () => {
+        startTransition(() => {
+            onThoughtDelete(thought.author.id, thought.id);
+            setIsDeleting(false);
+        });
+    }
 
     return (
         <Card>
             <CardHeader className="p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                     <Avatar>
                         <AvatarImage src={thought.author.profilePicture || undefined} alt={thought.author.name} />
                         <AvatarFallback>{initials}</AvatarFallback>
@@ -215,10 +241,36 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
                             {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
                         </p>
                     </div>
+                    {isAuthor && !isEditing && (
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}><Edit size={14} /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => setIsDeleting(true)}><Trash2 size={14} /></Button>
+                        </div>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-                <p className="text-card-foreground break-words">{thought.content}</p>
+                 {isEditing ? (
+                    <div className="space-y-2">
+                        <Textarea 
+                            value={editContent} 
+                            onChange={(e) => setEditContent(e.target.value)} 
+                            rows={3} 
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                             <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setEditContent(thought.content); }}>
+                                <X className="mr-1.5" size={16}/> Cancel
+                            </Button>
+                             <Button size="sm" onClick={handleUpdateThought} disabled={isPending}>
+                                {isPending ? <Loader2 className="mr-1.5 animate-spin" size={16} /> : <Check className="mr-1.5" size={16} />}
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-card-foreground break-words">{thought.content}</p>
+                )}
             </CardContent>
             <CardFooter className="px-4 py-2 bg-muted/50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -257,6 +309,24 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
                      </CollapsibleTrigger>
                  </div>
             </Collapsible>
+            
+             <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this thought?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this thought from your profile.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteThought} disabled={isPending} className="bg-destructive hover:bg-destructive/90">
+                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 }
