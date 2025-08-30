@@ -2,24 +2,52 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
+  listType?: 'followers' | 'following' | 'likes' | 'directory';
   onFollowToggle?: (studentId: string) => void;
   onLikeToggle?: (studentId: string) => void;
   onCancelRequest?: (studentId: string) => void;
+  onRemoveFollower?: (studentId: string) => void;
 }
 
-export function StudentCard({ student, currentUserId, onFollowToggle, onLikeToggle, onCancelRequest }: StudentCardProps) {
+export function StudentCard({ 
+  student, 
+  currentUserId,
+  listType = 'directory',
+  onFollowToggle, 
+  onLikeToggle, 
+  onCancelRequest,
+  onRemoveFollower
+}: StudentCardProps) {
   const { currentUser } = useAuth();
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
@@ -51,9 +79,17 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
       onLikeToggle(student.id);
     }
   };
+  
+  const handleRemoveFollowerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentUserId && onRemoveFollower) {
+      onRemoveFollower(student.id);
+    }
+  }
 
   const FollowButton = () => {
-    if (!onFollowToggle || !currentUserId || currentUserId === student.id) return null;
+    if (!onFollowToggle || !currentUserId || currentUserId === student.id || listType !== 'directory') return null;
 
     if (isFollowing) {
         return (
@@ -74,6 +110,56 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
             <UserPlus className="text-muted-foreground"/>
         </Button>
     )
+  }
+  
+  const ActionMenu = () => {
+    if (currentUserId === student.id) return null;
+    
+    if (listType === 'following' && onFollowToggle) {
+      return (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">Unfollow</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Unfollow {displayName}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They will not be notified.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.stopPropagation(); onFollowToggle(student.id); }}>Unfollow</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )
+    }
+
+    if (listType === 'followers' && onRemoveFollower) {
+      return (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">Remove</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove this follower?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {displayName} will no longer be following you and will not be notified of this action.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.stopPropagation(); onRemoveFollower(student.id); }} className="bg-destructive hover:bg-destructive/90">Remove</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
+    
+    return null;
   }
 
   return (
@@ -119,11 +205,14 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
                 <span className="text-sm">{(student.followers || []).length}</span>
           </div>
           </div>
-          <Button variant="outline" size="sm" asChild>
-              <Link href={`/profile/${student.id}`}>
-                  View <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-          </Button>
+          <ActionMenu />
+          {(listType === 'directory' || listType === 'likes') && (
+            <Button variant="outline" size="sm" asChild>
+                <Link href={`/profile/${student.id}`}>
+                    View <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+          )}
       </CardFooter>
     </Card>
   );

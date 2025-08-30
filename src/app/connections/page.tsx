@@ -4,26 +4,31 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { getFollowers, getFollowing, getProfileLikers, toggleFollow } from '@/lib/mock-data';
+import { getFollowers, getFollowing, getProfileLikers, toggleFollow, removeFollower } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { StudentCard } from '@/components/student-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Users, Heart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function ConnectionList({ 
     students, 
     currentUserId,
     onFollowToggle, 
+    onRemoveFollower,
     emptyState,
-    isLoading
+    isLoading,
+    listType
 }: { 
     students: Student[], 
     currentUserId?: string,
-    onFollowToggle: (studentId: string) => void,
+    onFollowToggle?: (studentId: string) => void,
+    onRemoveFollower?: (studentId: string) => void,
     emptyState: React.ReactNode,
-    isLoading: boolean
+    isLoading: boolean,
+    listType: 'followers' | 'following' | 'likes'
 }) {
     if (isLoading) {
         return (
@@ -49,6 +54,8 @@ function ConnectionList({
                     student={student} 
                     currentUserId={currentUserId} 
                     onFollowToggle={onFollowToggle} 
+                    onRemoveFollower={onRemoveFollower}
+                    listType={listType}
                 />
             ))}
         </div>
@@ -56,8 +63,9 @@ function ConnectionList({
 }
 
 export default function ConnectionsPage() {
-    const { currentUser, isLoading: isAuthLoading } = useAuth();
+    const { currentUser, isLoading: isAuthLoading, refreshCurrentUser } = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
 
     const [followers, setFollowers] = useState<Student[]>([]);
     const [following, setFollowing] = useState<Student[]>([]);
@@ -73,7 +81,7 @@ export default function ConnectionsPage() {
         }
     }, [isAuthLoading, currentUser, router]);
 
-    useEffect(() => {
+    const fetchAllConnections = async () => {
         if (currentUser) {
             setIsLoadingFollowers(true);
             getFollowers(currentUser.id).then(setFollowers).finally(() => setIsLoadingFollowers(false));
@@ -84,21 +92,45 @@ export default function ConnectionsPage() {
             setIsLoadingLikers(true);
             getProfileLikers(currentUser.id).then(setLikers).finally(() => setIsLoadingLikers(false));
         }
+    }
+
+    useEffect(() => {
+        fetchAllConnections();
     }, [currentUser]);
 
-    const handleFollowToggle = async (studentId: string) => {
+    const handleUnfollow = async (studentId: string) => {
         if (!currentUser) return;
         
-        const originalFollowing = following;
+        const originalFollowing = [...following];
         setFollowing(prevFriends => prevFriends.filter(f => f.id !== studentId));
 
         try {
             await toggleFollow(currentUser.id, studentId);
+            toast({ title: "Unfollowed", description: `You are no longer following them.` });
+            await refreshCurrentUser();
         } catch (error) {
             console.error("Failed to unfollow", error);
             setFollowing(originalFollowing);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not unfollow user.' });
         }
     };
+    
+    const handleRemoveFollower = async (studentId: string) => {
+        if (!currentUser) return;
+
+        const originalFollowers = [...followers];
+        setFollowers(prevFollowers => prevFollowers.filter(f => f.id !== studentId));
+        
+        try {
+            await removeFollower(currentUser.id, studentId);
+            toast({ title: "Follower Removed", description: `They are no longer following you.` });
+            await refreshCurrentUser();
+        } catch (error) {
+            console.error("Failed to remove follower", error);
+            setFollowers(originalFollowers);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove follower.' });
+        }
+    }
 
     if (isAuthLoading || !currentUser) {
         return (
@@ -128,8 +160,9 @@ export default function ConnectionsPage() {
                     <ConnectionList 
                         students={followers}
                         currentUserId={currentUser?.id}
-                        onFollowToggle={handleFollowToggle}
+                        onRemoveFollower={handleRemoveFollower}
                         isLoading={isLoadingFollowers}
+                        listType="followers"
                         emptyState={
                             <>
                                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
@@ -143,8 +176,9 @@ export default function ConnectionsPage() {
                      <ConnectionList 
                         students={following}
                         currentUserId={currentUser?.id}
-                        onFollowToggle={handleFollowToggle}
+                        onFollowToggle={handleUnfollow}
                         isLoading={isLoadingFollowing}
+                        listType="following"
                         emptyState={
                             <>
                                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
@@ -158,8 +192,9 @@ export default function ConnectionsPage() {
                      <ConnectionList 
                         students={likers}
                         currentUserId={currentUser?.id}
-                        onFollowToggle={handleFollowToggle}
+                        onFollowToggle={handleUnfollow}
                         isLoading={isLoadingLikers}
+                        listType="likes"
                         emptyState={
                             <>
                                 <Heart className="h-12 w-12 text-muted-foreground mb-4" />
@@ -173,4 +208,3 @@ export default function ConnectionsPage() {
         </div>
     );
 }
-

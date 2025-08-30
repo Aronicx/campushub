@@ -760,3 +760,13 @@ export async function unblockUser(currentUserId: string, targetUserId: string): 
         blockedUsers: arrayRemove(targetUserId)
     });
 }
+
+export async function removeFollower(currentUserId: string, followerId: string): Promise<void> {
+    const currentUserRef = doc(db, 'students', currentUserId);
+    const followerRef = doc(db, 'students', followerId);
+
+    const batch = writeBatch(db);
+    batch.update(currentUserRef, { followers: arrayRemove(followerId) });
+    batch.update(followerRef, { following: arrayRemove(currentUserId) });
+    await batch.commit();
+}
