@@ -1,11 +1,13 @@
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Student, Thought, Comment, ChatMessage, Click, Notification } from './types';
+import type { Student, Thought, Comment, ChatMessage, Click, Notification, PrivateChatMessage, ChatContact } from './types';
 import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
 const chatMessagesCollection = collection(db, 'chatMessages');
+const privateChatMessagesCollection = collection(db, 'privateChatMessages');
 const clicksCollection = collection(db, 'clicks');
 
 async function addNotification(userId: string, notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
@@ -24,16 +26,10 @@ async function addNotification(userId: string, notification: Omit<Notification, 
 export async function getStudents(filters?: { search?: string }): Promise<Student[]> {
     let q = query(studentsCollection);
     
-    // Note: Firestore does not support case-insensitive search or partial string matching natively.
-    // A more robust search solution like Algolia or Elasticsearch would be needed for that.
-    // For now, we will fetch all and filter client-side, which is not ideal for large datasets.
-    
     const snapshot = await getDocs(q);
     let students: Student[] = snapshot.docs.map(doc => doc.data() as Student);
     
-    // Sort by roll number numerically
     students.sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10));
-
 
     if (filters?.search) {
         const searchTerm = filters.search.toLowerCase();
@@ -52,7 +48,6 @@ export async function getFollowing(userId: string): Promise<Student[]> {
         return [];
     }
 
-    // Firestore 'in' query is limited to 30 items. For larger lists, you'd need multiple queries.
     const followingIds = userDoc.following;
     if (followingIds.length === 0) return [];
     
@@ -183,6 +178,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         pendingFollowRequests: [],
         sentFollowRequests: [],
         isPrivate: false,
+        blockedUsers: [],
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -253,10 +249,8 @@ export async function toggleLikeThought(authorId: string, thoughtId: string, lik
     const likeIndex = thought.likes.indexOf(likerId);
 
     if (likeIndex > -1) {
-        // User has already liked the thought, so unlike it.
         thought.likes.splice(likeIndex, 1);
     } else {
-        // User has not liked the thought, so like it.
         thought.likes.push(likerId);
         if (authorId !== likerId) {
             await addNotification(authorId, {
@@ -272,7 +266,6 @@ export async function toggleLikeThought(authorId: string, thoughtId: string, lik
         }
     }
     
-    // Update the entire thoughts array in Firestore
     await updateDoc(authorRef, { thoughts: author.thoughts });
     
     return thought;
@@ -294,7 +287,6 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
 
     const isFollowing = (currentUserData.following || []).includes(targetUserId);
 
-    // UNFOLLOW LOGIC (same for public and private)
     if (isFollowing) {
         const batch = writeBatch(db);
         batch.update(currentUserRef, { following: arrayRemove(targetUserId) });
@@ -303,9 +295,7 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
         return;
     }
 
-    // FOLLOW LOGIC (depends on target's privacy setting)
     if (targetUserData.isPrivate) {
-        // Private profile: Send a follow request
         const batch = writeBatch(db);
         batch.update(currentUserRef, { sentFollowRequests: arrayUnion(targetUserId) });
         batch.update(targetUserRef, { pendingFollowRequests: arrayUnion(currentUserId) });
@@ -322,7 +312,6 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
             }
         });
     } else {
-        // Public profile: Follow immediately
         const batch = writeBatch(db);
         batch.update(currentUserRef, { following: arrayUnion(targetUserId) });
         batch.update(targetUserRef, { followers: arrayUnion(currentUserId) });
@@ -356,19 +345,16 @@ export async function handleFollowRequest(requesterId: string, recipientId: stri
 
     const batch = writeBatch(db);
 
-    // Always remove the requests from both users' pending/sent arrays
     batch.update(recipientRef, { pendingFollowRequests: arrayRemove(requesterId) });
     batch.update(requesterRef, { sentFollowRequests: arrayRemove(recipientId) });
 
     if (action === 'accept') {
-        // Add to following/followers lists
         batch.update(recipientRef, { followers: arrayUnion(requesterId) });
         batch.update(requesterRef, { following: arrayUnion(recipientId) });
     }
 
     await batch.commit();
     
-    // Send a notification back to the requester if accepted
     if (action === 'accept') {
         await addNotification(requesterId, {
             type: 'follow_accepted',
@@ -418,11 +404,9 @@ export async function addOrUpdateComment(
     const commentIndex = thought.comments.findIndex(c => c.authorId === commenter.id);
 
     if (commentIndex > -1) {
-        // Update existing comment
         thought.comments[commentIndex].content = content;
         thought.comments[commentIndex].timestamp = new Date().toISOString();
     } else {
-        // Add new comment
         const newComment: Comment = {
             id: `${thoughtId}-${commenter.id}`,
             authorId: commenter.id,
@@ -460,7 +444,7 @@ export async function deleteComment(authorId: string, thoughtId: string, comment
     return thought.comments;
 }
 
-
+// Global Chat
 export async function addChatMessage(user: Student, content: string): Promise<void> {
   if (!content.trim()) return;
 
@@ -483,7 +467,6 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
             const data = doc.data();
             const timestamp = data.timestamp?.toMillis() || Date.now();
             
-            // Additional client-side filter for safety
             if (timestamp >= eightMinutesAgo) {
                 messages.push({
                     id: doc.id,
@@ -499,7 +482,6 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
 }
 
 // Clicks functionality
-
 export async function getRecentClicks(): Promise<Click[]> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
     const q = query(clicksCollection, where("timestamp", ">=", twentyHoursAgo.toISOString()), orderBy("timestamp", "desc"));
@@ -507,7 +489,6 @@ export async function getRecentClicks(): Promise<Click[]> {
     const snapshot = await getDocs(q);
     const clicksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
 
-    // Attach student rollNo for sorting by "All"
     const students = await getStudents();
     const studentMap = new Map(students.map(s => [s.id, s]));
 
@@ -522,34 +503,27 @@ export async function getRecentClicks(): Promise<Click[]> {
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    // Query requires a composite index on authorId and timestamp.
-    // To avoid crashes for users, we'll query only by authorId and filter client-side.
-    // The ideal solution is for the user to create the index via the Firebase console link in the error.
     const q = query(clicksCollection, where("authorId", "==", authorId));
     
     const snapshot = await getDocs(q);
     const clicks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
 
-    // Client-side filtering
     return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyHoursAgo.getTime());
 }
 
 
 export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
-    // Check user's click count for the last 20 hours
     const userClicks = await getClicksByAuthor(author.id);
     if (userClicks.length >= 3) {
         throw new Error("You have reached the maximum of 3 active Clicks.");
     }
 
-    // Upload to storage
     const timestamp = Date.now();
     const storagePath = `clicks/${author.id}/${timestamp}.webp`;
     const storageRef = ref(storage, storagePath);
     const uploadResult = await uploadString(storageRef, imageDataUrl, 'data_url');
     const imageUrl = await getDownloadURL(uploadResult.ref);
 
-    // Add to Firestore
     const newClickDoc = doc(clicksCollection);
     const newClick: Click = {
         id: newClickDoc.id,
@@ -580,13 +554,11 @@ export async function toggleClickLike(clickId: string, likerId: string): Promise
     const isLiked = (click.likes || []).includes(likerId);
 
     if (isLiked) {
-        // Unlike
         await updateDoc(clickRef, {
             likes: arrayRemove(likerId)
         });
         return false;
     } else {
-        // Like
         await updateDoc(clickRef, {
             likes: arrayUnion(likerId)
         });
@@ -608,21 +580,17 @@ export async function toggleClickLike(clickId: string, likerId: string): Promise
 
 
 export async function deleteClick(click: Click): Promise<void> {
-    // Delete from storage
     try {
         if (click.storagePath) {
             const storageRef = ref(storage, click.storagePath);
             await deleteObject(storageRef);
         }
     } catch (error: any) {
-       // If file doesn't exist, we can ignore the error
        if (error.code !== 'storage/object-not-found') {
            console.error(`Failed to delete from storage: ${click.storagePath}`, error);
-           // We might still want to proceed to delete the Firestore doc
        }
     }
 
-    // Delete from Firestore
     const clickDocRef = doc(db, 'clicks', click.id);
     await deleteDoc(clickDocRef);
 }
@@ -630,7 +598,6 @@ export async function deleteClick(click: Click): Promise<void> {
 export async function cleanupExpiredClicks(): Promise<void> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
     
-    // Fetch all clicks and filter client-side to avoid needing a specific index on timestamp.
     const allClicksSnapshot = await getDocs(clicksCollection);
 
     const expiredClicks = allClicksSnapshot.docs.filter(doc => {
@@ -643,7 +610,6 @@ export async function cleanupExpiredClicks(): Promise<void> {
     const batch = writeBatch(db);
     for (const doc of expiredClicks) {
         const click = doc.data() as Click;
-        // Delete from storage first
         try {
             if (click.storagePath) {
                 const storageRef = ref(storage, click.storagePath);
@@ -654,7 +620,6 @@ export async function cleanupExpiredClicks(): Promise<void> {
                 console.error(`Failed to delete from storage: ${click.storagePath}`, error)
             }
         }
-        // Then delete from firestore
         batch.delete(doc.ref);
     };
 
@@ -671,7 +636,6 @@ export async function markNotificationsAsRead(userId: string, notificationIds: s
 
     const user = userSnap.data() as Student;
     
-    // Also remove any accepted/rejected follow_request notifications
     const updatedNotifications = user.notifications.map(notif => {
         if (notificationIds.includes(notif.id)) {
             return { ...notif, read: true };
@@ -681,4 +645,89 @@ export async function markNotificationsAsRead(userId: string, notificationIds: s
 
 
     await updateDoc(userRef, { notifications: updatedNotifications });
+}
+
+// Private Chat
+export async function getChatContacts(userId: string): Promise<ChatContact[]> {
+  const user = await getStudentById(userId);
+  if (!user) return [];
+
+  const followingIds = user.following || [];
+  const followersIds = user.followers || [];
+  const contactIds = [...new Set([...followingIds, ...followersIds])];
+
+  if (contactIds.length === 0) return [];
+  
+  // Firestore 'in' query limit is 30. Chunk if necessary.
+  const chunks = [];
+  for (let i = 0; i < contactIds.length; i += 30) {
+      chunks.push(contactIds.slice(i, i + 30));
+  }
+  
+  const contactPromises = chunks.map(chunk => 
+    getDocs(query(studentsCollection, where('id', 'in', chunk)))
+  );
+
+  const chunkSnapshots = await Promise.all(contactPromises);
+  const contacts: Student[] = chunkSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Student));
+  
+  return contacts.map(contact => ({
+      ...contact,
+      isFollowing: followingIds.includes(contact.id),
+      isFollower: followersIds.includes(contact.id)
+  }));
+}
+
+export async function addPrivateChatMessage(chatId: string, authorId: string, content: string): Promise<void> {
+    if (!content.trim()) return;
+
+    await addDoc(privateChatMessagesCollection, {
+        chatId,
+        authorId,
+        content: content.trim(),
+        timestamp: serverTimestamp(),
+    });
+}
+
+export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
+    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const q = query(
+        privateChatMessagesCollection, 
+        where('chatId', '==', chatId), 
+        where('timestamp', '>=', new Date(twentyFourHoursAgo)),
+        orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const messages: PrivateChatMessage[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const timestamp = data.timestamp?.toMillis() || Date.now();
+            
+            if (timestamp >= twentyFourHoursAgo) {
+                messages.push({
+                    id: doc.id,
+                    ...data,
+                    timestamp: timestamp
+                } as PrivateChatMessage);
+            }
+        });
+        callback(messages);
+    });
+
+    return unsubscribe;
+}
+
+export async function blockUser(currentUserId: string, targetUserId: string): Promise<void> {
+    const userRef = doc(db, 'students', currentUserId);
+    await updateDoc(userRef, {
+        blockedUsers: arrayUnion(targetUserId)
+    });
+}
+
+export async function unblockUser(currentUserId: string, targetUserId: string): Promise<void> {
+    const userRef = doc(db, 'students', currentUserId);
+    await updateDoc(userRef, {
+        blockedUsers: arrayRemove(targetUserId)
+    });
 }

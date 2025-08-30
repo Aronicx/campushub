@@ -1,4 +1,5 @@
 
+
 export interface Comment {
   id: string;
   authorId: string;
@@ -33,7 +34,7 @@ export interface Notification {
 export interface Student {
   id: string;
   rollNo: string;
-  name: string;
+  name:string;
   major: string;
   interests: string[];
   profilePicture: string;
@@ -53,6 +54,7 @@ export interface Student {
   pendingFollowRequests: string[]; // IDs of users who want to follow this student
   sentFollowRequests: string[]; // IDs of users this student has requested to follow
   isPrivate: boolean;
+  blockedUsers?: string[];
 }
 
 export interface ChatMessage {
@@ -63,6 +65,20 @@ export interface ChatMessage {
     content: string;
     timestamp: number; // Use Firestore server timestamp
 }
+
+export interface PrivateChatMessage {
+    id: string;
+    chatId: string;
+    authorId: string;
+    content: string;
+    timestamp: number;
+}
+
+export interface ChatContact extends Student {
+    isFollowing: boolean;
+    isFollower: boolean;
+}
+
 
 export interface Click {
   id: string; // document id

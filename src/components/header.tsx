@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Icons } from "./icons";
 import { UserAvatar } from "./user-avatar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Droplets, Users, BookUser, MessagesSquare, Camera, User, Bell } from "lucide-react";
+import { Droplets, Users, BookUser, MessageSquareText, Camera, User, Bell } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Notifications } from "./notifications";
@@ -16,7 +16,7 @@ const navLinks = [
     { href: "/thought-bubbles", icon: Droplets, label: "Bubbles" },
     { href: "/directory", icon: BookUser, label: "Directory" },
     { href: "/friends", icon: Users, label: "Friends" },
-    { href: "/chat", icon: MessagesSquare, label: "Chat" },
+    { href: "/chat", icon: MessageSquareText, label: "Chat" },
     { href: "/clicks", icon: Camera, label: "Clicks" },
 ];
 
@@ -45,7 +45,7 @@ export function Header() {
                                 size="icon"
                                 className={cn(
                                     "text-muted-foreground hover:text-foreground",
-                                    pathname === link.href && "text-primary"
+                                    pathname.startsWith(link.href) && "text-primary"
                                 )}
                             >
                                 <Link href={link.href}>

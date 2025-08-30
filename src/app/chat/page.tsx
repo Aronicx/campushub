@@ -1,19 +1,22 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { onNewMessage, addChatMessage } from "@/lib/mock-data";
-import type { ChatMessage } from "@/lib/types";
+import { onNewMessage, addChatMessage, getChatContacts } from "@/lib/mock-data";
+import type { ChatMessage, ChatContact } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Clock } from "lucide-react";
+import { Send, Clock, Users, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+
 
 const MESSAGE_EXPIRATION_MS = 8 * 60 * 1000; // 8 minutes
 
@@ -43,44 +46,37 @@ function MessageItem({ message }: { message: ChatMessage }) {
     );
 }
 
-export default function ChatPage() {
-    const { currentUser, isLoading: isAuthLoading } = useAuth();
-    const router = useRouter();
+function GlobalChat() {
+    const { currentUser } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
+    
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    useEffect(scrollToBottom, [messages]);
+    
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    useEffect(() => {
-        if (!isAuthLoading && !currentUser) {
-            router.push('/login');
-            return;
-        }
-
+        if (!currentUser) return;
         const unsubscribe = onNewMessage((newMessages) => {
              setMessages(newMessages.filter(m => Date.now() - m.timestamp < MESSAGE_EXPIRATION_MS));
         });
 
-        // Periodically filter out old messages
         const intervalId = setInterval(() => {
             setMessages(prevMessages => 
                 prevMessages.filter(m => Date.now() - m.timestamp < MESSAGE_EXPIRATION_MS)
             );
-        }, 1000); // Check every second
+        }, 1000);
 
         return () => {
             unsubscribe();
             clearInterval(intervalId);
         };
-    }, [isAuthLoading, currentUser, router]);
+    }, [currentUser]);
+
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -96,12 +92,137 @@ export default function ChatPage() {
             setIsSending(false);
         }
     };
+
+    return (
+        <Card className="h-full flex flex-col border-0 sm:border">
+            <CardHeader>
+                <CardTitle className="text-2xl font-bold tracking-tight text-primary">Global Chat</CardTitle>
+                <CardDescription className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Clock size={14}/> Messages disappear 8 minutes after they are sent.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-2">
+                {messages.length > 0 ? (
+                    messages.map(msg => <MessageItem key={msg.id} message={msg} />)
+                ) : (
+                    <div className="text-center text-muted-foreground pt-10">
+                        No messages yet. Be the first to say something!
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </CardContent>
+            <CardFooter className="p-4 border-t">
+                <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
+                    <Avatar className="hidden sm:inline-flex h-10 w-10 border">
+                         <AvatarImage src={currentUser?.profilePicture} alt={currentUser?.name || ''} />
+                         <AvatarFallback>{(currentUser?.name || "NN").split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                    </Avatar>
+                    <Input 
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your message..."
+                        autoComplete="off"
+                        disabled={isSending}
+                    />
+                    <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
+                        <Send />
+                    </Button>
+                </form>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function PrivateChatList() {
+    const { currentUser } = useAuth();
+    const [contacts, setContacts] = useState<ChatContact[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!currentUser) return;
+        setIsLoading(true);
+        getChatContacts(currentUser.id)
+            .then(setContacts)
+            .finally(() => setIsLoading(false));
+    }, [currentUser]);
+
+    const filteredContacts = useMemo(() => {
+        return contacts.filter(contact => 
+            contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [contacts, searchTerm]);
+
+    const getChatId = (otherUserId: string) => {
+        if (!currentUser) return '';
+        return [currentUser.id, otherUserId].sort().join('--');
+    };
+
+    if (isLoading) {
+        return <div className="space-y-2 p-4">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
+    }
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="p-4 border-b">
+                 <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search contacts..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+            </div>
+             <div className="flex-1 overflow-y-auto">
+                {filteredContacts.length > 0 ? (
+                    <div className="divide-y">
+                        {filteredContacts.map(contact => (
+                            <Link key={contact.id} href={`/chat/${getChatId(contact.id)}`} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
+                                <Avatar className="h-12 w-12 border">
+                                    <AvatarImage src={contact.profilePicture} alt={contact.name} />
+                                    <AvatarFallback>{contact.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-semibold">{contact.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {contact.isFollowing && contact.isFollower ? "You follow each other" : contact.isFollower ? "Follows you" : "You follow"}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center p-10 text-muted-foreground">
+                        <p>No contacts found.</p>
+                        <p className="text-sm">Follow students to start chatting with them.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function ChatPage() {
+    const { currentUser, isLoading: isAuthLoading } = useAuth();
+    const router = useRouter();
     
+    useEffect(() => {
+        if (!isAuthLoading && !currentUser) {
+            router.push('/login');
+        }
+    }, [isAuthLoading, currentUser, router]);
+
     if (isAuthLoading || !currentUser) {
         return (
-             <div className="container mx-auto max-w-3xl px-4 py-8">
-                <Skeleton className="h-12 w-1/2 mb-2" />
-                <Skeleton className="h-8 w-3/4 mb-8" />
+             <div className="container mx-auto max-w-4xl px-4 py-8">
+                <div className="flex flex-col items-center mb-8">
+                    <Skeleton className="h-10 w-64" />
+                </div>
                 <div className="space-y-4">
                     <Skeleton className="h-16 w-full" />
                     <Skeleton className="h-16 w-full" />
@@ -112,43 +233,25 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="container mx-auto max-w-3xl px-0 sm:px-4 py-8">
-            <Card className="h-[calc(100vh-10rem)] flex flex-col">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold tracking-tight text-primary">Global Chat</CardTitle>
-                    <CardDescription className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Clock size={14}/> Messages disappear 8 minutes after they are sent.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {messages.length > 0 ? (
-                        messages.map(msg => <MessageItem key={msg.id} message={msg} />)
-                    ) : (
-                        <div className="text-center text-muted-foreground pt-10">
-                            No messages yet. Be the first to say something!
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </CardContent>
-                <CardFooter className="p-4 border-t">
-                    <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
-                        <Avatar className="hidden sm:inline-flex h-10 w-10 border">
-                             <AvatarImage src={currentUser?.profilePicture} alt={currentUser?.name || ''} />
-                             <AvatarFallback>{(currentUser?.name || "NN").split(" ").map((n) => n[0]).join("")}</AvatarFallback>
-                        </Avatar>
-                        <Input 
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Type your message..."
-                            autoComplete="off"
-                            disabled={isSending}
-                        />
-                        <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
-                            <Send />
-                        </Button>
-                    </form>
-                </CardFooter>
-            </Card>
+        <div className="container mx-auto max-w-4xl px-0 sm:px-4 py-8">
+            <div className="h-[calc(100vh-8rem)]">
+                <Tabs defaultValue="global" className="h-full w-full">
+                    <div className="flex justify-center">
+                        <TabsList className="grid w-full max-w-sm grid-cols-2">
+                            <TabsTrigger value="global">Global</TabsTrigger>
+                            <TabsTrigger value="private">Private</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <TabsContent value="global" className="h-full mt-4">
+                        <GlobalChat />
+                    </TabsContent>
+                    <TabsContent value="private" className="h-full mt-4">
+                        <Card className="h-full">
+                            <PrivateChatList />
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     );
 }
