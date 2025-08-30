@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 import { Lock, User, Eye, EyeOff } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   identifier: z.string().min(1, { message: "Please enter your username, email or roll number." }),
@@ -144,10 +145,16 @@ export default function LoginPage() {
         <CardContent>
           {isClient ? <LoginForm /> : null}
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <div className="p-6 pt-0">
+          <Separator />
+        </div>
+        <CardFooter className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
-                Don't have an account? <Button variant="link" className="p-0 h-auto" asChild><Link href="/signup">Create one</Link></Button>
+                Don't have an account?
             </p>
+            <Button variant="outline" className="w-full" asChild>
+                <Link href="/signup">Create New Account</Link>
+            </Button>
         </CardFooter>
       </Card>
     </div>

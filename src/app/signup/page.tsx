@@ -29,6 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { KeyRound, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   rollNo: z.string().min(1, { message: "Roll number is required." }),
@@ -181,10 +182,16 @@ export default function SignupPage() {
         <CardContent>
           {isClient ? <SignupForm /> : null}
         </CardContent>
-         <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-                Already have an account? <Button variant="link" className="p-0 h-auto" asChild><Link href="/login">Log in</Link></Button>
+        <div className="p-6 pt-0">
+            <Separator />
+        </div>
+        <CardFooter className="flex flex-col gap-4">
+             <p className="text-sm text-muted-foreground">
+                Already have an account?
             </p>
+             <Button variant="outline" className="w-full" asChild>
+                <Link href="/login">Log In</Link>
+            </Button>
         </CardFooter>
       </Card>
     </div>
