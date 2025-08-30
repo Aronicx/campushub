@@ -35,7 +35,7 @@ export function Header() {
         </Link>
         <div className="flex-1 min-w-0">
           <TooltipProvider>
-            <nav className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
+            <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
                 {navLinks.map((link) => (
                      <Tooltip key={link.href}>
                         <TooltipTrigger asChild>
