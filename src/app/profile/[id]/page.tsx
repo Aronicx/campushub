@@ -1,11 +1,13 @@
 
-import { getStudentById } from "@/lib/mock-data";
-import { notFound } from "next/navigation";
+'use client'
+
+import { getStudentById, toggleFollow } from "@/lib/mock-data";
+import { notFound, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -15,7 +17,10 @@ import {
   DialogTrigger,
   DialogTitle,
   DialogHeader
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 function ContactInfo({ student }: { student: Student }) {
@@ -54,12 +59,75 @@ function ContactInfo({ student }: { student: Student }) {
     )
 }
 
+function FollowButton({ studentId }: { studentId: string }) {
+    const { currentUser, updateProfileFollowing } = useAuth();
+    const [isFollowing, setIsFollowing] = useState(false);
+    const router = useRouter();
 
-export default async function ProfilePage({ params }: { params: { id: string } }) {
-  const student = await getStudentById(params.id);
+    useEffect(() => {
+        if(currentUser) {
+            setIsFollowing((currentUser.following || []).includes(studentId));
+        }
+    }, [currentUser, studentId]);
 
-  if (!student) {
-    notFound();
+    const handleFollowToggle = async () => {
+        if (!currentUser) {
+            router.push('/login');
+            return;
+        }
+
+        const originalIsFollowing = isFollowing;
+        setIsFollowing(!isFollowing);
+
+        try {
+            await toggleFollow(currentUser.id, studentId);
+            // Update the local auth context state
+            const newFollowing = originalIsFollowing
+                ? currentUser.following.filter(id => id !== studentId)
+                : [...currentUser.following, studentId];
+            updateProfileFollowing(newFollowing);
+        } catch (error) {
+            console.error("Failed to toggle follow", error);
+            setIsFollowing(originalIsFollowing); // Revert on error
+        }
+    }
+
+    if (!currentUser || currentUser.id === studentId) {
+        return null; // Don't show follow button on your own profile
+    }
+
+    return (
+        <Button onClick={handleFollowToggle} variant={isFollowing ? "secondary" : "default"}>
+            {isFollowing ? <UserCheck className="mr-2" /> : <UserPlus className="mr-2" />}
+            {isFollowing ? "Following" : "Follow"}
+        </Button>
+    )
+}
+
+
+export default function ProfilePage({ params }: { params: { id: string } }) {
+  const [student, setStudent] = useState<Student | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+      async function fetchStudent() {
+          setIsLoading(true);
+          const studentData = await getStudentById(params.id);
+          if (!studentData) {
+              notFound();
+          }
+          setStudent(studentData);
+          setIsLoading(false);
+      }
+      fetchStudent();
+  }, [params.id]);
+  
+  if (isLoading || !student) {
+    return (
+        <div className="container mx-auto max-w-4xl px-4 py-8">
+            <Skeleton className="h-[500px] w-full" />
+        </div>
+    )
   }
 
   const initials = (student.name || "NN")
@@ -69,14 +137,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
   
   const displayName = student.name || '(no name)';
 
-  const socialLinks = [
-    { icon: Instagram, href: student.instagram ? `https://instagram.com/${student.instagram}` : null },
-    { icon: MessageCircle, href: student.snapchat ? `https://snapchat.com/add/${student.snapchat}`: null },
-    { icon: Mail, href: student.email ? `mailto:${student.email}` : null },
-    { icon: Link2, href: student.customLink },
-  ].filter(link => link.href);
-
-  const recentThoughts = student.thoughts
+  const recentThoughts = (student.thoughts || [])
     .filter(thought => {
         const thoughtDate = new Date(thought.timestamp);
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -107,26 +168,22 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                 )}
               </DialogContent>
             </Dialog>
-            <div className="mt-4 sm:mt-0">
-              <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
-              <p className="text-lg text-muted-foreground">{student.major}</p>
-              <p className="text-sm text-muted-foreground">Roll No: {student.rollNo}</p>
+            <div className="mt-4 sm:mt-0 flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-end">
+                <div>
+                    <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
+                    <p className="text-lg text-muted-foreground">{student.major}</p>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                        <span>Roll No: {student.rollNo}</span>
+                        <span>{student.followers?.length || 0} Followers</span>
+                        <span>{student.following?.length || 0} Following</span>
+                    </div>
+                </div>
+                <div className="mt-4 sm:mt-0">
+                    <FollowButton studentId={student.id} />
+                </div>
             </div>
           </div>
           
-          <div className="mt-4 flex items-center gap-x-4 gap-y-2 flex-wrap">
-            {socialLinks.map(({ icon: Icon, href }, index) => (
-              <Button key={index} asChild variant="outline" size="sm">
-                <a href={href!} target="_blank" rel="noopener noreferrer">
-                  <Icon className="h-4 w-4" />
-                </a>
-              </Button>
-            ))}
-            {student.discord && <Badge variant="secondary" className="gap-2"><Users className="h-4 w-4" />{student.discord}</Badge>}
-            {student.phoneNumber && <Badge variant="secondary" className="gap-2"><Phone className="h-4 w-4" />{student.phoneNumber}</Badge>}
-          </div>
-
-
           <div className="mt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
@@ -158,6 +215,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
                     </CardContent>
                 </Card>
             </div>
+            <ContactInfo student={student} />
           </div>
         </CardContent>
       </Card>

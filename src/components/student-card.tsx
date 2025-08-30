@@ -7,25 +7,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, Heart } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
-  onLikeToggle?: (studentId: string) => void;
+  onFollowToggle?: (studentId: string) => void;
 }
 
-export function StudentCard({ student, currentUserId, onLikeToggle }: StudentCardProps) {
+export function StudentCard({ student, currentUserId, onFollowToggle }: StudentCardProps) {
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
-  const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
+  const isFollowing = currentUserId ? (student.followers || []).includes(currentUserId) : false;
 
-  const handleLikeClick = (e: React.MouseEvent) => {
+  const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if(currentUserId && onLikeToggle) {
-        onLikeToggle(student.id);
+    if(currentUserId && onFollowToggle) {
+        onFollowToggle(student.id);
     }
   }
 
@@ -58,18 +58,19 @@ export function StudentCard({ student, currentUserId, onLikeToggle }: StudentCar
            </Button>
         </CardFooter>
       </Link>
-       {onLikeToggle && (
-         <div className="border-t p-3 flex justify-end">
+       {onFollowToggle && currentUserId !== student.id && (
+         <div className="border-t p-3 flex justify-end items-center gap-2">
+              <span className="text-sm text-muted-foreground">{student.followers?.length || 0} Followers</span>
               <Button 
-                  variant="ghost" 
+                  variant={isFollowing ? "secondary" : "default"}
                   size="sm" 
-                  onClick={handleLikeClick} 
-                  disabled={!currentUserId || currentUserId === student.id}
-                  className="flex items-center gap-1.5"
-                  aria-label={isLiked ? "Unlike profile" : "Like profile"}
+                  onClick={handleFollowClick} 
+                  disabled={!currentUserId}
+                  className="w-24"
+                  aria-label={isFollowing ? "Unfollow profile" : "Follow profile"}
               >
-                  <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
-                  <span className="text-muted-foreground font-normal">{(student.likedBy || []).length}</span>
+                  {isFollowing ? <UserCheck className="mr-2"/> : <UserPlus className="mr-2"/>}
+                  {isFollowing ? "Following" : "Follow"}
               </Button>
         </div>
        )}

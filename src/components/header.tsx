@@ -34,6 +34,12 @@ export function Header() {
                 Directory
               </Link>
                <Link
+                href="/friends"
+                className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
+              >
+                Friends
+              </Link>
+               <Link
                 href="/chat"
                 className="text-foreground/60 transition-colors hover:text-foreground/80 whitespace-nowrap"
               >

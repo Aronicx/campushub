@@ -40,6 +40,21 @@ export async function getStudents(filters?: { search?: string, major?: string, i
     return students;
 }
 
+export async function getFollowing(userId: string): Promise<Student[]> {
+    const userDoc = await getStudentById(userId);
+    if (!userDoc || !userDoc.following || userDoc.following.length === 0) {
+        return [];
+    }
+
+    // Firestore 'in' query is limited to 30 items. For larger lists, you'd need multiple queries.
+    const followingIds = userDoc.following;
+    if (followingIds.length === 0) return [];
+    
+    const q = query(studentsCollection, where('id', 'in', followingIds));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as Student);
+}
+
 export async function getStudentById(id: string): Promise<Student | undefined> {
   const docRef = doc(db, 'students', id);
   const docSnap = await getDoc(docRef);
@@ -155,7 +170,8 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         bio: `A new member of the Campus Hub community!`,
         email: `${name.toLowerCase().replace(/\s/g, '.')}@example.com`,
         thoughts: [],
-        likedBy: [],
+        following: [],
+        followers: [],
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -214,31 +230,31 @@ export async function toggleLikeThought(authorId: string, thoughtId: string, lik
     return thought;
 }
 
-export async function toggleProfileLike(studentId: string, likerId: string): Promise<boolean> {
-    const studentRef = doc(db, 'students', studentId);
-    const studentSnap = await getDoc(studentRef);
+export async function toggleFollow(currentUserId: string, targetUserId: string): Promise<void> {
+    const currentUserRef = doc(db, 'students', currentUserId);
+    const targetUserRef = doc(db, 'students', targetUserId);
 
-    if (!studentSnap.exists()) {
-        throw new Error("Student not found");
-    }
+    const currentUserSnap = await getDoc(currentUserRef);
+    if (!currentUserSnap.exists()) throw new Error("Current user not found.");
+    
+    const currentUserData = currentUserSnap.data() as Student;
+    const isFollowing = (currentUserData.following || []).includes(targetUserId);
 
-    const student = studentSnap.data() as Student;
-    const isLiked = (student.likedBy || []).includes(likerId);
+    const batch = writeBatch(db);
 
-    if (isLiked) {
-        // Unlike
-        await updateDoc(studentRef, {
-            likedBy: arrayRemove(likerId)
-        });
-        return false;
+    if (isFollowing) {
+        // Unfollow
+        batch.update(currentUserRef, { following: arrayRemove(targetUserId) });
+        batch.update(targetUserRef, { followers: arrayRemove(currentUserId) });
     } else {
-        // Like
-        await updateDoc(studentRef, {
-            likedBy: arrayUnion(likerId)
-        });
-        return true;
+        // Follow
+        batch.update(currentUserRef, { following: arrayUnion(targetUserId) });
+        batch.update(targetUserRef, { followers: arrayUnion(currentUserId) });
     }
+
+    await batch.commit();
 }
+
 
 export async function addOrUpdateComment(
     authorId: string,
@@ -368,21 +384,16 @@ export async function getRecentClicks(): Promise<Click[]> {
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    const q = query(clicksCollection, 
-        where("authorId", "==", authorId),
-        where("timestamp", ">=", twentyHoursAgo.toISOString())
-    );
+    // Query requires a composite index on authorId and timestamp.
+    // To avoid crashes for users, we'll query only by authorId and filter client-side.
+    // The ideal solution is for the user to create the index via the Firebase console link in the error.
+    const q = query(clicksCollection, where("authorId", "==", authorId));
     
-    try {
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-    } catch (error) {
-        console.warn("Firestore query failed, falling back to client-side filtering for getClicksByAuthor. Consider adding a composite index.", error);
-        // Fallback to client-side filtering if index is missing
-        const allUserClicks = await getDocs(query(clicksCollection, where("authorId", "==", authorId)));
-        const clicks = allUserClicks.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-        return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyHoursAgo.getTime());
-    }
+    const snapshot = await getDocs(q);
+    const clicks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
+
+    // Client-side filtering
+    return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyHoursAgo.getTime());
 }
 
 
@@ -467,6 +478,7 @@ export async function deleteClick(click: Click): Promise<void> {
 export async function cleanupExpiredClicks(): Promise<void> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
     
+    // Fetch all clicks and filter client-side to avoid needing a specific index on timestamp.
     const allClicksSnapshot = await getDocs(clicksCollection);
 
     const expiredClicks = allClicksSnapshot.docs.filter(doc => {

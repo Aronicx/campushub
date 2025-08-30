@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (identifier: string, password?: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<Student>) => Promise<void>;
+  updateProfileFollowing: (following: string[]) => void;
   postThought: (content: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   deleteProfile: () => Promise<void>;
@@ -98,6 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const updateProfileFollowing = (following: string[]) => {
+      if (currentUser) {
+          setCurrentUser({ ...currentUser, following });
+      }
+  }
+
   const postThought = async (content: string) => {
       if(currentUser) {
         const newThought = await addThought(currentUser.id, content);
@@ -151,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile };
+  const value = { currentUser, isLoading, login, logout, updateProfile, postThought, changePassword, deleteProfile, updateProfileFollowing };
 
   return (
     <AuthContext.Provider value={value}>
