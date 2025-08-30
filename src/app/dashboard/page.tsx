@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 
 import { useAuth } from "@/hooks/use-auth";
-import { getStudents, getClicksByAuthor, addClick } from "@/lib/mock-data";
+import { getClicksByAuthor, addClick, deleteClick } from "@/lib/mock-data";
 import type { Student, Click } from "@/lib/types";
 import { resizeAndCompressImage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,17 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -469,22 +480,15 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
 }
 
 
-function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) => void }) {
+function UploadDialog({ userClickCount, onUploadSuccess }: { userClickCount: number; onUploadSuccess: (newClick: Click) => void }) {
     const { currentUser } = useAuth();
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [userClickCount, setUserClickCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (!currentUser || !isOpen) return;
-        getClicksByAuthor(currentUser.id).then(clicks => {
-            setUserClickCount(clicks.length);
-        });
-    }, [currentUser, isOpen]);
+    const CLICK_LIMIT = 3;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -530,14 +534,14 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     
     if (!currentUser) return null;
 
-    const clicksLeft = 10 - userClickCount;
+    const clicksLeft = CLICK_LIMIT - userClickCount;
     const canUpload = clicksLeft > 0;
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => !isUploading && setIsOpen(open)}>
             <DialogTrigger asChild>
-                <Button>
-                    <Upload className="mr-2" /> Share a Click
+                <Button disabled={!canUpload}>
+                    <Upload className="mr-2" /> Share a Click ({clicksLeft} left)
                 </Button>
             </DialogTrigger>
             <DialogContent onInteractOutside={(e) => {if(isUploading) e.preventDefault()}}>
@@ -549,8 +553,8 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">You have {clicksLeft} clicks left for today.</p>
-                        <Progress value={(userClickCount / 10) * 100} className="w-full h-2" />
+                        <p className="text-sm text-muted-foreground">You have {clicksLeft} of {CLICK_LIMIT} clicks left.</p>
+                        <Progress value={(userClickCount / CLICK_LIMIT) * 100} className="w-full h-2" />
                     </div>
 
                     {!preview ? (
@@ -580,7 +584,7 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
                     )}
                 </div>
                 <DialogFooter>
-                    <DialogClose asChild><Button variant="ghost" onClick={handleClose} disabled={isUploading}>Cancel</Button></DialogClose>
+                    <Button variant="ghost" onClick={handleClose} disabled={isUploading}>Cancel</Button>
                     <Button onClick={handleUpload} disabled={!file || !canUpload || isUploading}>
                         {isUploading ? <><Loader2 className="mr-2 animate-spin" /> Uploading...</> : <>Post Click</>}
                     </Button>
@@ -590,15 +594,93 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     )
 }
 
+function MyClicksManager({ initialClicks, onDelete }: { initialClicks: Click[], onDelete: (clickId: string) => void }) {
+    const { toast } = useToast();
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+    const handleDelete = async (click: Click) => {
+        setIsDeleting(click.id);
+        try {
+            await deleteClick(click);
+            onDelete(click.id);
+            toast({ title: "Click Deleted", description: "Your click has been removed." });
+        } catch (error) {
+            console.error("Failed to delete click:", error);
+            toast({ variant: 'destructive', title: "Error", description: "Failed to delete click." });
+        } finally {
+            setIsDeleting(null);
+        }
+    }
+
+    if (initialClicks.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Daily Clicks</CardTitle>
+                    <CardDescription>You haven't posted any clicks recently.</CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>My Daily Clicks</CardTitle>
+                <CardDescription>These are your active clicks. They will disappear 20 hours after posting.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {initialClicks.map(click => (
+                    <div key={click.id} className="relative group">
+                        <Image src={click.imageUrl} alt="My Click" width={200} height={350} className="rounded-md object-cover aspect-[9/16]" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon" disabled={isDeleting === click.id}>
+                                        {isDeleting === click.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete this Click?</AlertDialogTitle>
+                                        <AlertDialogDescription>This action cannot be undone. This will permanently delete your click.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(click)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function ProfilePage() {
   const { currentUser, isLoading: isAuthLoading, updateProfile } = useAuth();
   const router = useRouter();
+  const [myClicks, setMyClicks] = useState<Click[]>([]);
+  const [isLoadingClicks, setIsLoadingClicks] = useState(true);
 
   useEffect(() => {
     if (!isAuthLoading && !currentUser) {
       router.push("/login");
     }
   }, [isAuthLoading, currentUser, router]);
+
+   useEffect(() => {
+    if (currentUser) {
+      setIsLoadingClicks(true);
+      getClicksByAuthor(currentUser.id).then(clicks => {
+        setMyClicks(clicks);
+        setIsLoadingClicks(false);
+      });
+    }
+  }, [currentUser]);
+
 
   if (isAuthLoading || !currentUser) {
     return (
@@ -619,6 +701,14 @@ export default function ProfilePage() {
 
   const initials = (currentUser.name || "NN").split(" ").map((n) => n[0]).join("");
   const displayName = currentUser.name || '(no name)';
+
+  const handleUploadSuccess = (newClick: Click) => {
+    setMyClicks(prev => [...prev, newClick]);
+  }
+
+  const handlePostDelete = (deletedClickId: string) => {
+    setMyClicks(prev => prev.filter(click => click.id !== deletedClickId));
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -735,19 +825,22 @@ export default function ProfilePage() {
             </div>
         </TabsContent>
         <TabsContent value="posts" className="mt-6">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             <div className="space-y-6">
                 <DailyThoughtPoster />
                 <Card>
                     <CardHeader>
                         <CardTitle>Share a Daily Click</CardTitle>
-                        <CardDescription>Share a photo with campus. It will disappear in 20 hours.</CardDescription>
+                        <CardDescription>Share a photo with campus. It will disappear in 20 hours. You can post up to 3.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <UploadDialog onUploadSuccess={() => {
-                            // Optionally refetch user's clicks or give other feedback
-                        }}/>
+                        <UploadDialog onUploadSuccess={handleUploadSuccess} userClickCount={myClicks.length}/>
                     </CardContent>
                 </Card>
+                {isLoadingClicks ? (
+                    <Skeleton className="h-48 w-full" />
+                ) : (
+                    <MyClicksManager initialClicks={myClicks} onDelete={handlePostDelete}/>
+                )}
             </div>
         </TabsContent>
       </Tabs>

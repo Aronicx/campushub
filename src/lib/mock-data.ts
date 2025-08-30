@@ -368,7 +368,6 @@ export async function getRecentClicks(): Promise<Click[]> {
 
 export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    // This query might need an index. If it fails, we need to filter client-side.
     const q = query(clicksCollection, 
         where("authorId", "==", authorId),
         where("timestamp", ">=", twentyHoursAgo.toISOString())
@@ -390,8 +389,8 @@ export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
 export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
     // Check user's click count for the last 20 hours
     const userClicks = await getClicksByAuthor(author.id);
-    if (userClicks.length >= 10) {
-        throw new Error("You have reached the maximum of 10 Clicks per day.");
+    if (userClicks.length >= 3) {
+        throw new Error("You have reached the maximum of 3 active Clicks.");
     }
 
     // Upload to storage
@@ -447,8 +446,18 @@ export async function toggleClickLike(clickId: string, likerId: string): Promise
 
 export async function deleteClick(click: Click): Promise<void> {
     // Delete from storage
-    const storageRef = ref(storage, click.storagePath);
-    await deleteObject(storageRef);
+    try {
+        if (click.storagePath) {
+            const storageRef = ref(storage, click.storagePath);
+            await deleteObject(storageRef);
+        }
+    } catch (error: any) {
+       // If file doesn't exist, we can ignore the error
+       if (error.code !== 'storage/object-not-found') {
+           console.error(`Failed to delete from storage: ${click.storagePath}`, error);
+           // We might still want to proceed to delete the Firestore doc
+       }
+    }
 
     // Delete from Firestore
     const clickDocRef = doc(db, 'clicks', click.id);
@@ -476,8 +485,10 @@ export async function cleanupExpiredClicks(): Promise<void> {
                 const storageRef = ref(storage, click.storagePath);
                 await deleteObject(storageRef);
             }
-        } catch (error) {
-            console.error(`Failed to delete from storage: ${click.storagePath}`, error)
+        } catch (error: any) {
+            if (error.code !== 'storage/object-not-found') {
+                console.error(`Failed to delete from storage: ${click.storagePath}`, error)
+            }
         }
         // Then delete from firestore
         batch.delete(doc.ref);
