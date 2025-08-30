@@ -1,13 +1,13 @@
 
 'use client'
 
-import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest } from "@/lib/mock-data";
+import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest, getFollowers, getFollowing } from "@/lib/mock-data";
 import { notFound, useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,89 @@ import {
   DialogContent,
   DialogTrigger,
   DialogTitle,
-  DialogHeader
+  DialogHeader,
+  DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
 
+
+function ConnectionListDialog({ studentId, listType, canViewContent, trigger }: { studentId: string, listType: 'followers' | 'following', canViewContent: boolean, trigger: React.ReactNode }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [list, setList] = useState<Student[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !canViewContent) return;
+
+        async function fetchConnections() {
+            setIsLoading(true);
+            const data = listType === 'followers'
+                ? await getFollowers(studentId)
+                : await getFollowing(studentId);
+            setList(data);
+            setIsLoading(false);
+        }
+
+        fetchConnections();
+    }, [isOpen, studentId, listType, canViewContent]);
+
+    if (!canViewContent) {
+        return <>{trigger}</>;
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="capitalize">{listType}</DialogTitle>
+                     <DialogDescription>
+                        {list.length} {list.length === 1 ? 'person' : 'people'}
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="h-72">
+                    {isLoading ? (
+                         <div className="space-y-3 pr-6">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-1">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-3 w-16" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-3 pr-6">
+                            {list.length > 0 ? list.map(user => (
+                                <div key={user.id} className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={user.profilePicture} alt={user.name} />
+                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <DialogClose asChild>
+                                            <Link href={`/profile/${user.id}`} className="font-semibold hover:underline">{user.name}</Link>
+                                        </DialogClose>
+                                        <p className="text-sm text-muted-foreground">{user.major}</p>
+                                    </div>
+                                </div>
+                            )) : <p className="text-muted-foreground text-sm">Nothing to see here.</p>}
+                        </div>
+                    )}
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function ContactInfo({ student }: { student: Student }) {
     const contacts = [
@@ -261,8 +336,18 @@ export default function ProfilePage() {
                     <p className="text-lg text-muted-foreground">{student.major}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         <span>Roll No: {student.rollNo}</span>
-                        <span>{(student.followers?.length || 0)} Followers</span>
-                        <span>{(student.following?.length || 0)} Following</span>
+                         <ConnectionListDialog
+                            studentId={student.id}
+                            listType="followers"
+                            canViewContent={canViewContent}
+                            trigger={<button className="hover:underline disabled:no-underline" disabled={!canViewContent}>{(student.followers?.length || 0)} Followers</button>}
+                        />
+                        <ConnectionListDialog
+                            studentId={student.id}
+                            listType="following"
+                            canViewContent={canViewContent}
+                            trigger={<button className="hover:underline disabled:no-underline" disabled={!canViewContent}>{(student.following?.length || 0)} Following</button>}
+                        />
                         <span>{(student.likedBy?.length || 0)} Likes</span>
                     </div>
                 </div>
