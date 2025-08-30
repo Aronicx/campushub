@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -155,7 +155,9 @@ export default function ProfilePage() {
             await refreshCurrentUser();
             const refreshedStudent = await getStudentById(student.id);
             setStudent(refreshedStudent || null);
-             toast({ title: "Follow Request Sent!" });
+            if (refreshedStudent?.isPrivate && !refreshedStudent.followers.includes(currentUser.id)) {
+                 toast({ title: "Follow Request Sent!" });
+            }
         } catch (error) {
              console.error("Failed to toggle follow", error);
              toast({ variant: "destructive", title: "Error", description: "Failed to send follow request." });
@@ -221,6 +223,11 @@ export default function ProfilePage() {
         return thoughtDate > oneDayAgo;
     });
 
+  const isFollowing = currentUser ? (student.followers || []).includes(currentUser.id) : false;
+  const isOwnProfile = currentUser?.id === student.id;
+  const canViewContent = !student.isPrivate || isFollowing || isOwnProfile;
+
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-lg">
@@ -247,7 +254,10 @@ export default function ProfilePage() {
             </Dialog>
             <div className="mt-4 sm:mt-0 flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-end">
                 <div>
-                    <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
+                        {student.isPrivate && <Lock size={20} className="text-muted-foreground" />}
+                    </div>
                     <p className="text-lg text-muted-foreground">{student.major}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         <span>Roll No: {student.rollNo}</span>
@@ -293,35 +303,44 @@ export default function ProfilePage() {
                     </CardContent>
                 </Card>
             </div>
-            <ContactInfo student={student} />
+            {canViewContent ? (
+                <>
+                    <ContactInfo student={student} />
+                    <div className="mt-8">
+                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                            <BookOpen /> Recent Daily Thoughts
+                        </h2>
+                        {recentThoughts.length > 0 ? (
+                        <div className="space-y-4">
+                            {recentThoughts.map((thought) => (
+                            <Card key={thought.id}>
+                                <CardContent className="p-4">
+                                <p>{thought.content}</p>
+                                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                    <CalendarDays size={14} /> 
+                                    {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
+                                </p>
+                                </CardContent>
+                            </Card>
+                            ))}
+                        </div>
+                        ) : (
+                        <Card className="text-center p-8 border-dashed">
+                            <p className="text-muted-foreground">{displayName} hasn't shared any thoughts in the last 24 hours.</p>
+                        </Card>
+                        )}
+                    </div>
+                </>
+            ) : (
+                 <Card className="mt-8 text-center p-8 border-dashed">
+                    <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-xl font-semibold">This Account is Private</h3>
+                    <p className="mt-2 text-muted-foreground">Follow this account to see their thoughts and contact information.</p>
+                </Card>
+            )}
           </div>
         </CardContent>
       </Card>
-      
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <BookOpen /> Recent Daily Thoughts
-        </h2>
-        {recentThoughts.length > 0 ? (
-          <div className="space-y-4">
-            {recentThoughts.map((thought) => (
-              <Card key={thought.id}>
-                <CardContent className="p-4">
-                  <p>{thought.content}</p>
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <CalendarDays size={14} /> 
-                    {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="text-center p-8 border-dashed">
-            <p className="text-muted-foreground">{displayName} hasn't shared any thoughts in the last 24 hours.</p>
-          </Card>
-        )}
-      </div>
     </div>
   );
 }

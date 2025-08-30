@@ -52,6 +52,7 @@ export interface Student {
   customLink?: string;
   pendingFollowRequests: string[]; // IDs of users who want to follow this student
   sentFollowRequests: string[]; // IDs of users this student has requested to follow
+  isPrivate: boolean;
 }
 
 export interface ChatMessage {

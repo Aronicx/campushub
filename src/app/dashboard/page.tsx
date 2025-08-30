@@ -61,10 +61,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus, ShieldCheck } from "lucide-react";
 
 
 const profileFormSchema = z.object({
@@ -815,11 +817,24 @@ export default function ProfilePage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Lock /> Security</CardTitle>
-                        <CardDescription>Manage your password settings.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Lock /> Security & Privacy</CardTitle>
+                        <CardDescription>Manage your password and profile privacy settings.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-6">
                         <PasswordEditor />
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                               <Label htmlFor="private-profile" className="text-base">Private Profile</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    If enabled, you will have to approve follow requests.
+                                </p>
+                            </div>
+                            <Switch
+                                id="private-profile"
+                                checked={currentUser.isPrivate}
+                                onCheckedChange={(checked) => updateProfile({ isPrivate: checked })}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -847,6 +862,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
-    

@@ -181,7 +181,8 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         likedBy: [],
         notifications: [],
         pendingFollowRequests: [],
-        sentFollowRequests: []
+        sentFollowRequests: [],
+        isPrivate: false,
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -282,13 +283,19 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
     const targetUserRef = doc(db, 'students', targetUserId);
 
     const currentUserSnap = await getDoc(currentUserRef);
-    if (!currentUserSnap.exists()) throw new Error("Current user not found.");
+    const targetUserSnap = await getDoc(targetUserRef);
+
+    if (!currentUserSnap.exists() || !targetUserSnap.exists()) {
+        throw new Error("User not found.");
+    }
     
     const currentUserData = currentUserSnap.data() as Student;
+    const targetUserData = targetUserSnap.data() as Student;
+
     const isFollowing = (currentUserData.following || []).includes(targetUserId);
 
+    // UNFOLLOW LOGIC (same for public and private)
     if (isFollowing) {
-        // Unfollow logic
         const batch = writeBatch(db);
         batch.update(currentUserRef, { following: arrayRemove(targetUserId) });
         batch.update(targetUserRef, { followers: arrayRemove(currentUserId) });
@@ -296,20 +303,42 @@ export async function toggleFollow(currentUserId: string, targetUserId: string):
         return;
     }
 
-    // Follow Request Logic
-    await updateDoc(currentUserRef, { sentFollowRequests: arrayUnion(targetUserId) });
-    await updateDoc(targetUserRef, { pendingFollowRequests: arrayUnion(currentUserId) });
-    
-    await addNotification(targetUserId, {
-        type: 'follow_request',
-        message: `${currentUserData.name} wants to follow you.`,
-        link: `/profile/${currentUserId}`, // Link to requester's profile
-        fromUser: {
-            id: currentUserData.id,
-            name: currentUserData.name,
-            profilePicture: currentUserData.profilePicture
-        }
-    });
+    // FOLLOW LOGIC (depends on target's privacy setting)
+    if (targetUserData.isPrivate) {
+        // Private profile: Send a follow request
+        const batch = writeBatch(db);
+        batch.update(currentUserRef, { sentFollowRequests: arrayUnion(targetUserId) });
+        batch.update(targetUserRef, { pendingFollowRequests: arrayUnion(currentUserId) });
+        await batch.commit();
+        
+        await addNotification(targetUserId, {
+            type: 'follow_request',
+            message: `${currentUserData.name} wants to follow you.`,
+            link: `/profile/${currentUserId}`,
+            fromUser: {
+                id: currentUserData.id,
+                name: currentUserData.name,
+                profilePicture: currentUserData.profilePicture
+            }
+        });
+    } else {
+        // Public profile: Follow immediately
+        const batch = writeBatch(db);
+        batch.update(currentUserRef, { following: arrayUnion(targetUserId) });
+        batch.update(targetUserRef, { followers: arrayUnion(currentUserId) });
+        await batch.commit();
+
+        await addNotification(targetUserId, {
+            type: 'follow',
+            message: `${currentUserData.name} started following you.`,
+            link: `/profile/${currentUserId}`,
+            fromUser: {
+                id: currentUserData.id,
+                name: currentUserData.name,
+                profilePicture: currentUserData.profilePicture,
+            }
+        });
+    }
 }
 
 export async function handleFollowRequest(requesterId: string, recipientId: string, action: 'accept' | 'reject') {
