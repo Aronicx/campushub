@@ -1,17 +1,74 @@
 
-import { StudentList } from "@/components/student-list";
-import { Suspense } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Icons } from "@/components/icons";
+import { Droplets, Camera, MessageSquareText } from "lucide-react";
+import Link from "next/link";
+
+const features = [
+  {
+    icon: <Droplets className="h-8 w-8 text-primary" />,
+    title: "Thought Bubbles",
+    description: "Share your fleeting thoughts and ideas with the entire campus. A live feed of what everyone is thinking, which disappears after 24 hours.",
+    link: "/thought-bubbles"
+  },
+  {
+    icon: <Camera className="h-8 w-8 text-pink-500" />,
+    title: "Daily Clicks",
+    description: "Post a photo to the 'Clicks' reel, a 24-hour visual story of campus life. Like your friends' moments and see what's trending.",
+    link: "/clicks"
+  },
+  {
+    icon: <MessageSquareText className="h-8 w-8 text-green-500" />,
+    title: "Global & Private Chat",
+    description: "Jump into the ephemeral Global Chat that vanishes every few minutes, or have private, expiring conversations with your connections.",
+    link: "/chat"
+  }
+];
 
 export default function HomePage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">Student Directory</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Log in to edit your profile and connect with others.</p>
-      </div>
-      <Suspense fallback={<p>Loading students...</p>}>
-        <StudentList />
-      </Suspense>
+    <div className="container mx-auto px-4 py-12">
+      <section className="text-center mb-16">
+        <div className="flex justify-center items-center gap-4 mb-4">
+          <Icons.logo className="h-16 w-16 text-primary" />
+          <h1 className="text-5xl font-bold tracking-tight text-primary">
+            Campus Hub
+          </h1>
+        </div>
+        <p className="mt-4 text-xl text-muted-foreground max-w-3xl mx-auto">
+          Your exclusive social network to connect, share, and engage with your college community in new and exciting ways.
+        </p>
+        <div className="mt-8 flex justify-center gap-4">
+            <Button asChild size="lg">
+                <Link href="/directory">Browse Directory</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+                <Link href="/login">Get Started</Link>
+            </Button>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-3xl font-bold text-center mb-8">Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {features.map((feature) => (
+            <Card key={feature.title} className="flex flex-col">
+              <CardHeader className="items-center">
+                {feature.icon}
+                <CardTitle className="mt-4 text-2xl">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex-grow">
+                <p className="text-muted-foreground">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+      
+       <footer className="text-center mt-16 text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} Campus Hub. All rights reserved.</p>
+        </footer>
     </div>
   );
 }
