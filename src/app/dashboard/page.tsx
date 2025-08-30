@@ -489,8 +489,8 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
-            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-                toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 10MB.' });
+            if (selectedFile.size > 2 * 1024 * 1024) { // 2MB limit
+                toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 2MB.' });
                 return;
             }
             setFile(selectedFile);
@@ -560,7 +560,7 @@ function UploadDialog({ onUploadSuccess }: { onUploadSuccess: (newClick: Click) 
                         >
                             <ImagePlus className="h-10 w-10 text-muted-foreground" />
                             <p className="mt-2 text-sm text-muted-foreground">Click to browse or drag & drop</p>
-                            <p className="text-xs text-muted-foreground/80">PNG, JPG, WEBP up to 10MB</p>
+                            <p className="text-xs text-muted-foreground/80">PNG, JPG, WEBP up to 2MB</p>
                             <Input
                                 ref={fileInputRef}
                                 type="file"
@@ -755,4 +755,5 @@ export default function ProfilePage() {
   );
 }
 
+    
     
