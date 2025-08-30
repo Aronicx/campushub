@@ -50,9 +50,9 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
         </Link>
         <div className="flex-1">
           <Link href={`/profile/${student.id}`}>
-            <h3 className="font-semibold text-lg leading-tight">{displayName}</h3>
-            <p className="text-sm text-muted-foreground leading-tight">{student.major}</p>
+            <h3 className="font-semibold text-lg leading-tight hover:underline">{displayName}</h3>
           </Link>
+          <p className="text-sm text-muted-foreground leading-tight">{student.major}</p>
           <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
         </div>
         {onFollowToggle && currentUserId && currentUserId !== student.id && (
@@ -68,8 +68,7 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
           </Button>
        )}
       </CardHeader>
-      <Link href={`/profile/${student.id}`} className="flex flex-col flex-grow">
-        <CardContent className="px-4 pb-4 flex-grow">
+      <CardContent className="px-4 pb-4 flex-grow">
           <div className="flex flex-wrap gap-2">
             {student.interests.slice(0, 3).map((interest) => (
               <Badge key={interest} variant="secondary">
@@ -79,28 +78,27 @@ export function StudentCard({ student, currentUserId, onFollowToggle, onLikeTogg
             {student.interests.length > 3 && <Badge variant="secondary">...</Badge>}
           </div>
         </CardContent>
-        <CardFooter className="p-4 flex justify-between items-center border-t">
-           <div className="flex items-center gap-4 text-muted-foreground">
-             {onLikeToggle && (
-                 <div className="flex items-center gap-1.5">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
-                         <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
-                    </Button>
-                    <span className="text-sm">{(student.likedBy || []).length}</span>
-                </div>
-             )}
-            <div className="flex items-center gap-1">
-                 <Users className="h-4 w-4" />
-                 <span className="text-sm">{(student.followers || []).length}</span>
-            </div>
-           </div>
-           <Button variant="outline" size="sm" asChild>
-                <Link href={`/profile/${student.id}`}>
-                    View <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-           </Button>
-        </CardFooter>
-      </Link>
+      <CardFooter className="p-4 flex justify-between items-center border-t">
+          <div className="flex items-center gap-4 text-muted-foreground">
+            {onLikeToggle && (
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
+                        <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
+                  </Button>
+                  <span className="text-sm">{(student.likedBy || []).length}</span>
+              </div>
+            )}
+          <div className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">{(student.followers || []).length}</span>
+          </div>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+              <Link href={`/profile/${student.id}`}>
+                  View <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+          </Button>
+      </CardFooter>
     </Card>
   );
 }
