@@ -1,10 +1,9 @@
 
 "use client";
 
-import { getStudents, getUniqueMajors, getUniqueInterests, toggleFollow } from "@/lib/mock-data";
+import { getStudents, toggleFollow, toggleProfileLike } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Suspense, useEffect, useState, useTransition } from 'react';
 import type { Student } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,7 +68,7 @@ function FilterControls() {
   );
 }
 
-function StudentList({ students, currentUserId, onFollowToggle }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void }) {
+function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void }) {
   if (students.length === 0) {
     return <p className="text-center text-muted-foreground mt-8">No students found.</p>;
   }
@@ -77,7 +76,7 @@ function StudentList({ students, currentUserId, onFollowToggle }: { students: St
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {students.map((student) => (
-        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} />
+        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} onLikeToggle={onLikeToggle} />
       ))}
     </div>
   );
@@ -123,6 +122,25 @@ function StudentDirectoryContent() {
       await toggleFollow(currentUser.id, studentId);
   };
   
+    const handleLikeToggle = async (studentId: string) => {
+        if (!currentUser) return;
+
+        setStudents(prevStudents =>
+            prevStudents.map(student => {
+                if (student.id === studentId) {
+                    const isLiked = (student.likedBy || []).includes(currentUser.id);
+                    const newLikedBy = isLiked
+                        ? (student.likedBy || []).filter(id => id !== currentUser.id)
+                        : [...(student.likedBy || []), currentUser.id];
+                    return { ...student, likedBy: newLikedBy };
+                }
+                return student;
+            })
+        );
+        await toggleProfileLike(studentId, currentUser.id);
+    };
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
@@ -137,7 +155,7 @@ function StudentDirectoryContent() {
             {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
         </div>
       ) : (
-        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle}/>
+        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} />
       )}
     </div>
   );

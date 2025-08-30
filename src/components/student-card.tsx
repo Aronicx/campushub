@@ -7,19 +7,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
   onFollowToggle?: (studentId: string) => void;
+  onLikeToggle?: (studentId: string) => void;
 }
 
-export function StudentCard({ student, currentUserId, onFollowToggle }: StudentCardProps) {
+export function StudentCard({ student, currentUserId, onFollowToggle, onLikeToggle }: StudentCardProps) {
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
   const isFollowing = currentUserId ? (student.followers || []).includes(currentUserId) : false;
+  const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,52 +30,77 @@ export function StudentCard({ student, currentUserId, onFollowToggle }: StudentC
         onFollowToggle(student.id);
     }
   }
+  
+  const handleLikeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentUserId && onLikeToggle) {
+      onLikeToggle(student.id);
+    }
+  };
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
-      <Link href={`/profile/${student.id}`} className="flex flex-col flex-grow">
-        <CardHeader className="flex-row gap-4 items-center">
+      <CardHeader className="flex-row gap-4 items-center p-4">
+        <Link href={`/profile/${student.id}`} className="flex-shrink-0">
           <Avatar>
             <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
-          <div>
-            <h3 className="font-semibold text-lg">{displayName}</h3>
-            <p className="text-sm text-muted-foreground">{student.major}</p>
-            <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow">
+        </Link>
+        <div className="flex-1">
+          <Link href={`/profile/${student.id}`}>
+            <h3 className="font-semibold text-lg leading-tight">{displayName}</h3>
+            <p className="text-sm text-muted-foreground leading-tight">{student.major}</p>
+          </Link>
+          <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
+        </div>
+        {onFollowToggle && currentUserId && currentUserId !== student.id && (
+          <Button 
+              variant="ghost"
+              size="icon" 
+              onClick={handleFollowClick} 
+              disabled={!currentUserId}
+              className="h-8 w-8"
+              aria-label={isFollowing ? "Unfollow profile" : "Follow profile"}
+          >
+              {isFollowing ? <UserCheck className="text-primary"/> : <UserPlus className="text-muted-foreground"/>}
+          </Button>
+       )}
+      </CardHeader>
+      <Link href={`/profile/${student.id}`} className="flex flex-col flex-grow">
+        <CardContent className="px-4 pb-4 flex-grow">
           <div className="flex flex-wrap gap-2">
             {student.interests.slice(0, 3).map((interest) => (
               <Badge key={interest} variant="secondary">
                 {interest}
               </Badge>
             ))}
+            {student.interests.length > 3 && <Badge variant="secondary">...</Badge>}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
-           <Button variant="outline" className="w-full">
-                View Profile <ArrowRight className="ml-2 h-4 w-4" />
+        <CardFooter className="p-4 flex justify-between items-center border-t">
+           <div className="flex items-center gap-4 text-muted-foreground">
+             {onLikeToggle && (
+                 <div className="flex items-center gap-1.5">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
+                         <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
+                    </Button>
+                    <span className="text-sm">{(student.likedBy || []).length}</span>
+                </div>
+             )}
+            <div className="flex items-center gap-1">
+                 <Users className="h-4 w-4" />
+                 <span className="text-sm">{(student.followers || []).length}</span>
+            </div>
+           </div>
+           <Button variant="outline" size="sm" asChild>
+                <Link href={`/profile/${student.id}`}>
+                    View <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
            </Button>
         </CardFooter>
       </Link>
-       {onFollowToggle && currentUserId !== student.id && (
-         <div className="border-t p-3 flex justify-end items-center gap-2">
-              <span className="text-sm text-muted-foreground">{student.followers?.length || 0} Followers</span>
-              <Button 
-                  variant={isFollowing ? "secondary" : "default"}
-                  size="sm" 
-                  onClick={handleFollowClick} 
-                  disabled={!currentUserId}
-                  className="w-24"
-                  aria-label={isFollowing ? "Unfollow profile" : "Follow profile"}
-              >
-                  {isFollowing ? <UserCheck className="mr-2"/> : <UserPlus className="mr-2"/>}
-                  {isFollowing ? "Following" : "Follow"}
-              </Button>
-        </div>
-       )}
     </Card>
   );
 }

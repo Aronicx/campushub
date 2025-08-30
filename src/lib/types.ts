@@ -28,6 +28,7 @@ export interface Student {
   thoughts: Thought[];
   following: string[];
   followers: string[];
+  likedBy: string[];
   password?: string;
   instagram?: string;
   snapchat?: string;

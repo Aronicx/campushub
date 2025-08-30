@@ -9,7 +9,7 @@ const chatMessagesCollection = collection(db, 'chatMessages');
 const clicksCollection = collection(db, 'clicks');
 
 
-export async function getStudents(filters?: { search?: string, major?: string, interest?: string }): Promise<Student[]> {
+export async function getStudents(filters?: { search?: string }): Promise<Student[]> {
     let q = query(studentsCollection);
     
     // Note: Firestore does not support case-insensitive search or partial string matching natively.
@@ -29,12 +29,6 @@ export async function getStudents(filters?: { search?: string, major?: string, i
             (s.name || '').toLowerCase().includes(searchTerm) ||
             s.rollNo.toLowerCase().includes(searchTerm)
         );
-    }
-    if (filters?.major && filters.major !== 'all') {
-        students = students.filter(s => s.major === filters.major);
-    }
-    if (filters?.interest && filters.interest !== 'all') {
-        students = students.filter(s => s.interests.includes(filters.interest as string));
     }
 
     return students;
@@ -172,6 +166,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         thoughts: [],
         following: [],
         followers: [],
+        likedBy: [],
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -185,18 +180,24 @@ export async function deleteStudent(studentId: string): Promise<void> {
     await deleteDoc(docRef);
 }
 
+export async function toggleProfileLike(targetUserId: string, currentUserId: string): Promise<void> {
+    const targetUserRef = doc(db, 'students', targetUserId);
+    const targetUserSnap = await getDoc(targetUserRef);
 
-export async function getUniqueMajors(): Promise<string[]> {
-    const snapshot = await getDocs(studentsCollection);
-    const majors = new Set(snapshot.docs.map(d => (d.data() as Student).major));
-    return Array.from(majors).sort();
+    if (!targetUserSnap.exists()) {
+        throw new Error("Target user not found.");
+    }
+
+    const targetUserData = targetUserSnap.data() as Student;
+    const isLiked = (targetUserData.likedBy || []).includes(currentUserId);
+
+    if (isLiked) {
+        await updateDoc(targetUserRef, { likedBy: arrayRemove(currentUserId) });
+    } else {
+        await updateDoc(targetUserRef, { likedBy: arrayUnion(currentUserId) });
+    }
 }
 
-export async function getUniqueInterests(): Promise<string[]> {
-    const snapshot = await getDocs(studentsCollection);
-    const interests = new Set(snapshot.docs.flatMap(d => (d.data() as Student).interests));
-    return Array.from(interests).sort();
-}
 
 export async function toggleLikeThought(authorId: string, thoughtId: string, likerId: string): Promise<Thought | undefined> {
     const authorRef = doc(db, 'students', authorId);
