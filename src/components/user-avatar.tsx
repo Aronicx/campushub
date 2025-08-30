@@ -94,9 +94,9 @@ export function UserAvatar() {
             </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-            <Link href="/directory">
+            <Link href="/connections">
                 <Users className="mr-2 h-4 w-4" />
-                <span>Directory</span>
+                <span>Connections</span>
             </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

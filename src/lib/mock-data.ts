@@ -56,6 +56,35 @@ export async function getFollowing(userId: string): Promise<Student[]> {
     return snapshot.docs.map(doc => doc.data() as Student);
 }
 
+export async function getFollowers(userId: string): Promise<Student[]> {
+    const userDoc = await getStudentById(userId);
+    if (!userDoc || !userDoc.followers || userDoc.followers.length === 0) {
+        return [];
+    }
+
+    const followerIds = userDoc.followers;
+    if (followerIds.length === 0) return [];
+    
+    const q = query(studentsCollection, where('id', 'in', followerIds));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as Student);
+}
+
+export async function getProfileLikers(userId: string): Promise<Student[]> {
+    const userDoc = await getStudentById(userId);
+    if (!userDoc || !userDoc.likedBy || userDoc.likedBy.length === 0) {
+        return [];
+    }
+
+    const likerIds = userDoc.likedBy;
+    if (likerIds.length === 0) return [];
+    
+    const q = query(studentsCollection, where('id', 'in', likerIds));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as Student);
+}
+
+
 export async function getStudentById(id: string): Promise<Student | undefined> {
   const docRef = doc(db, 'students', id);
   const docSnap = await getDoc(docRef);
