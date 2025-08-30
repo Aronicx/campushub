@@ -1,11 +1,8 @@
 
-import { getStudents } from "@/lib/mock-data";
 import { StudentList } from "@/components/student-list";
 import { Suspense } from 'react';
 
-export default async function NotFound() {
-  const students = await getStudents();
-  
+export default function NotFound() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
@@ -13,7 +10,7 @@ export default async function NotFound() {
         <p className="mt-2 text-lg text-muted-foreground">Log in to edit your profile and connect with others.</p>
       </div>
       <Suspense fallback={<p>Loading students...</p>}>
-        <StudentList students={students} />
+        <StudentList />
       </Suspense>
     </div>
   );
