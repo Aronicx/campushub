@@ -27,14 +27,23 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Icons.logo className="h-8 w-8 text-primary" />
-          <span className="hidden font-bold sm:inline-block text-lg">
-            Campus Hub
-          </span>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <TooltipProvider>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Link href="/" className="mr-6 flex items-center space-x-2">
+                        <Icons.logo className="h-8 w-8 text-primary" />
+                        <span className="hidden font-bold sm:inline-block text-lg">
+                            Campus Hub
+                        </span>
+                    </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p className="font-semibold">Campus Hub</p>
+                    <p className="text-sm text-muted-foreground">Connect, share, and chat with your college community.</p>
+                </TooltipContent>
+            </Tooltip>
+        
+          <div className="flex-1 min-w-0">
             <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
                 {navLinks.map((link) => (
                      <Tooltip key={link.href}>
@@ -60,43 +69,41 @@ export function Header() {
                     </Tooltip>
                 ))}
             </nav>
-          </TooltipProvider>
-        </div>
+          </div>
 
-        <div className="flex items-center space-x-2 pl-4">
-          {isLoading ? (
-            <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
-          ) : currentUser ? (
-            <>
-                <Notifications />
-                <TooltipProvider>
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button asChild variant="ghost" size="icon">
-                                <Link href="/dashboard">
-                                    <User className="h-5 w-5" />
-                                    <span className="sr-only">Profile</span>
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Profile</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-              <UserAvatar />
-            </>
-          ) : (
-            <>
-              <Button asChild variant="ghost">
-                <Link href="/login">Log In</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/signup">Sign Up</Link>
-              </Button>
-            </>
-          )}
-        </div>
+          <div className="flex items-center space-x-2 pl-4">
+            {isLoading ? (
+              <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
+            ) : currentUser ? (
+              <>
+                  <Notifications />
+                   <Tooltip>
+                      <TooltipTrigger asChild>
+                           <Button asChild variant="ghost" size="icon">
+                              <Link href="/dashboard">
+                                  <User className="h-5 w-5" />
+                                  <span className="sr-only">Profile</span>
+                              </Link>
+                          </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                          <p>Profile</p>
+                      </TooltipContent>
+                  </Tooltip>
+                <UserAvatar />
+              </>
+            ) : (
+              <>
+                <Button asChild variant="ghost">
+                  <Link href="/login">Log In</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </TooltipProvider>
       </div>
     </header>
   );
