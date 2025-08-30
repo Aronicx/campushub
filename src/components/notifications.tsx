@@ -53,14 +53,14 @@ export function Notifications() {
     const [isOpen, setIsOpen] = useState(false);
 
     const sortedNotifications = useMemo(() => {
-        if (!currentUser?.notifications) return [];
-        return [...currentUser.notifications]
+        const notifications = currentUser?.notifications || [];
+        return [...notifications]
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(0, NOTIFICATION_LIMIT);
     }, [currentUser?.notifications]);
 
     const unreadCount = useMemo(() => {
-        return currentUser?.notifications.filter(n => !n.read).length || 0;
+        return (currentUser?.notifications || []).filter(n => !n.read).length || 0;
     }, [currentUser?.notifications]);
 
     const handleOpenChange = (open: boolean) => {
