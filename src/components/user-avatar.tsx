@@ -28,11 +28,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Trash2, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, Trash2, Users, Loader2 } from "lucide-react";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function UserAvatar() {
   const { currentUser, logout, deleteProfile } = useAuth();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!currentUser) return null;
 
@@ -42,7 +46,21 @@ export function UserAvatar() {
     .join("");
     
   const handleDelete = async () => {
-    await deleteProfile();
+    setIsDeleting(true);
+    await deleteProfile(password);
+    // If deletion is successful, the user is logged out and redirected.
+    // If it fails, the toast is shown, and we can reset the state here.
+    setIsDeleting(false);
+    setIsAlertOpen(false);
+    setPassword("");
+  }
+  
+  const onAlertOpenChange = (open: boolean) => {
+    if (isDeleting) return;
+    setIsAlertOpen(open);
+    if (!open) {
+      setPassword("");
+    }
   }
 
   return (
@@ -93,21 +111,34 @@ export function UserAvatar() {
             </DropdownMenuItem>
         </DropdownMenuContent>
         </DropdownMenu>
-        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialog open={isAlertOpen} onOpenChange={onAlertOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
                         This action cannot be undone. This will permanently delete your
-                        account and remove your data from our servers.
+                        account and remove your data from our servers. Please enter your password to confirm.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="space-y-2 py-2">
+                    <Label htmlFor="password-confirm">Password</Label>
+                    <Input 
+                        id="password-confirm"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoFocus
+                    />
+                </div>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleDelete}
+                        disabled={!password || isDeleting}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
+                         {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>

@@ -16,7 +16,7 @@ interface AuthContextType {
   updateProfileFollowing: (following: string[]) => void;
   postThought: (content: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
-  deleteProfile: () => Promise<void>;
+  deleteProfile: (password: string) => Promise<void>;
   markNotificationsAsRead: (notificationIds: string[]) => Promise<void>;
   refreshCurrentUser: () => Promise<void>;
 }
@@ -154,11 +154,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteProfile = async () => {
+  const deleteProfile = async (password: string) => {
     if (!currentUser) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to delete your profile.' });
       return;
     }
+
+    if (currentUser.password !== password) {
+      toast({ variant: 'destructive', title: 'Incorrect Password', description: 'The password you entered is incorrect. Profile not deleted.' });
+      return;
+    }
+
     try {
       await deleteStudent(currentUser.id);
       logout();
