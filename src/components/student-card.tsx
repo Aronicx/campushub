@@ -57,10 +57,8 @@ export function StudentCard({
   const isFollowing = currentUser ? (currentUser.following || []).includes(student.id) : false;
   const hasSentRequest = currentUser ? (currentUser.sentFollowRequests || []).includes(student.id) : false;
   const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
-
-  const twentyDaysAgo = useMemo(() => Date.now() - 20 * 24 * 60 * 60 * 1000, []);
-  const hasTrustLiked = useMemo(() => (student.trustLikes || []).some(like => like.userId === currentUserId && like.timestamp > twentyDaysAgo), [student.trustLikes, currentUserId, twentyDaysAgo]);
-  const recentTrustLikeCount = useMemo(() => (student.trustLikes || []).filter(like => like.timestamp > twentyDaysAgo).length, [student.trustLikes, twentyDaysAgo]);
+  const hasTrustLiked = (student.trustLikes || []).some(like => like.userId === currentUserId);
+  const trustLikeCount = (student.trustLikes || []).length;
 
 
   const handleFollowClick = (e: React.MouseEvent) => {
@@ -212,7 +210,7 @@ export function StudentCard({
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || currentUserId === student.id}>
                        <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
                     </Button>
-                    <span className="text-sm">{recentTrustLikeCount}</span>
+                    <span className="text-sm">{trustLikeCount}</span>
                 </div>
             )}
             {onLikeToggle && (

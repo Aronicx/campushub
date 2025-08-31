@@ -12,6 +12,8 @@
 
 
 
+
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -37,7 +39,6 @@ async function addNotification(userId: string, notification: Omit<Notification, 
 
 function assignCoordinatorRoles(students: Student[]): Student[] {
     const moderatorRollNo = '75';
-    const twentyDaysAgo = Date.now() - 20 * 24 * 60 * 60 * 1000;
 
     // First, find the moderator and rename them
     const studentsWithModeratorName = students.map(s => {
@@ -47,26 +48,36 @@ function assignCoordinatorRoles(students: Student[]): Student[] {
         return s;
     });
 
-    // Calculate recent trust likes for all users who are not the moderator
-    const studentsWithRecentTrustLikes = studentsWithModeratorName.map(s => {
-        if (s.rollNo === moderatorRollNo) {
-            return { ...s, recentTrustLikeCount: (s.trustLikes || []).length };
+    // Identify potential coordinators based on their TOTAL trust likes (>= 50)
+    const potentialCoordinators = studentsWithModeratorName
+        .filter(s => s.rollNo !== moderatorRollNo && (s.trustLikes || []).length >= 50);
+
+    // For these potential coordinators, calculate their RECENT trust like count
+    const twentyDaysAgo = Date.now() - 20 * 24 * 60 * 60 * 1000;
+    const candidatesWithRecentLikes = potentialCoordinators.map(s => {
+        const recentTrustLikeCount = (s.trustLikes || []).filter(like => {
+            const studentIsCoordinator = students.find(c => c.id === s.id)?.isCoordinator;
+            if (studentIsCoordinator) {
+                return like.timestamp >= twentyDaysAgo;
+            }
+            return true; // Count all likes for non-coordinators
+        }).length;
+        
+        return {
+            ...s,
+            recentTrustLikeCount,
         }
-        const recentLikes = (s.trustLikes || []).filter(like => like.timestamp >= twentyDaysAgo);
-        return { ...s, recentTrustLikeCount: recentLikes.length };
     });
-
-    // Identify potential coordinators (not the moderator, >= 50 likes)
-    const potentialCoordinators = studentsWithRecentTrustLikes
-        .filter(s => s.rollNo !== moderatorRollNo && s.recentTrustLikeCount >= 50)
-        .sort((a, b) => b.recentTrustLikeCount - a.recentTrustLikeCount);
-
-    // Get the top two
-    const topLikedCoordinators = potentialCoordinators.slice(0, 2);
-    const coordinatorIds = new Set(topLikedCoordinators.map(s => s.id));
     
-    // Assign coordinator status
-    return studentsWithRecentTrustLikes.map(student => ({
+    // Sort candidates by their recent likes to find the top two
+    candidatesWithRecentLikes.sort((a, b) => b.recentTrustLikeCount - a.recentTrustLikeCount);
+
+    // Get the top two to be coordinators
+    const topTwoElected = candidatesWithRecentLikes.slice(0, 2);
+    const coordinatorIds = new Set(topTwoElected.map(s => s.id));
+    
+    // Assign coordinator status to the moderator and the top two elected
+    return studentsWithModeratorName.map(student => ({
         ...student,
         isCoordinator: student.rollNo === moderatorRollNo || coordinatorIds.has(student.id)
     }));
@@ -631,36 +642,6 @@ export async function markNotificationsAsRead(userId: string, notificationIds: s
 }
 
 // Private Chat
-export async function getChatContacts(userId: string): Promise<ChatContact[]> {
-  const user = await getStudentById(userId);
-  if (!user) return [];
-
-  const followingIds = user.following || [];
-  const followersIds = user.followers || [];
-  const contactIds = [...new Set([...followingIds, ...followersIds])];
-
-  if (contactIds.length === 0) return [];
-  
-  // Firestore 'in' query limit is 30. Chunk if necessary.
-  const chunks = [];
-  for (let i = 0; i < contactIds.length; i += 30) {
-      chunks.push(contactIds.slice(i, i + 30));
-  }
-  
-  const contactPromises = chunks.map(chunk => 
-    getDocs(query(studentsCollection, where('id', 'in', chunk)))
-  );
-
-  const chunkSnapshots = await Promise.all(contactPromises);
-  const contacts: Student[] = chunkSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Student));
-  
-  return contacts.map(contact => ({
-      ...contact,
-      isFollowing: followingIds.includes(contact.id),
-      isFollower: followersIds.includes(contact.id)
-  }));
-}
-
 export async function addPrivateChatMessage(chatId: string, authorId: string, content: string): Promise<void> {
     if (!content.trim()) return;
 
@@ -679,7 +660,6 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
         const allMessages: PrivateChatMessage[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
@@ -690,6 +670,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
             } as PrivateChatMessage);
         });
         
+        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
         const recentMessages = allMessages
             .filter(msg => msg.timestamp >= twentyFourHoursAgo)
             .sort((a, b) => a.timestamp - b.timestamp);
@@ -724,6 +705,32 @@ export async function removeFollower(currentUserId: string, followerId: string):
     batch.update(followerRef, { following: arrayRemove(currentUserId) });
     await batch.commit();
 }
+
+export async function getChatContacts(userId: string): Promise<ChatContact[]> {
+    const user = await getStudentById(userId);
+    if (!user) return [];
+
+    const followingIds = user.following || [];
+    const followerIds = user.followers || [];
+    const allContactIds = [...new Set([...followingIds, ...followerIds])];
+
+    if (allContactIds.length === 0) return [];
+    
+    // Firestore 'in' queries are limited to 30 items. We might need to chunk this for larger lists.
+    // For this app's scale, we'll assume it's under 30.
+    const q = query(studentsCollection, where('id', 'in', allContactIds));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => {
+        const student = doc.data() as Student;
+        return {
+            ...student,
+            isFollowing: followingIds.includes(student.id),
+            isFollower: followerIds.includes(student.id),
+        };
+    });
+}
+
 
 // Notes
 export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {

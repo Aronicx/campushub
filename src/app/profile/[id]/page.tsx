@@ -147,10 +147,7 @@ function ActionButtons({ student, onFollowToggle, onLikeToggle, onCancelRequest,
     const isFollowing = (currentUser.following || []).includes(student.id);
     const hasSentRequest = (currentUser.sentFollowRequests || []).includes(student.id);
     const isLiked = (student.likedBy || []).includes(currentUser.id);
-    
-    const twentyDaysAgo = useMemo(() => Date.now() - 20 * 60 * 60 * 24 * 1000, []);
-    const hasTrustLiked = useMemo(() => (student.trustLikes || []).some(like => like.userId === currentUser.id && like.timestamp > twentyDaysAgo), [student.trustLikes, currentUser.id, twentyDaysAgo]);
-
+    const hasTrustLiked = (student.trustLikes || []).some(like => like.userId === currentUser.id);
 
     const handleFollow = () => {
         if (!currentUser) {
@@ -223,13 +220,6 @@ export default function ProfilePage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { toast } = useToast();
-
-  const twentyDaysAgo = useMemo(() => Date.now() - 20 * 24 * 60 * 60 * 1000, []);
-  
-  const recentTrustLikes = useMemo(() => {
-    return (student?.trustLikes || []).filter(like => like.timestamp > twentyDaysAgo);
-  }, [student?.trustLikes, twentyDaysAgo]);
-
 
   useEffect(() => {
       async function fetchStudent() {
@@ -396,7 +386,7 @@ export default function ProfilePage() {
                         <span>{(student.likedBy?.length || 0)} Likes</span>
                          <span className="flex items-center gap-1 text-green-600 font-medium">
                             <ShieldCheck size={14} />
-                            {recentTrustLikes.length} Trust Likes
+                            {(student.trustLikes || []).length} Trust Likes
                         </span>
                     </div>
                 </div>
