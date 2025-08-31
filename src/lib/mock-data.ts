@@ -8,6 +8,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -670,25 +671,22 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
     const q = query(
         privateChatMessagesCollection, 
         where('chatId', '==', chatId), 
-        where('timestamp', '>=', new Date(tenMinutesAgo)),
         orderBy('timestamp', 'asc')
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const messages: PrivateChatMessage[] = [];
+        const allMessages: PrivateChatMessage[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const timestamp = data.timestamp?.toMillis() || Date.now();
-            
-            if (timestamp >= tenMinutesAgo) {
-                messages.push({
-                    id: doc.id,
-                    ...data,
-                    timestamp: timestamp
-                } as PrivateChatMessage);
-            }
+            allMessages.push({
+                id: doc.id,
+                ...data,
+                timestamp: data.timestamp?.toMillis() || Date.now()
+            } as PrivateChatMessage);
         });
-        callback(messages);
+        
+        const recentMessages = allMessages.filter(msg => msg.timestamp >= tenMinutesAgo);
+        callback(recentMessages);
     });
 
     return unsubscribe;
