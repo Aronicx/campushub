@@ -8,11 +8,10 @@ import type { ChatMessage, ChatContact, Student } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Clock, Users, Search, MoreVertical, Shield } from "lucide-react";
+import { Send, Clock, Users, Search, MoreVertical, Shield, ArrowLeft, Globe, Lock } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -68,7 +67,7 @@ function MessageItem({ message, currentUser, onRestrict }: { message: ChatMessag
     );
 }
 
-function GlobalChat() {
+function GlobalChat({ onBack }: { onBack: () => void }) {
     const { currentUser, refreshCurrentUser } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
@@ -140,12 +139,17 @@ function GlobalChat() {
     const restrictionLiftTime = isRestricted ? formatDistanceToNow(new Date(currentUser.globalChatRestrictedUntil), { addSuffix: true }) : '';
 
     return (
-        <Card className="h-full flex flex-col border-0 sm:border">
-            <CardHeader>
-                <CardTitle className="text-2xl font-bold tracking-tight text-primary">Global Chat</CardTitle>
-                <CardDescription className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Clock size={14}/> Messages disappear 8 minutes after they are sent.
-                </CardDescription>
+        <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center gap-4">
+                 <Button variant="ghost" size="icon" onClick={onBack}>
+                    <ArrowLeft />
+                </Button>
+                <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight text-primary">Global Chat</CardTitle>
+                    <CardDescription className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Clock size={14}/> Messages disappear 8 minutes after they are sent.
+                    </CardDescription>
+                </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.length > 0 ? (
@@ -185,7 +189,7 @@ function GlobalChat() {
     );
 }
 
-function PrivateChatList() {
+function PrivateChatList({ onBack }: { onBack: () => void }) {
     const { currentUser } = useAuth();
     const [contacts, setContacts] = useState<ChatContact[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -218,8 +222,17 @@ function PrivateChatList() {
     }
 
     return (
-        <div className="h-full flex flex-col">
-            <div className="p-4 border-b">
+        <Card className="h-full flex flex-col">
+             <CardHeader className="flex flex-row items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={onBack}>
+                    <ArrowLeft />
+                </Button>
+                <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight text-primary">Private Chat</CardTitle>
+                    <CardDescription>Select a contact to start chatting.</CardDescription>
+                </div>
+            </CardHeader>
+             <div className="p-4 border-b border-t">
                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input 
@@ -255,12 +268,13 @@ function PrivateChatList() {
                     </div>
                 )}
             </div>
-        </div>
+        </Card>
     );
 }
 
 export default function ChatPage() {
     const { currentUser, isLoading: isAuthLoading } = useAuth();
+    const [mode, setMode] = useState<'select' | 'global' | 'private'>('select');
     const router = useRouter();
     
     useEffect(() => {
@@ -284,25 +298,44 @@ export default function ChatPage() {
         )
     }
 
+    const renderContent = () => {
+        switch(mode) {
+            case 'global':
+                return <GlobalChat onBack={() => setMode('select')} />;
+            case 'private':
+                return <PrivateChatList onBack={() => setMode('select')} />;
+            case 'select':
+            default:
+                return (
+                    <div className="text-center">
+                        <h1 className="text-4xl font-bold tracking-tight text-primary">Chat</h1>
+                        <p className="mt-2 text-lg text-muted-foreground">Choose a chat mode to get started.</p>
+                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                            <Card onClick={() => setMode('global')} className="cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-transform">
+                                <CardHeader className="items-center text-center">
+                                    <Globe className="h-12 w-12 text-primary mb-4" />
+                                    <CardTitle className="text-2xl">Global Chat</CardTitle>
+                                    <CardDescription>Public chat with everyone on campus. Messages disappear quickly!</CardDescription>
+                                </CardHeader>
+                            </Card>
+                             <Card onClick={() => setMode('private')} className="cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-transform">
+                                <CardHeader className="items-center text-center">
+                                    <Lock className="h-12 w-12 text-primary mb-4" />
+                                    <CardTitle className="text-2xl">Private Chat</CardTitle>
+                                    <CardDescription>Have one-on-one conversations with your connections.</CardDescription>
+                                </CardHeader>
+                            </Card>
+                        </div>
+                    </div>
+                );
+        }
+    }
+
+
     return (
         <div className="container mx-auto max-w-4xl px-0 sm:px-4 py-8">
             <div className="h-[calc(100vh-8rem)]">
-                <Tabs defaultValue="global" className="h-full w-full">
-                    <div className="flex justify-center">
-                        <TabsList className="grid w-full max-w-sm grid-cols-2">
-                            <TabsTrigger value="global">Global</TabsTrigger>
-                            <TabsTrigger value="private">Private</TabsTrigger>
-                        </TabsList>
-                    </div>
-                    <TabsContent value="global" className="h-full mt-4">
-                        <GlobalChat />
-                    </TabsContent>
-                    <TabsContent value="private" className="h-full mt-4">
-                        <Card className="h-full">
-                            <PrivateChatList />
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                {renderContent()}
             </div>
         </div>
     );
