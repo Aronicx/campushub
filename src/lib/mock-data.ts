@@ -11,6 +11,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -678,7 +679,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
         const allMessages: PrivateChatMessage[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
@@ -690,7 +691,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
         });
         
         const recentMessages = allMessages
-            .filter(msg => msg.timestamp >= tenMinutesAgo)
+            .filter(msg => msg.timestamp >= twentyFourHoursAgo)
             .sort((a, b) => a.timestamp - b.timestamp);
             
         callback(recentMessages);
