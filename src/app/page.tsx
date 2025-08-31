@@ -57,7 +57,7 @@ function CoordinatorInfoDialog() {
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                             <li><span className="font-semibold text-card-foreground">Delete Thoughts:</span> Coordinators can remove any thought bubble that violates community guidelines.</li>
                             <li><span className="font-semibold text-card-foreground">Restrict from Global Chat:</span> They can temporarily restrict a user from participating in the Global Chat for 24 hours if they are being disruptive.</li>
-                            <li><span className="font-semibold text-card-foreground">Delete Notes:</span> The special Moderator (Roll No. 75) has the additional power to delete any shared note.</li>
+                            <li><span className="font-semibold text-blue-600">Moderator Power:</span> The special Moderator (Roll No. 75) has the additional power to delete any shared note to maintain content quality.</li>
                         </ul>
                     </div>
 

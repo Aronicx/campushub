@@ -239,7 +239,7 @@ export default function PrivateChatPage() {
           ) : (
             <div className="text-center text-muted-foreground m-auto">
               <p>No messages yet.</p>
-              <p className="text-xs">Messages disappear 24 hours after they are sent.</p>
+              <p className="text-xs">Messages disappear 10 minutes after they are sent.</p>
             </div>
           )}
           <div ref={messagesEndRef} />

@@ -5,6 +5,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -663,11 +664,11 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 }
 
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
-    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
     const q = query(
         privateChatMessagesCollection, 
         where('chatId', '==', chatId), 
-        where('timestamp', '>=', new Date(twentyFourHoursAgo)),
+        where('timestamp', '>=', new Date(tenMinutesAgo)),
         orderBy('timestamp', 'asc')
     );
 
@@ -677,7 +678,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
             const data = doc.data();
             const timestamp = data.timestamp?.toMillis() || Date.now();
             
-            if (timestamp >= twentyFourHoursAgo) {
+            if (timestamp >= tenMinutesAgo) {
                 messages.push({
                     id: doc.id,
                     ...data,
