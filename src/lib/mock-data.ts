@@ -10,6 +10,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -45,8 +46,11 @@ function assignCoordinatorRoles(students: Student[]): Student[] {
         return s;
     });
 
-    // Calculate recent trust likes for all users
+    // Calculate recent trust likes for all users who are not the moderator
     const studentsWithRecentTrustLikes = studentsWithModeratorName.map(s => {
+        if (s.rollNo === moderatorRollNo) {
+            return { ...s, recentTrustLikeCount: (s.trustLikes || []).length };
+        }
         const recentLikes = (s.trustLikes || []).filter(like => like.timestamp >= twentyDaysAgo);
         return { ...s, recentTrustLikeCount: recentLikes.length };
     });
@@ -670,8 +674,7 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
     const q = query(
         privateChatMessagesCollection, 
-        where('chatId', '==', chatId), 
-        orderBy('timestamp', 'asc')
+        where('chatId', '==', chatId)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -686,12 +689,16 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
             } as PrivateChatMessage);
         });
         
-        const recentMessages = allMessages.filter(msg => msg.timestamp >= tenMinutesAgo);
+        const recentMessages = allMessages
+            .filter(msg => msg.timestamp >= tenMinutesAgo)
+            .sort((a, b) => a.timestamp - b.timestamp);
+            
         callback(recentMessages);
     });
 
     return unsubscribe;
 }
+
 
 export async function blockUser(currentUserId: string, targetUserId: string): Promise<void> {
     const userRef = doc(db, 'students', currentUserId);
