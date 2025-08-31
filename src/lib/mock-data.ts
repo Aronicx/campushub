@@ -4,6 +4,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -28,26 +29,36 @@ async function addNotification(userId: string, notification: Omit<Notification, 
 }
 
 function assignCoordinatorRoles(students: Student[]): Student[] {
-    const specialCoordinatorRollNo = '75';
+    const moderatorRollNo = '75';
     const twentyDaysAgo = Date.now() - 20 * 24 * 60 * 60 * 1000;
 
-    // Filter for likes within the last 20 days and count them
-    const studentsWithRecentTrustLikes = students.map(s => {
+    // First, find the moderator and rename them
+    const studentsWithModeratorName = students.map(s => {
+        if (s.rollNo === moderatorRollNo) {
+            return { ...s, name: 'Moderator' };
+        }
+        return s;
+    });
+
+    // Calculate recent trust likes for all users
+    const studentsWithRecentTrustLikes = studentsWithModeratorName.map(s => {
         const recentLikes = (s.trustLikes || []).filter(like => like.timestamp >= twentyDaysAgo);
         return { ...s, recentTrustLikeCount: recentLikes.length };
     });
 
-    // Find top 2 most liked users with at least 50 recent trust likes
+    // Identify potential coordinators (not the moderator, >= 50 likes)
     const potentialCoordinators = studentsWithRecentTrustLikes
-        .filter(s => s.recentTrustLikeCount >= 50 && s.rollNo !== specialCoordinatorRollNo)
+        .filter(s => s.rollNo !== moderatorRollNo && s.recentTrustLikeCount >= 50)
         .sort((a, b) => b.recentTrustLikeCount - a.recentTrustLikeCount);
 
+    // Get the top two
     const topLikedCoordinators = potentialCoordinators.slice(0, 2);
     const coordinatorIds = new Set(topLikedCoordinators.map(s => s.id));
     
-    return students.map(student => ({
+    // Assign coordinator status
+    return studentsWithRecentTrustLikes.map(student => ({
         ...student,
-        isCoordinator: student.rollNo === specialCoordinatorRollNo || coordinatorIds.has(student.id)
+        isCoordinator: student.rollNo === moderatorRollNo || coordinatorIds.has(student.id)
     }));
 }
 
@@ -144,6 +155,7 @@ export async function getStudentByEmail(email: string): Promise<Student | undefi
 
 export async function getStudentByName(name: string): Promise<Student | undefined> {
     if (!name) return undefined;
+    if (name === 'Moderator') return getStudentByRollNo('75');
     const q = query(studentsCollection, where("name", "==", name));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return undefined;
@@ -154,7 +166,11 @@ export async function getStudentByRollNo(rollNo: string): Promise<Student | unde
     const q = query(studentsCollection, where("rollNo", "==", rollNo));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return undefined;
-    return snapshot.docs[0].data() as Student;
+    const student = snapshot.docs[0].data() as Student;
+    if (student.rollNo === '75') {
+        student.name = 'Moderator';
+    }
+    return student;
 }
 
 export async function updateStudent(id: string, updates: Partial<Student>): Promise<Student | undefined> {

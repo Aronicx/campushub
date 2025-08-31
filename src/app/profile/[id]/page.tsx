@@ -371,7 +371,12 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2">
                         <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
                         {student.isPrivate && <Lock size={20} className="text-muted-foreground" />}
-                        {student.isCoordinator && <ShieldCheck size={20} className="text-green-500" />}
+                        {student.isCoordinator && (
+                            <Badge variant="outline" className={cn("border-green-500 text-green-600", student.rollNo === '75' && "border-blue-500 text-blue-600")}>
+                                <ShieldCheck className="mr-1 h-3 w-3" />
+                                {student.rollNo === '75' ? 'Moderator' : 'Coordinator'}
+                            </Badge>
+                        )}
                     </div>
                     <p className="text-lg text-muted-foreground">{student.major}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">

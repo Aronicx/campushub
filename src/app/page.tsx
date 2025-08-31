@@ -55,8 +55,9 @@ function CoordinatorInfoDialog() {
                     <div className="space-y-2">
                         <h3 className="font-semibold text-md">Coordinator Powers:</h3>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                            <li><span className="font-semibold text-card-foreground">Delete Thoughts & Notes:</span> Coordinators can remove any thought bubble or shared note that violates community guidelines.</li>
+                            <li><span className="font-semibold text-card-foreground">Delete Thoughts:</span> Coordinators can remove any thought bubble that violates community guidelines.</li>
                             <li><span className="font-semibold text-card-foreground">Restrict from Global Chat:</span> They can temporarily restrict a user from participating in the Global Chat for 24 hours if they are being disruptive.</li>
+                            <li><span className="font-semibold text-card-foreground">Delete Notes:</span> The special Moderator (Roll No. 75) has the additional power to delete any shared note.</li>
                         </ul>
                     </div>
 
@@ -64,7 +65,7 @@ function CoordinatorInfoDialog() {
                         <h3 className="font-semibold text-md">How to Become a Coordinator:</h3>
                          <p className="text-muted-foreground">The coordinator election is a dynamic process based on <span className="font-semibold text-green-600">Trust Likes</span>.</p>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                            <li>A special user (Roll No. 75) is always a coordinator.</li>
+                            <li>A special user, the <span className="font-semibold text-card-foreground">Moderator</span> (Roll No. 75), is always a coordinator.</li>
                             <li>The <span className="font-semibold text-card-foreground">top two users</span> with the most Trust Likes become coordinators.</li>
                             <li>A minimum of <span className="font-semibold text-card-foreground">50 Trust Likes</span> is required to be eligible.</li>
                             <li>Trust Likes are temporary! Each Trust Like you receive expires after <span className="font-semibold text-card-foreground">20 days</span>. This ensures coordinators remain active and continuously trusted members of the community.</li>

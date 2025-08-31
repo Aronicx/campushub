@@ -21,9 +21,9 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
   const { currentUser } = useAuth();
   const initials = (note.authorName || 'NN').split(" ").map((n) => n[0]).join("");
   
-  // A user can delete a note if they are the author, or if they are the special coordinator (rollNo: 75)
+  // A user can delete a note if they are the author, or if they are the special moderator (rollNo: 75)
   const isAuthor = note.authorId === currentUserId;
-  const isSpecialCoordinator = currentUser?.rollNo === '75' && currentUser?.isCoordinator;
+  const isSpecialCoordinator = currentUser?.rollNo === '75';
   const canDelete = isAuthor || isSpecialCoordinator;
 
 
