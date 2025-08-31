@@ -2,6 +2,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -25,21 +26,21 @@ async function addNotification(userId: string, notification: Omit<Notification, 
     });
 }
 
-function assignAdminRoles(students: Student[]): Student[] {
-    // User 75 is always an admin
-    const specialAdminRollNo = '75';
+function assignCoordinatorRoles(students: Student[]): Student[] {
+    // User 75 is always a coordinator
+    const specialCoordinatorRollNo = '75';
     
     // Find top 2 most liked users with at least 50 likes
-    const potentialAdmins = students
-        .filter(s => (s.likedBy?.length || 0) >= 50 && s.rollNo !== specialAdminRollNo)
+    const potentialCoordinators = students
+        .filter(s => (s.likedBy?.length || 0) >= 50 && s.rollNo !== specialCoordinatorRollNo)
         .sort((a, b) => (b.likedBy?.length || 0) - (a.likedBy?.length || 0));
 
-    const topLikedAdmins = potentialAdmins.slice(0, 2);
-    const adminIds = new Set(topLikedAdmins.map(s => s.id));
+    const topLikedCoordinators = potentialCoordinators.slice(0, 2);
+    const coordinatorIds = new Set(topLikedCoordinators.map(s => s.id));
     
     return students.map(student => ({
         ...student,
-        isAdmin: student.rollNo === specialAdminRollNo || adminIds.has(student.id)
+        isCoordinator: student.rollNo === specialCoordinatorRollNo || coordinatorIds.has(student.id)
     }));
 }
 
@@ -50,7 +51,7 @@ export async function getStudents(filters?: { search?: string }): Promise<Studen
     const snapshot = await getDocs(q);
     let students: Student[] = snapshot.docs.map(doc => doc.data() as Student);
     
-    students = assignAdminRoles(students);
+    students = assignCoordinatorRoles(students);
     
     students.sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10));
 
@@ -115,15 +116,15 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
   
   const student = docSnap.data() as Student;
   
-  // This is a simple way to check admin status on a single user fetch.
-  // A more robust system would involve a separate admin collection or claims.
+  // This is a simple way to check coordinator status on a single user fetch.
+  // A more robust system would involve a separate coordinator collection or claims.
   const allStudentsSnap = await getDocs(studentsCollection);
   const allStudents = allStudentsSnap.docs.map(doc => doc.data() as Student);
-  const studentsWithAdmin = assignAdminRoles(allStudents);
+  const studentsWithCoordinator = assignCoordinatorRoles(allStudents);
   
-  const studentWithAdminStatus = studentsWithAdmin.find(s => s.id === id);
+  const studentWithCoordinatorStatus = studentsWithCoordinator.find(s => s.id === id);
 
-  return studentWithAdminStatus;
+  return studentWithCoordinatorStatus;
 }
 
 
@@ -689,7 +690,7 @@ export async function deleteNote(noteId: string): Promise<void> {
     await deleteDoc(noteRef);
 }
 
-// Admin functions
+// Coordinator functions
 export async function restrictFromGlobalChat(userId: string): Promise<void> {
     const userRef = doc(db, 'students', userId);
     const restrictionEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000);

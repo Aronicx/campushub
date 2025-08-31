@@ -55,7 +55,7 @@ export interface Student {
   sentFollowRequests: string[]; // IDs of users this student has requested to follow
   isPrivate: boolean;
   blockedUsers?: string[];
-  isAdmin?: boolean;
+  isCoordinator?: boolean;
   globalChatRestrictedUntil?: string;
 }
 

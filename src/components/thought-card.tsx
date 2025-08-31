@@ -199,7 +199,7 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
     const initials = (thought.author.name || "NN").split(" ").map((n) => n[0]).join("");
     const isLiked = currentUserId ? thought.likes.includes(currentUserId) : false;
     const isAuthor = currentUserId === thought.author.id;
-    const canDelete = isAuthor || currentUser?.isAdmin;
+    const canDelete = isAuthor || currentUser?.isCoordinator;
 
     const handleLikeClick = () => {
         if (currentUserId) {

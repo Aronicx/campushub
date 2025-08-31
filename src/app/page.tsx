@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-import { Droplets, Camera, MessageSquareText } from "lucide-react";
+import { Droplets, MessageSquareText, BookCopy } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -13,10 +13,10 @@ const features = [
     link: "/thought-bubbles"
   },
   {
-    icon: <Camera className="h-8 w-8 text-pink-500" />,
-    title: "Daily Clicks",
-    description: "Post a photo to the 'Clicks' reel, a 24-hour visual story of campus life. Like your friends' moments and see what's trending.",
-    link: "/clicks"
+    icon: <BookCopy className="h-8 w-8 text-orange-500" />,
+    title: "Notes Sharing",
+    description: "Share and discover useful study notes, links, and resources with your peers. A collaborative space for academic success.",
+    link: "/notes"
   },
   {
     icon: <MessageSquareText className="h-8 w-8 text-green-500" />,

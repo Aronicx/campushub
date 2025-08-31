@@ -50,7 +50,7 @@ function MessageItem({ message, currentUser, onRestrict }: { message: ChatMessag
                 </div>
                 <p className="text-card-foreground break-words">{message.content}</p>
             </div>
-             {!isOwnMessage && currentUser.isAdmin && (
+             {!isOwnMessage && currentUser.isCoordinator && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
