@@ -77,20 +77,7 @@ export function Header() {
             ) : currentUser ? (
               <>
                   <Notifications />
-                   <Tooltip>
-                      <TooltipTrigger asChild>
-                           <Button asChild variant="ghost" size="icon">
-                              <Link href="/dashboard">
-                                  <User className="h-5 w-5" />
-                                  <span className="sr-only">Profile</span>
-                              </Link>
-                          </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                          <p>Profile</p>
-                      </TooltipContent>
-                  </Tooltip>
-                <UserAvatar />
+                  <UserAvatar />
               </>
             ) : (
               <>
