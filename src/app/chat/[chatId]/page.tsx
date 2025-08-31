@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -103,10 +103,14 @@ export default function PrivateChatPage() {
       return;
     }
     if (currentUser && !otherUserId) {
-        router.push('/chat');
+        // This can happen briefly on load, but if it persists, something is wrong with the chatId
+        // For now, we can just wait or redirect to the main chat page if it's clearly invalid.
+        if (chatId && chatId.split('--').length !== 2) {
+             router.push('/chat');
+        }
         return;
     }
-  }, [isAuthLoading, currentUser, otherUserId, router]);
+  }, [isAuthLoading, currentUser, otherUserId, chatId, router]);
 
   useEffect(() => {
     if (!otherUserId) return;
@@ -116,11 +120,13 @@ export default function PrivateChatPage() {
         if (user) {
           setOtherUser(user);
         } else {
+          // This could happen if a user was deleted.
+          toast({ variant: 'destructive', title: 'User not found' });
           router.push('/chat');
         }
       })
       .finally(() => setIsLoading(false));
-  }, [otherUserId, router]);
+  }, [otherUserId, router, toast]);
 
   useEffect(() => {
     if (!chatId) return;
@@ -164,7 +170,7 @@ export default function PrivateChatPage() {
       await refreshCurrentUser();
       toast({ title: "User Unblocked", description: `You have unblocked ${otherUser.name}.` });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not unblock user.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not block user.' });
     }
   };
   
@@ -244,7 +250,7 @@ export default function PrivateChatPage() {
               <UserX size={16} />
               {amIBlocked && `You are blocked by ${otherUser.name}.`}
               {isOtherUserBlocked && `You have blocked ${otherUser.name}.`}
-              {!canChat && 'You must follow each other to chat.'}
+              {!amIBlocked && !isOtherUserBlocked && !canChat && 'You must follow each other to chat.'}
             </div>
           ) : (
             <form
@@ -272,3 +278,5 @@ export default function PrivateChatPage() {
     </div>
   );
 }
+
+    
