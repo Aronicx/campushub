@@ -19,7 +19,7 @@ export interface Thought {
 
 export interface Notification {
     id: string;
-    type: 'follow' | 'thought_like' | 'click_like' | 'profile_like' | 'follow_request' | 'follow_accepted';
+    type: 'follow' | 'thought_like' | 'profile_like' | 'follow_request' | 'follow_accepted';
     message: string;
     link: string; // e.g., /profile/[id], /thought-bubbles#thought-[id]
     timestamp: string;
@@ -77,16 +77,4 @@ export interface PrivateChatMessage {
 export interface ChatContact extends Student {
     isFollowing: boolean;
     isFollower: boolean;
-}
-
-
-export interface Click {
-  id: string; // document id
-  authorId: string;
-  authorName: string;
-  authorProfilePicture?: string;
-  imageUrl: string;
-  storagePath: string;
-  timestamp: string; // ISO string
-  likes: string[]; // Array of student IDs who liked the click
 }

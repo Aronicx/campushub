@@ -2,13 +2,12 @@
 
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Student, Thought, Comment, ChatMessage, Click, Notification, PrivateChatMessage, ChatContact } from './types';
+import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact } from './types';
 import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
 const chatMessagesCollection = collection(db, 'chatMessages');
 const privateChatMessagesCollection = collection(db, 'privateChatMessages');
-const clicksCollection = collection(db, 'clicks');
 
 async function addNotification(userId: string, notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
     const userRef = doc(db, 'students', userId);
@@ -508,151 +507,6 @@ export function onNewMessage(callback: (messages: ChatMessage[]) => void): () =>
     });
 
     return unsubscribe;
-}
-
-// Clicks functionality
-export async function getRecentClicks(): Promise<Click[]> {
-    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    const q = query(clicksCollection, where("timestamp", ">=", twentyHoursAgo.toISOString()), orderBy("timestamp", "desc"));
-    
-    const snapshot = await getDocs(q);
-    const clicksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-
-    const students = await getStudents();
-    const studentMap = new Map(students.map(s => [s.id, s]));
-
-    return clicksData.map(click => {
-        const author = studentMap.get(click.authorId);
-        return {
-            ...click,
-            authorRollNo: author ? parseInt(author.rollNo, 10) : Infinity,
-        };
-    });
-}
-
-export async function getClicksByAuthor(authorId: string): Promise<Click[]> {
-    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    const q = query(clicksCollection, where("authorId", "==", authorId));
-    
-    const snapshot = await getDocs(q);
-    const clicks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Click));
-
-    return clicks.filter(click => new Date(click.timestamp).getTime() >= twentyHoursAgo.getTime());
-}
-
-
-export async function addClick(author: Student, imageDataUrl: string): Promise<Click> {
-    const userClicks = await getClicksByAuthor(author.id);
-    if (userClicks.length >= 3) {
-        throw new Error("You have reached the maximum of 3 active Clicks.");
-    }
-
-    const timestamp = Date.now();
-    const storagePath = `clicks/${author.id}/${timestamp}.webp`;
-    const storageRef = ref(storage, storagePath);
-    const uploadResult = await uploadString(storageRef, imageDataUrl, 'data_url');
-    const imageUrl = await getDownloadURL(uploadResult.ref);
-
-    const newClickDoc = doc(clicksCollection);
-    const newClick: Click = {
-        id: newClickDoc.id,
-        authorId: author.id,
-        authorName: author.name,
-        authorProfilePicture: author.profilePicture,
-        imageUrl,
-        storagePath,
-        timestamp: new Date().toISOString(),
-        likes: [],
-    };
-
-    await setDoc(newClickDoc, newClick);
-    return newClick;
-}
-
-export async function toggleClickLike(clickId: string, likerId: string): Promise<boolean> {
-    const clickRef = doc(db, 'clicks', clickId);
-    const clickSnap = await getDoc(clickRef);
-    const likerSnap = await getDoc(doc(db, 'students', likerId));
-
-    if (!clickSnap.exists() || !likerSnap.exists()) {
-        throw new Error("Click or Liker not found");
-    }
-
-    const click = clickSnap.data() as Click;
-    const liker = likerSnap.data() as Student;
-    const isLiked = (click.likes || []).includes(likerId);
-
-    if (isLiked) {
-        await updateDoc(clickRef, {
-            likes: arrayRemove(likerId)
-        });
-        return false;
-    } else {
-        await updateDoc(clickRef, {
-            likes: arrayUnion(likerId)
-        });
-        if (click.authorId !== likerId) {
-            await addNotification(click.authorId, {
-                type: 'click_like',
-                message: `${liker.name} liked your click.`,
-                link: `/clicks#${click.id}`,
-                 fromUser: {
-                    id: liker.id,
-                    name: liker.name,
-                    profilePicture: liker.profilePicture
-                }
-            });
-        }
-        return true;
-    }
-}
-
-
-export async function deleteClick(click: Click): Promise<void> {
-    try {
-        if (click.storagePath) {
-            const storageRef = ref(storage, click.storagePath);
-            await deleteObject(storageRef);
-        }
-    } catch (error: any) {
-       if (error.code !== 'storage/object-not-found') {
-           console.error(`Failed to delete from storage: ${click.storagePath}`, error);
-       }
-    }
-
-    const clickDocRef = doc(db, 'clicks', click.id);
-    await deleteDoc(clickDocRef);
-}
-
-export async function cleanupExpiredClicks(): Promise<void> {
-    const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    
-    const allClicksSnapshot = await getDocs(clicksCollection);
-
-    const expiredClicks = allClicksSnapshot.docs.filter(doc => {
-        const click = doc.data() as Click;
-        return new Date(click.timestamp).getTime() < twentyHoursAgo.getTime();
-    });
-
-    if (expiredClicks.length === 0) return;
-
-    const batch = writeBatch(db);
-    for (const doc of expiredClicks) {
-        const click = doc.data() as Click;
-        try {
-            if (click.storagePath) {
-                const storageRef = ref(storage, click.storagePath);
-                await deleteObject(storageRef);
-            }
-        } catch (error: any) {
-            if (error.code !== 'storage/object-not-found') {
-                console.error(`Failed to delete from storage: ${click.storagePath}`, error)
-            }
-        }
-        batch.delete(doc.ref);
-    };
-
-    await batch.commit();
 }
 
 export async function markNotificationsAsRead(userId: string, notificationIds: string[]): Promise<void> {

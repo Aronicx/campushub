@@ -21,7 +21,6 @@ const iconMap = {
     follow_request: <UserPlus className="h-5 w-5 text-blue-500" />,
     follow_accepted: <UserCheck className="h-5 w-5 text-green-500" />,
     thought_like: <Heart className="h-5 w-5 text-red-500" />,
-    click_like: <Heart className="h-5 w-5 text-pink-500" />,
     profile_like: <Heart className="h-5 w-5 text-yellow-500" />,
 };
 
