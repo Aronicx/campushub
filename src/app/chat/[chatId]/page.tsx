@@ -180,8 +180,8 @@ export default function PrivateChatPage() {
     </div>;
   }
   
-  const isFollowing = currentUser.following.includes(otherUser.id);
-  const isFollowedBy = currentUser.followers.includes(otherUser.id);
+  const isFollowing = (currentUser.following || []).includes(otherUser.id);
+  const isFollowedBy = (currentUser.followers || []).includes(otherUser.id);
   const canChat = isFollowing || isFollowedBy;
   
   const amIBlocked = (otherUser.blockedUsers || []).includes(currentUser.id);
