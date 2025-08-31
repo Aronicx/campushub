@@ -31,6 +31,11 @@ export interface Notification {
     }
 }
 
+export interface TrustLike {
+    userId: string;
+    timestamp: number;
+}
+
 export interface Student {
   id: string;
   rollNo: string;
@@ -44,6 +49,7 @@ export interface Student {
   following: string[];
   followers: string[];
   likedBy: string[];
+  trustLikes?: TrustLike[];
   notifications: Notification[];
   password?: string;
   instagram?: string;

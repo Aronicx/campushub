@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getStudents, toggleFollow, toggleProfileLike, cancelFollowRequest } from "@/lib/mock-data";
+import { getStudents, toggleFollow, toggleProfileLike, cancelFollowRequest, toggleTrustLike } from "@/lib/mock-data";
 import { StudentCard } from "@/components/student-card";
 import { Input } from "@/components/ui/input";
 import { Suspense, useEffect, useState, useTransition } from 'react';
@@ -69,7 +69,7 @@ function FilterControls() {
   );
 }
 
-function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle, onCancelRequest }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void, onCancelRequest: (studentId: string) => void }) {
+function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle, onTrustLikeToggle, onCancelRequest }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void, onTrustLikeToggle: (studentId: string) => void, onCancelRequest: (studentId: string) => void }) {
   if (students.length === 0) {
     return <p className="text-center text-muted-foreground mt-8">No students found.</p>;
   }
@@ -77,7 +77,7 @@ function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle, on
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {students.map((student) => (
-        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} onLikeToggle={onLikeToggle} onCancelRequest={onCancelRequest} />
+        <StudentCard key={student.id} student={student} currentUserId={currentUserId} onFollowToggle={onFollowToggle} onLikeToggle={onLikeToggle} onTrustLikeToggle={onTrustLikeToggle} onCancelRequest={onCancelRequest} />
       ))}
     </div>
   );
@@ -90,16 +90,17 @@ function StudentDirectoryContent() {
   const { currentUser, refreshCurrentUser } = useAuth();
   const { toast } = useToast();
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    const filters = {
+      search: searchParams.get('search') || undefined,
+    };
+    const studentsData = await getStudents(filters);
+    setStudents(studentsData);
+    setIsLoading(false);
+  }
+
   useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      const filters = {
-        search: searchParams.get('search') || undefined,
-      };
-      const studentsData = await getStudents(filters);
-      setStudents(studentsData);
-      setIsLoading(false);
-    }
     fetchData();
   }, [searchParams]);
 
@@ -108,6 +109,7 @@ function StudentDirectoryContent() {
       try {
         await toggleFollow(currentUser.id, studentId);
         await refreshCurrentUser();
+        await fetchData(); // Refetch to update UI optimistically
         toast({ title: "Follow Request Sent" });
       } catch (error) {
           console.error("Failed to toggle follow", error);
@@ -120,6 +122,7 @@ function StudentDirectoryContent() {
     try {
         await cancelFollowRequest(currentUser.id, studentId);
         await refreshCurrentUser();
+        await fetchData();
         toast({ title: "Follow Request Canceled" });
     } catch (error) {
         console.error("Failed to cancel request", error);
@@ -129,20 +132,14 @@ function StudentDirectoryContent() {
   
     const handleLikeToggle = async (studentId: string) => {
         if (!currentUser) return;
-
-        setStudents(prevStudents =>
-            prevStudents.map(student => {
-                if (student.id === studentId) {
-                    const isLiked = (student.likedBy || []).includes(currentUser.id);
-                    const newLikedBy = isLiked
-                        ? (student.likedBy || []).filter(id => id !== currentUser.id)
-                        : [...(student.likedBy || []), currentUser.id];
-                    return { ...student, likedBy: newLikedBy };
-                }
-                return student;
-            })
-        );
         await toggleProfileLike(studentId, currentUser.id);
+        await fetchData();
+    };
+
+    const handleTrustLikeToggle = async (studentId: string) => {
+        if (!currentUser) return;
+        await toggleTrustLike(studentId, currentUser.id);
+        await fetchData();
     };
 
 
@@ -160,7 +157,7 @@ function StudentDirectoryContent() {
             {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
         </div>
       ) : (
-        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onCancelRequest={handleCancelRequest} />
+        <StudentList students={students} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onTrustLikeToggle={handleTrustLikeToggle} onCancelRequest={handleCancelRequest} />
       )}
     </div>
   );

@@ -1,15 +1,15 @@
 
 'use client'
 
-import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest, getFollowers, getFollowing } from "@/lib/mock-data";
+import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest, getFollowers, getFollowing, toggleTrustLike } from "@/lib/mock-data";
 import { notFound, useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock, X } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock, X, ShieldCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { Student } from "@/lib/types";
+import type { Student, TrustLike } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +21,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -136,7 +136,7 @@ function ContactInfo({ student }: { student: Student }) {
     )
 }
 
-function FollowButton({ student, onFollowToggle, onLikeToggle, onCancelRequest }: { student: Student, onFollowToggle: () => void, onLikeToggle: () => void, onCancelRequest: () => void }) {
+function ActionButtons({ student, onFollowToggle, onLikeToggle, onCancelRequest, onTrustLikeToggle }: { student: Student, onFollowToggle: () => void, onLikeToggle: () => void, onCancelRequest: () => void, onTrustLikeToggle: () => void }) {
     const { currentUser } = useAuth();
     const router = useRouter();
 
@@ -147,6 +147,10 @@ function FollowButton({ student, onFollowToggle, onLikeToggle, onCancelRequest }
     const isFollowing = (currentUser.following || []).includes(student.id);
     const hasSentRequest = (currentUser.sentFollowRequests || []).includes(student.id);
     const isLiked = (student.likedBy || []).includes(currentUser.id);
+    
+    const twentyDaysAgo = useMemo(() => Date.now() - 20 * 60 * 60 * 24 * 1000, []);
+    const hasTrustLiked = useMemo(() => (student.trustLikes || []).some(like => like.userId === currentUser.id && like.timestamp > twentyDaysAgo), [student.trustLikes, currentUser.id, twentyDaysAgo]);
+
 
     const handleFollow = () => {
         if (!currentUser) {
@@ -166,6 +170,14 @@ function FollowButton({ student, onFollowToggle, onLikeToggle, onCancelRequest }
             return;
         }
         onLikeToggle();
+    }
+    
+    const handleTrustLike = () => {
+        if (!currentUser) {
+            router.push('/login');
+            return;
+        }
+        onTrustLikeToggle();
     }
     
     let followButton;
@@ -193,7 +205,10 @@ function FollowButton({ student, onFollowToggle, onLikeToggle, onCancelRequest }
     return (
         <div className="flex items-center gap-2">
             {followButton}
-             <Button onClick={handleLike} variant="outline" size="icon">
+            <Button onClick={handleTrustLike} variant="outline" size="icon">
+                <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
+            </Button>
+            <Button onClick={handleLike} variant="outline" size="icon">
                 <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
             </Button>
         </div>
@@ -208,6 +223,13 @@ export default function ProfilePage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { toast } = useToast();
+
+  const twentyDaysAgo = useMemo(() => Date.now() - 20 * 24 * 60 * 60 * 1000, []);
+  
+  const recentTrustLikes = useMemo(() => {
+    return (student?.trustLikes || []).filter(like => like.timestamp > twentyDaysAgo);
+  }, [student?.trustLikes, twentyDaysAgo]);
+
 
   useEffect(() => {
       async function fetchStudent() {
@@ -275,6 +297,23 @@ export default function ProfilePage() {
              setStudent(studentData || null);
         }
     }
+
+    const handleTrustLikeToggle = async () => {
+        if (!currentUser || !student || currentUser.id === student.id) return;
+        
+        try {
+            await toggleTrustLike(student.id, currentUser.id);
+            // We need to fetch the student again to get the updated list, as the logic is complex.
+            const refreshedStudent = await getStudentById(student.id);
+            setStudent(refreshedStudent || null);
+        } catch (error) {
+            console.error("Failed to toggle trust like", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not process Trust Like." });
+            const studentData = await getStudentById(id);
+            setStudent(studentData || null);
+        }
+    };
+
   
   if (isLoading || !student) {
     return (
@@ -332,9 +371,10 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2">
                         <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
                         {student.isPrivate && <Lock size={20} className="text-muted-foreground" />}
+                        {student.isCoordinator && <ShieldCheck size={20} className="text-green-500" />}
                     </div>
                     <p className="text-lg text-muted-foreground">{student.major}</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                         <span>Roll No: {student.rollNo}</span>
                          <ConnectionListDialog
                             studentId={student.id}
@@ -349,10 +389,14 @@ export default function ProfilePage() {
                             trigger={<button className="hover:underline disabled:no-underline" disabled={!canViewContent}>{(student.following?.length || 0)} Following</button>}
                         />
                         <span>{(student.likedBy?.length || 0)} Likes</span>
+                         <span className="flex items-center gap-1 text-green-600 font-medium">
+                            <ShieldCheck size={14} />
+                            {recentTrustLikes.length} Trust Likes
+                        </span>
                     </div>
                 </div>
                 <div className="mt-4 sm:mt-0">
-                    <FollowButton student={student} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onCancelRequest={handleCancelRequest} />
+                    <ActionButtons student={student} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onCancelRequest={handleCancelRequest} onTrustLikeToggle={handleTrustLikeToggle} />
                 </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-import { Droplets, MessageSquareText, BookCopy } from "lucide-react";
+import { Droplets, MessageSquareText, BookCopy, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -19,10 +19,16 @@ const features = [
     link: "/notes"
   },
   {
-    icon: <MessageSquareText className="h-8 w-8 text-green-500" />,
+    icon: <MessageSquareText className="h-8 w-8 text-blue-500" />,
     title: "Global & Private Chat",
     description: "Jump into the ephemeral Global Chat that vanishes every few minutes, or have private, expiring conversations with your connections.",
     link: "/chat"
+  },
+  {
+    icon: <ShieldCheck className="h-8 w-8 text-green-500" />,
+    title: "Community Coordinators",
+    description: "Become a coordinator by earning Trust Likes from your peers. Coordinators help moderate the community by removing inappropriate content and ensuring a safe environment for everyone.",
+    link: "/directory"
   }
 ];
 
@@ -51,7 +57,7 @@ export default function HomePage() {
 
       <section>
         <h2 className="text-3xl font-bold text-center mb-8">Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature) => (
             <Card key={feature.title} className="flex flex-col">
               <CardHeader className="items-center">

@@ -2,13 +2,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2 } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2, ShieldCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +35,7 @@ interface StudentCardProps {
   listType?: 'followers' | 'following' | 'likes' | 'directory';
   onFollowToggle?: (studentId: string) => void;
   onLikeToggle?: (studentId: string) => void;
+  onTrustLikeToggle?: (studentId: string) => void;
   onCancelRequest?: (studentId: string) => void;
   onRemoveFollower?: (studentId: string) => void;
 }
@@ -44,7 +45,8 @@ export function StudentCard({
   currentUserId,
   listType = 'directory',
   onFollowToggle, 
-  onLikeToggle, 
+  onLikeToggle,
+  onTrustLikeToggle,
   onCancelRequest,
   onRemoveFollower
 }: StudentCardProps) {
@@ -55,6 +57,11 @@ export function StudentCard({
   const isFollowing = currentUser ? (currentUser.following || []).includes(student.id) : false;
   const hasSentRequest = currentUser ? (currentUser.sentFollowRequests || []).includes(student.id) : false;
   const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
+
+  const twentyDaysAgo = useMemo(() => Date.now() - 20 * 24 * 60 * 60 * 1000, []);
+  const hasTrustLiked = useMemo(() => (student.trustLikes || []).some(like => like.userId === currentUserId && like.timestamp > twentyDaysAgo), [student.trustLikes, currentUserId, twentyDaysAgo]);
+  const recentTrustLikeCount = useMemo(() => (student.trustLikes || []).filter(like => like.timestamp > twentyDaysAgo).length, [student.trustLikes, twentyDaysAgo]);
+
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -77,6 +84,14 @@ export function StudentCard({
     e.stopPropagation();
     if (currentUserId && onLikeToggle) {
       onLikeToggle(student.id);
+    }
+  };
+
+  const handleTrustLikeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentUserId && onTrustLikeToggle && currentUserId !== student.id) {
+      onTrustLikeToggle(student.id);
     }
   };
   
@@ -191,9 +206,17 @@ export function StudentCard({
           </div>
         </CardContent>
       <CardFooter className="p-4 flex justify-between items-center border-t">
-          <div className="flex items-center gap-4 text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-4 text-muted-foreground">
+             {onTrustLikeToggle && (
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || currentUserId === student.id}>
+                       <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
+                    </Button>
+                    <span className="text-sm">{recentTrustLikeCount}</span>
+                </div>
+            )}
             {onLikeToggle && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
                         <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
                   </Button>

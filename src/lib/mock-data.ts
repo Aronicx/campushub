@@ -3,6 +3,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -27,13 +28,19 @@ async function addNotification(userId: string, notification: Omit<Notification, 
 }
 
 function assignCoordinatorRoles(students: Student[]): Student[] {
-    // User 75 is always a coordinator
     const specialCoordinatorRollNo = '75';
-    
-    // Find top 2 most liked users with at least 50 likes
-    const potentialCoordinators = students
-        .filter(s => (s.likedBy?.length || 0) >= 50 && s.rollNo !== specialCoordinatorRollNo)
-        .sort((a, b) => (b.likedBy?.length || 0) - (a.likedBy?.length || 0));
+    const twentyDaysAgo = Date.now() - 20 * 24 * 60 * 60 * 1000;
+
+    // Filter for likes within the last 20 days and count them
+    const studentsWithRecentTrustLikes = students.map(s => {
+        const recentLikes = (s.trustLikes || []).filter(like => like.timestamp >= twentyDaysAgo);
+        return { ...s, recentTrustLikeCount: recentLikes.length };
+    });
+
+    // Find top 2 most liked users with at least 50 recent trust likes
+    const potentialCoordinators = studentsWithRecentTrustLikes
+        .filter(s => s.recentTrustLikeCount >= 50 && s.rollNo !== specialCoordinatorRollNo)
+        .sort((a, b) => b.recentTrustLikeCount - a.recentTrustLikeCount);
 
     const topLikedCoordinators = potentialCoordinators.slice(0, 2);
     const coordinatorIds = new Set(topLikedCoordinators.map(s => s.id));
@@ -239,6 +246,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         following: [],
         followers: [],
         likedBy: [],
+        trustLikes: [],
         notifications: [],
         pendingFollowRequests: [],
         sentFollowRequests: [],
@@ -288,6 +296,35 @@ export async function toggleProfileLike(targetUserId: string, currentUserId: str
                 }
             })
         }
+    }
+}
+
+export async function toggleTrustLike(targetUserId: string, currentUserId: string): Promise<void> {
+    if (targetUserId === currentUserId) return;
+
+    const targetUserRef = doc(db, 'students', targetUserId);
+    const targetUserSnap = await getDoc(targetUserRef);
+
+    if (!targetUserSnap.exists()) {
+        throw new Error("User not found.");
+    }
+
+    const targetUserData = targetUserSnap.data() as Student;
+    const trustLikes = targetUserData.trustLikes || [];
+    
+    const existingLikeIndex = trustLikes.findIndex(like => like.userId === currentUserId);
+
+    if (existingLikeIndex > -1) {
+        // User has already liked, so we remove the like
+        await updateDoc(targetUserRef, {
+            trustLikes: arrayRemove(trustLikes[existingLikeIndex])
+        });
+    } else {
+        // New like, add it with a timestamp
+        const newTrustLike = { userId: currentUserId, timestamp: Date.now() };
+        await updateDoc(targetUserRef, {
+            trustLikes: arrayUnion(newTrustLike)
+        });
     }
 }
 
