@@ -15,7 +15,6 @@ import { Notifications } from "./notifications";
 const navLinks = [
     { href: "/thought-bubbles", icon: Droplets, label: "Bubbles" },
     { href: "/notes", icon: BookCopy, label: "Notes" },
-    { href: "/directory", icon: BookUser, label: "Directory" },
     { href: "/friends", icon: Users, label: "Friends" },
     { href: "/chat", icon: MessageSquareText, label: "Chat" },
 ];
@@ -76,6 +75,27 @@ export function Header() {
               <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
             ) : currentUser ? (
               <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                         <Button 
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                                "text-muted-foreground hover:text-foreground",
+                                pathname.startsWith('/directory') && "text-primary"
+                            )}
+                        >
+                            <Link href="/directory">
+                                <BookUser className="h-5 w-5" />
+                                <span className="sr-only">Directory</span>
+                            </Link>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Directory</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Notifications />
                   <UserAvatar />
               </>
