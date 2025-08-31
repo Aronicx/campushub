@@ -9,6 +9,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -667,7 +668,6 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 }
 
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
-    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
     const q = query(
         privateChatMessagesCollection, 
         where('chatId', '==', chatId), 
@@ -675,6 +675,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
         const allMessages: PrivateChatMessage[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
