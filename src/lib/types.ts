@@ -78,3 +78,14 @@ export interface ChatContact extends Student {
     isFollowing: boolean;
     isFollower: boolean;
 }
+
+export interface Note {
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorProfilePicture?: string;
+    heading: string;
+    description: string;
+    link: string;
+    timestamp: number;
+}

@@ -7,13 +7,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { Icons } from "./icons";
 import { UserAvatar } from "./user-avatar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Droplets, Users, BookUser, MessageSquareText, User, Bell } from "lucide-react";
+import { Droplets, Users, BookUser, MessageSquareText, User, Bell, BookCopy } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Notifications } from "./notifications";
 
 const navLinks = [
     { href: "/thought-bubbles", icon: Droplets, label: "Bubbles" },
+    { href: "/notes", icon: BookCopy, label: "Notes" },
     { href: "/directory", icon: BookUser, label: "Directory" },
     { href: "/friends", icon: Users, label: "Friends" },
     { href: "/chat", icon: MessageSquareText, label: "Chat" },
@@ -43,7 +44,7 @@ export function Header() {
             </Tooltip>
         
           <div className="flex-1 min-w-0">
-            <nav className="flex items-center space-x-4 sm:space-x-6 overflow-x-auto">
+            <nav className="flex items-center space-x-6 sm:space-x-6 overflow-x-auto">
                 {navLinks.map((link) => (
                      <Tooltip key={link.href}>
                         <TooltipTrigger asChild>

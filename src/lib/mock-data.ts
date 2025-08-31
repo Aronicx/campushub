@@ -1,13 +1,15 @@
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact } from './types';
+import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
 import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
 const chatMessagesCollection = collection(db, 'chatMessages');
 const privateChatMessagesCollection = collection(db, 'privateChatMessages');
+const notesCollection = collection(db, 'notes');
 
 async function addNotification(userId: string, notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
     const userRef = doc(db, 'students', userId);
@@ -623,4 +625,32 @@ export async function removeFollower(currentUserId: string, followerId: string):
     batch.update(currentUserRef, { followers: arrayRemove(followerId) });
     batch.update(followerRef, { following: arrayRemove(currentUserId) });
     await batch.commit();
+}
+
+// Notes
+export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {
+    const newNoteDoc = doc(notesCollection);
+    const newNote: Note = {
+        id: newNoteDoc.id,
+        authorId: author.id,
+        authorName: author.name,
+        authorProfilePicture: author.profilePicture,
+        heading: data.heading,
+        description: data.description,
+        link: data.link,
+        timestamp: Date.now(),
+    };
+    await setDoc(newNoteDoc, newNote);
+    return newNote;
+}
+
+export async function getNotes(): Promise<Note[]> {
+    const q = query(notesCollection, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as Note);
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+    const noteRef = doc(db, 'notes', noteId);
+    await deleteDoc(noteRef);
 }
