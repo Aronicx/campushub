@@ -3,28 +3,36 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { onNewMessage, addChatMessage, getChatContacts } from "@/lib/mock-data";
-import type { ChatMessage, ChatContact } from "@/lib/types";
+import { onNewMessage, addChatMessage, getChatContacts, restrictFromGlobalChat } from "@/lib/mock-data";
+import type { ChatMessage, ChatContact, Student } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Clock, Users, Search } from "lucide-react";
-import { format } from "date-fns";
+import { Send, Clock, Users, Search, MoreVertical, Shield } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from "@/hooks/use-toast";
 
 
 const MESSAGE_EXPIRATION_MS = 8 * 60 * 1000; // 8 minutes
 
-function MessageItem({ message }: { message: ChatMessage }) {
+function MessageItem({ message, currentUser, onRestrict }: { message: ChatMessage, currentUser: Student, onRestrict: (userId: string) => void }) {
     const initials = (message.authorName || "NN").split(" ").map((n) => n[0]).join("");
+    const isOwnMessage = message.authorId === currentUser.id;
 
     return (
-        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+        <div className="group flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
             <Link href={`/profile/${message.authorId}`}>
                 <Avatar className="h-10 w-10 border">
                     <AvatarImage src={message.authorProfilePicture} alt={message.authorName} />
@@ -42,16 +50,31 @@ function MessageItem({ message }: { message: ChatMessage }) {
                 </div>
                 <p className="text-card-foreground break-words">{message.content}</p>
             </div>
+             {!isOwnMessage && currentUser.isAdmin && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                            <MoreVertical size={16} />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => onRestrict(message.authorId)} className="text-destructive focus:text-destructive">
+                            <Shield className="mr-2" /> Restrict User (24h)
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
         </div>
     );
 }
 
 function GlobalChat() {
-    const { currentUser } = useAuth();
+    const { currentUser, refreshCurrentUser } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { toast } = useToast();
     
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,6 +116,29 @@ function GlobalChat() {
         }
     };
 
+    const handleRestrictUser = async (userId: string) => {
+        try {
+            await restrictFromGlobalChat(userId);
+            toast({
+                title: "User Restricted",
+                description: `The user has been restricted from Global Chat for 24 hours.`
+            });
+            await refreshCurrentUser(); // Refresh to get updated restriction status
+        } catch (error) {
+            console.error("Failed to restrict user:", error);
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Could not restrict the user."
+            });
+        }
+    };
+
+    if (!currentUser) return null; // Should be handled by parent but good practice
+
+    const isRestricted = currentUser.globalChatRestrictedUntil && new Date(currentUser.globalChatRestrictedUntil) > new Date();
+    const restrictionLiftTime = isRestricted ? formatDistanceToNow(new Date(currentUser.globalChatRestrictedUntil), { addSuffix: true }) : '';
+
     return (
         <Card className="h-full flex flex-col border-0 sm:border">
             <CardHeader>
@@ -103,7 +149,7 @@ function GlobalChat() {
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.length > 0 ? (
-                    messages.map(msg => <MessageItem key={msg.id} message={msg} />)
+                    messages.map(msg => <MessageItem key={msg.id} message={msg} currentUser={currentUser} onRestrict={handleRestrictUser} />)
                 ) : (
                     <div className="text-center text-muted-foreground pt-10">
                         No messages yet. Be the first to say something!
@@ -112,22 +158,28 @@ function GlobalChat() {
                 <div ref={messagesEndRef} />
             </CardContent>
             <CardFooter className="p-4 border-t">
-                <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
-                    <Avatar className="hidden sm:inline-flex h-10 w-10 border">
-                         <AvatarImage src={currentUser?.profilePicture} alt={currentUser?.name || ''} />
-                         <AvatarFallback>{(currentUser?.name || "NN").split(" ").map((n) => n[0]).join("")}</AvatarFallback>
-                    </Avatar>
-                    <Input 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message..."
-                        autoComplete="off"
-                        disabled={isSending}
-                    />
-                    <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
-                        <Send />
-                    </Button>
-                </form>
+                {isRestricted ? (
+                    <div className="w-full text-center text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                        You are restricted from global chat. Your access will be restored {restrictionLiftTime}.
+                    </div>
+                ) : (
+                    <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
+                        <Avatar className="hidden sm:inline-flex h-10 w-10 border">
+                            <AvatarImage src={currentUser?.profilePicture} alt={currentUser?.name || ''} />
+                            <AvatarFallback>{(currentUser?.name || "NN").split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                        </Avatar>
+                        <Input 
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type your message..."
+                            autoComplete="off"
+                            disabled={isSending}
+                        />
+                        <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
+                            <Send />
+                        </Button>
+                    </form>
+                )}
             </CardFooter>
         </Card>
     );

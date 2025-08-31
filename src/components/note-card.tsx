@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "./ui/button";
 import { Trash2, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import type { Note } from "@/lib/types";
+import type { Note, Student } from "@/lib/types";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NoteCardProps {
   note: Note;
@@ -17,8 +18,14 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
+  const { currentUser } = useAuth();
   const initials = (note.authorName || 'NN').split(" ").map((n) => n[0]).join("");
+  
+  // A user can delete a note if they are the author, or if they are the special admin (rollNo: 75)
   const isAuthor = note.authorId === currentUserId;
+  const isSpecialAdmin = currentUser?.rollNo === '75' && currentUser?.isAdmin;
+  const canDelete = isAuthor || isSpecialAdmin;
+
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,7 +38,7 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
       <CardHeader className="p-4">
         <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-lg leading-tight">{note.heading}</CardTitle>
-            {isAuthor && (
+            {canDelete && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive flex-shrink-0">

@@ -199,6 +199,7 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
     const initials = (thought.author.name || "NN").split(" ").map((n) => n[0]).join("");
     const isLiked = currentUserId ? thought.likes.includes(currentUserId) : false;
     const isAuthor = currentUserId === thought.author.id;
+    const canDelete = isAuthor || currentUser?.isAdmin;
 
     const handleLikeClick = () => {
         if (currentUserId) {
@@ -241,12 +242,14 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
                             {formatDistanceToNow(new Date(thought.timestamp), { addSuffix: true })}
                         </p>
                     </div>
-                    {isAuthor && !isEditing && (
-                        <div className="flex gap-1">
+                    <div className="flex gap-1">
+                        {isAuthor && !isEditing && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}><Edit size={14} /></Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => setIsDeleting(true)}><Trash2 size={14} /></Button>
-                        </div>
-                    )}
+                        )}
+                        {canDelete && !isEditing && (
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => setIsDeleting(true)}><Trash2 size={14} /></Button>
+                        )}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -315,7 +318,7 @@ export function ThoughtCard({ thought, currentUserId, currentUser, onLikeToggle,
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete this thought?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this thought from your profile.
+                            This action cannot be undone. This will permanently delete this thought.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
