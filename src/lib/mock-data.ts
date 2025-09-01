@@ -14,6 +14,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
@@ -37,50 +38,52 @@ async function addNotification(userId: string, notification: Omit<Notification, 
     });
 }
 
-function assignCoordinatorRoles(students: Student[]): Student[] {
+// This function needs to be stateful to know when the last election was run.
+// In a real production app, this would be handled by a scheduled cloud function.
+// For this mock, we'll simulate it by checking the date.
+let lastElectionDay: number | null = null;
+
+async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
+    const today = new Date();
+    const currentDay = today.getDate();
     const moderatorRollNo = '75';
 
-    // First, find the moderator and rename them
-    const studentsWithModeratorName = students.map(s => {
-        if (s.rollNo === moderatorRollNo) {
-            return { ...s, name: 'Moderator' };
-        }
-        return s;
-    });
+    // Check if it's the first day of the month and if we haven't run the election today
+    if (currentDay === 1 && lastElectionDay !== 1) {
+        lastElectionDay = 1; // Mark that we are running the election for today
 
-    // Identify potential coordinators based on their TOTAL trust likes (>= 50)
-    const potentialCoordinators = studentsWithModeratorName
-        .filter(s => s.rollNo !== moderatorRollNo && (s.trustLikes || []).length >= 50);
+        // --- ELECTION PROCESS ---
+        // 1. Find the top two users based on their total trust like count
+        const candidates = students
+            .filter(s => s.rollNo !== moderatorRollNo)
+            .sort((a, b) => (b.trustLikes?.length || 0) - (a.trustLikes?.length || 0));
 
-    // For these potential coordinators, calculate their RECENT trust like count
-    const twentyDaysAgo = Date.now() - 20 * 24 * 60 * 60 * 1000;
-    const candidatesWithRecentLikes = potentialCoordinators.map(s => {
-        const recentTrustLikeCount = (s.trustLikes || []).filter(like => {
-            const studentIsCoordinator = students.find(c => c.id === s.id)?.isCoordinator;
-            if (studentIsCoordinator) {
-                return like.timestamp >= twentyDaysAgo;
-            }
-            return true; // Count all likes for non-coordinators
-        }).length;
+        const newCoordinatorIds = new Set(candidates.slice(0, 2).map(c => c.id));
         
-        return {
-            ...s,
-            recentTrustLikeCount,
-        }
-    });
-    
-    // Sort candidates by their recent likes to find the top two
-    candidatesWithRecentLikes.sort((a, b) => b.recentTrustLikeCount - a.recentTrustLikeCount);
+        // 2. Reset all trust likes and update coordinator status for everyone
+        const batch = writeBatch(db);
+        students.forEach(student => {
+            const studentRef = doc(db, 'students', student.id);
+            const isNewCoordinator = newCoordinatorIds.has(student.id) || student.rollNo === moderatorRollNo;
+            batch.update(studentRef, {
+                trustLikes: [], // Reset likes for everyone
+                isCoordinator: isNewCoordinator,
+            });
+        });
+        await batch.commit();
+        
+        // Return the freshly updated student data
+        const updatedStudentsSnap = await getDocs(studentsCollection);
+        return updatedStudentsSnap.docs.map(d => d.data() as Student);
 
-    // Get the top two to be coordinators
-    const topTwoElected = candidatesWithRecentLikes.slice(0, 2);
-    const coordinatorIds = new Set(topTwoElected.map(s => s.id));
-    
-    // Assign coordinator status to the moderator and the top two elected
-    return studentsWithModeratorName.map(student => ({
-        ...student,
-        isCoordinator: student.rollNo === moderatorRollNo || coordinatorIds.has(student.id)
-    }));
+    } else if (currentDay !== 1) {
+        // If it's not the first of the month, reset the election-day flag
+        lastElectionDay = null;
+    }
+
+    // For any day other than the first, just return the students with their existing roles.
+    // The `isCoordinator` field is already stored in Firestore.
+    return students;
 }
 
 
@@ -90,7 +93,7 @@ export async function getStudents(filters?: { search?: string }): Promise<Studen
     const snapshot = await getDocs(q);
     let students: Student[] = snapshot.docs.map(doc => doc.data() as Student);
     
-    students = assignCoordinatorRoles(students);
+    students = await assignCoordinatorRoles(students);
     
     students.sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10));
 
@@ -153,17 +156,7 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return undefined;
   
-  const student = docSnap.data() as Student;
-  
-  // This is a simple way to check coordinator status on a single user fetch.
-  // A more robust system would involve a separate coordinator collection or claims.
-  const allStudentsSnap = await getDocs(studentsCollection);
-  const allStudents = allStudentsSnap.docs.map(doc => doc.data() as Student);
-  const studentsWithCoordinator = assignCoordinatorRoles(allStudents);
-  
-  const studentWithCoordinatorStatus = studentsWithCoordinator.find(s => s.id === id);
-
-  return studentWithCoordinatorStatus;
+  return docSnap.data() as Student;
 }
 
 
@@ -176,7 +169,6 @@ export async function getStudentByEmail(email: string): Promise<Student | undefi
 
 export async function getStudentByName(name: string): Promise<Student | undefined> {
     if (!name) return undefined;
-    if (name === 'Moderator') return getStudentByRollNo('75');
     const q = query(studentsCollection, where("name", "==", name));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return undefined;
@@ -188,9 +180,6 @@ export async function getStudentByRollNo(rollNo: string): Promise<Student | unde
     const snapshot = await getDocs(q);
     if (snapshot.empty) return undefined;
     const student = snapshot.docs[0].data() as Student;
-    if (student.rollNo === '75') {
-        student.name = 'Moderator';
-    }
     return student;
 }
 
@@ -289,6 +278,7 @@ export async function createStudent(data: { rollNo: string; name: string; passwo
         sentFollowRequests: [],
         isPrivate: false,
         blockedUsers: [],
+        isCoordinator: rollNo === '75',
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -654,10 +644,7 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 }
 
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
-    const q = query(
-        privateChatMessagesCollection, 
-        where('chatId', '==', chatId)
-    );
+    const q = query(privateChatMessagesCollection, where('chatId', '==', chatId));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const allMessages: PrivateChatMessage[] = [];
@@ -669,7 +656,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
                 timestamp: data.timestamp?.toMillis() || Date.now()
             } as PrivateChatMessage);
         });
-        
+
         const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
         const recentMessages = allMessages
             .filter(msg => msg.timestamp >= twentyFourHoursAgo)

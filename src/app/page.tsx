@@ -47,13 +47,13 @@ function CoordinatorInfoDialog() {
             </DialogTrigger>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-2xl"><ShieldCheck className="text-green-500"/> Community Coordinators</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2 text-2xl"><ShieldCheck className="text-green-500"/> Community Moderators</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4 text-sm text-card-foreground">
                     <p>Community Coordinators are essential to keeping Campus Hub a safe, productive, and welcoming place for everyone. They are users who have earned the trust of the community.</p>
                     
                     <div className="space-y-2">
-                        <h3 className="font-semibold text-md">Coordinator Powers:</h3>
+                        <h3 className="font-semibold text-md">Moderator Powers:</h3>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                             <li><span className="font-semibold text-card-foreground">Delete Thoughts:</span> Coordinators can remove any thought bubble that violates community guidelines.</li>
                             <li><span className="font-semibold text-card-foreground">Restrict from Global Chat:</span> They can temporarily restrict a user from participating in the Global Chat for 24 hours if they are being disruptive.</li>
@@ -66,9 +66,8 @@ function CoordinatorInfoDialog() {
                          <p className="text-muted-foreground">The coordinator election is a dynamic process based on <span className="font-semibold text-green-600">Trust Likes</span>.</p>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                             <li>A special user, the <span className="font-semibold text-card-foreground">Moderator</span> (Roll No. 75), is always a coordinator.</li>
-                            <li>The <span className="font-semibold text-card-foreground">top two users</span> with the most Trust Likes become coordinators.</li>
-                            <li>A minimum of <span className="font-semibold text-card-foreground">50 Trust Likes</span> is required to be eligible.</li>
-                            <li>Trust Likes are temporary! Each Trust Like you receive expires after <span className="font-semibold text-card-foreground">20 days</span>. This ensures coordinators remain active and continuously trusted members of the community.</li>
+                            <li>On the <span className="font-semibold text-card-foreground">1st of every month</span>, the top two users with the most Trust Likes become the new coordinators for that month.</li>
+                            <li>After the election, all Trust Likes across the platform are <span className="font-semibold text-card-foreground">reset to zero</span>, starting a fresh race for the next month.</li>
                         </ul>
                     </div>
                      <p className="text-xs text-center pt-2 text-muted-foreground">This system ensures that the most currently trusted members of the community are empowered to keep it safe.</p>
