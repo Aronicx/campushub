@@ -15,9 +15,10 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note } from './types';
+import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
 import { db, storage } from './firebase';
 
 const studentsCollection = collection(db, 'students');
@@ -38,24 +39,30 @@ async function addNotification(userId: string, notification: Omit<Notification, 
     });
 }
 
-// This function needs to be stateful to know when the last election was run.
-// In a real production app, this would be handled by a scheduled cloud function.
-// For this mock, we'll simulate it by checking the date.
-let lastElectionDay: number | null = null;
+// In-memory flag to prevent re-running the election on the same day.
+// In a production app, use a persistent store (e.g., Firestore doc) for this.
+let lastElectionDate: string | null = null;
+
 
 async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
     const today = new Date();
     const currentDay = today.getDate();
     const moderatorRollNo = '75';
 
-    // Check if it's the first day of the month and if we haven't run the election today
-    if (currentDay === 1 && lastElectionDay !== 1) {
-        lastElectionDay = 1; // Mark that we are running the election for today
+    // This is a simple in-memory flag. In a real app, you'd use a persistent store (like a doc in Firestore)
+    // to track the last election run to prevent re-running it on the same day.
+    if (today.toISOString().split('T')[0] === lastElectionDate) {
+        // Election already run for today, just return students as is.
+        return students;
+    }
+
+    if (currentDay === 1) {
+        lastElectionDate = today.toISOString().split('T')[0];
 
         // --- ELECTION PROCESS ---
-        // 1. Find the top two users based on their total trust like count
+        // 1. Find candidates with at least 20 likes, then sort to find the top two.
         const candidates = students
-            .filter(s => s.rollNo !== moderatorRollNo)
+            .filter(s => s.rollNo !== moderatorRollNo && (s.trustLikes?.length || 0) >= 20)
             .sort((a, b) => (b.trustLikes?.length || 0) - (a.trustLikes?.length || 0));
 
         const newCoordinatorIds = new Set(candidates.slice(0, 2).map(c => c.id));
@@ -76,13 +83,8 @@ async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
         const updatedStudentsSnap = await getDocs(studentsCollection);
         return updatedStudentsSnap.docs.map(d => d.data() as Student);
 
-    } else if (currentDay !== 1) {
-        // If it's not the first of the month, reset the election-day flag
-        lastElectionDay = null;
     }
 
-    // For any day other than the first, just return the students with their existing roles.
-    // The `isCoordinator` field is already stored in Firestore.
     return students;
 }
 
@@ -348,7 +350,7 @@ export async function toggleTrustLike(targetUserId: string, currentUserId: strin
         });
     } else {
         // New like, add it with a timestamp
-        const newTrustLike = { userId: currentUserId, timestamp: Date.now() };
+        const newTrustLike: TrustLike = { userId: currentUserId, timestamp: Date.now() };
         await updateDoc(targetUserRef, {
             trustLikes: arrayUnion(newTrustLike)
         });
