@@ -15,15 +15,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, FilePlus } from "lucide-react";
+import { PlusCircle, Loader2, FilePlus, Upload } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+
+const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
-  link: z.string().url("A valid URL to the note is required."),
   password: z.string().optional(),
+  file: z.any()
+    .refine((files) => files?.length === 1, "File is required.")
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES, `Max file size is ${MAX_FILE_SIZE_MB}MB.`)
 });
 
 function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
@@ -31,22 +38,28 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const fileInputRef =  useState<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", link: "", password: "" },
+    defaultValues: { heading: "", description: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
     if (!currentUser) return;
     setIsSubmitting(true);
     try {
-      await addNote(currentUser, values);
+      await addNote(currentUser, values.file[0], {
+        heading: values.heading,
+        description: values.description,
+        password: values.password,
+      });
       toast({ title: "Note Added!", description: "Your note has been shared." });
       form.reset();
       setIsOpen(false);
       onNoteAdded();
     } catch (error) {
+      console.error(error);
       toast({ variant: "destructive", title: "Error", description: "Failed to add note." });
     } finally {
       setIsSubmitting(false);
@@ -64,8 +77,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Add a link to your note hosted on another service like Google Docs or Notion.
-            You can optionally add a password to restrict editing the note's details.
+            Upload a file (PDF, DOCX, etc.) up to {MAX_FILE_SIZE_MB}MB. You can optionally add a password to restrict editing the note's details.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -94,19 +106,16 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
             />
              <FormField
               control={form.control}
-              name="link"
+              name="file"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex justify-between items-center">
-                    <FormLabel>Link to Note</FormLabel>
-                    <Button asChild variant="link" size="sm" className="text-xs px-1 h-auto">
-                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer">
-                            <FilePlus className="mr-1 h-3 w-3" /> Create File
-                        </a>
-                    </Button>
-                  </div>
-                  <FormControl><Input placeholder="https://docs.google.com/..." {...field} /></FormControl>
-                  <FormMessage />
+                    <FormLabel>Note File</FormLabel>
+                    <FormControl>
+                        <Input type="file" {...fileInputRef} onChange={(event) => {
+                          field.onChange(event.target.files);
+                        }} />
+                    </FormControl>
+                    <FormMessage />
                 </FormItem>
               )}
             />
@@ -153,10 +162,13 @@ export default function NotesPage() {
   }, []);
 
   const handleNoteDelete = async (noteId: string) => {
+    const noteToDelete = notes.find(n => n.id === noteId);
+    if (!noteToDelete) return;
+
     const originalNotes = [...notes];
     setNotes(prev => prev.filter(n => n.id !== noteId));
     try {
-      await deleteNote(noteId);
+      await deleteNote(noteId, noteToDelete.link);
       toast({ title: "Note Deleted", description: "The note has been removed." });
     } catch (error) {
       setNotes(originalNotes);

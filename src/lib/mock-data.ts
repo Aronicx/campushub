@@ -20,6 +20,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -732,7 +733,13 @@ export async function removeFollower(currentUserId: string, followerId: string):
 
 
 // Notes
-export async function addNote(author: Student, data: { heading: string, description: string, link: string, password?: string }): Promise<Note> {
+export async function addNote(author: Student, file: File, data: { heading: string, description: string, password?: string }): Promise<Note> {
+    // 1. Upload file to Firebase Storage
+    const fileRef = ref(storage, `notes/${Date.now()}-${file.name}`);
+    const fileSnapshot = await uploadString(fileRef, await file.text(), 'raw', { contentType: file.type });
+    const downloadURL = await getDownloadURL(fileSnapshot.ref);
+
+    // 2. Create note document in Firestore
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
         id: newNoteDoc.id,
@@ -741,7 +748,7 @@ export async function addNote(author: Student, data: { heading: string, descript
         authorProfilePicture: author.profilePicture,
         heading: data.heading,
         description: data.description,
-        link: data.link,
+        link: downloadURL,
         password: data.password,
         timestamp: Date.now(),
     };
@@ -767,7 +774,22 @@ export async function updateNote(noteId: string, updates: Partial<Note>): Promis
     return getNoteById(noteId);
 }
 
-export async function deleteNote(noteId: string): Promise<void> {
+export async function deleteNote(noteId: string, fileUrl: string): Promise<void> {
+    // 1. Delete the file from Firebase Storage
+    if (fileUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+            const fileRef = ref(storage, fileUrl);
+            await deleteObject(fileRef);
+        } catch (error: any) {
+            // It's okay if the file doesn't exist, we can still delete the DB entry
+            if (error.code !== 'storage/object-not-found') {
+                console.error("Error deleting file from storage:", error);
+                throw error; // Re-throw if it's another error
+            }
+        }
+    }
+    
+    // 2. Delete the note document from Firestore
     const noteRef = doc(db, 'notes', noteId);
     await deleteDoc(noteRef);
 }
