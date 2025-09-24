@@ -14,6 +14,7 @@ const fontInter = Inter({
 export const metadata: Metadata = {
   title: "Campus Hub",
   description: "A social network for college students.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
