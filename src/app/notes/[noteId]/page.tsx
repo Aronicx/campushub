@@ -7,30 +7,29 @@ import { useAuth } from '@/hooks/use-auth';
 import { getNoteById, updateNote } from '@/lib/mock-data';
 import type { Note } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Save, Lock, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Lock, Loader2, User, Key, Link2, FileText, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-export default function NoteViewerPage() {
+const editNoteSchema = z.object({
+  heading: z.string().min(1, "Heading is required"),
+  description: z.string().max(50, "Description must be 50 characters or less"),
+  link: z.string().url("Please enter a valid URL"),
+});
+
+
+export default function NoteEditorPage() {
   const { currentUser } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -39,11 +38,14 @@ export default function NoteViewerPage() {
 
   const [note, setNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [password, setPassword] = useState('');
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  const form = useForm<z.infer<typeof editNoteSchema>>({
+    resolver: zodResolver(editNoteSchema),
+  });
   
   useEffect(() => {
     if (!noteId) return;
@@ -53,7 +55,14 @@ export default function NoteViewerPage() {
       const noteData = await getNoteById(noteId);
       if (noteData) {
         setNote(noteData);
-        setEditContent(noteData.content);
+        if (!noteData.password || noteData.authorId === currentUser?.id) {
+            setIsAuthorized(true);
+        }
+        form.reset({
+            heading: noteData.heading,
+            description: noteData.description,
+            link: noteData.link,
+        });
       } else {
         toast({ variant: 'destructive', title: 'Note not found.' });
         router.push('/notes');
@@ -62,40 +71,29 @@ export default function NoteViewerPage() {
     }
 
     fetchNote();
-  }, [noteId, router, toast]);
+  }, [noteId, router, toast, currentUser?.id, form]);
 
-  const handleEditClick = () => {
-    // If the note has no password and the current user is the author, allow editing directly.
-    if (!note?.password && currentUser?.id === note?.authorId) {
-      setIsEditing(true);
-    } else if (note?.password) {
-      // Otherwise, require a password.
-      setIsPasswordModalOpen(true);
-    } else {
-      toast({ variant: 'destructive', title: 'Not Authorized', description: 'You do not have permission to edit this note.' });
-    }
-  };
 
   const handlePasswordSubmit = () => {
+    setIsSubmittingPassword(true);
     if (password === note?.password) {
-      setIsPasswordModalOpen(false);
-      setIsEditing(true);
-      setPassword(''); // Clear password after successful entry
-      toast({ title: 'Access Granted', description: 'You can now edit the note.' });
+      setIsAuthorized(true);
+      toast({ title: 'Access Granted', description: 'You can now edit the note details.' });
     } else {
       toast({ variant: 'destructive', title: 'Incorrect Password' });
     }
+    setIsSubmittingPassword(false);
   };
 
-  const handleSaveChanges = async () => {
+  async function onSubmit(values: z.infer<typeof editNoteSchema>) {
     if (!note) return;
     setIsSaving(true);
     try {
-      const updatedNote = await updateNote(note.id, { content: editContent });
+      const updatedNote = await updateNote(note.id, values);
       if (updatedNote) {
         setNote(updatedNote);
-        toast({ title: 'Note Saved!', description: 'Your changes have been saved.' });
-        setIsEditing(false);
+        toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
+        form.reset(values);
       }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save changes.' });
@@ -106,56 +104,93 @@ export default function NoteViewerPage() {
   
   if (isLoading || !note) {
     return (
-      <div className="container mx-auto max-w-3xl px-4 py-8">
+      <div className="container mx-auto max-w-2xl px-4 py-8">
         <Skeleton className="h-[calc(100vh-12rem)] w-full" />
       </div>
     );
+  }
+  
+  if (!isAuthorized) {
+    return (
+        <div className="container mx-auto max-w-md px-4 py-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Lock size={24}/> Password Required</CardTitle>
+                    <CardDescription>This note's details are password protected. Please enter the password to manage it.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input 
+                            id="password" 
+                            type="password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            autoFocus
+                            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                        />
+                    </div>
+                    <Button onClick={handlePasswordSubmit} disabled={isSubmittingPassword || !password} className="w-full">
+                        {isSubmittingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Unlock
+                    </Button>
+                </CardContent>
+                 <CardFooter>
+                    <Button variant="link" onClick={() => router.back()} className="w-full">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+    )
   }
 
   const initials = (note.authorName || 'NN').split(' ').map((n) => n[0]).join('');
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+         <div className="mb-4">
+            <Button variant="ghost" size="sm" onClick={() => router.push('/notes')} className="mb-4">
+                <ArrowLeft className="mr-2" /> Back to All Notes
+            </Button>
+        </div>
       <Card>
         <CardHeader className="border-b">
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div className="flex-1">
-              <Button variant="ghost" size="sm" onClick={() => router.push('/notes')} className="mb-4">
-                <ArrowLeft className="mr-2" /> Back to Notes
-              </Button>
-              <CardTitle className="text-3xl font-bold tracking-tight">{note.heading}</CardTitle>
-              <CardDescription className="mt-2">{note.description}</CardDescription>
-            </div>
-            <div className="flex-shrink-0">
-              {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                  <Button onClick={handleSaveChanges} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />}
-                    Save Changes
-                  </Button>
-                </div>
-              ) : (
-                <Button onClick={handleEditClick} disabled={currentUser?.id !== note.authorId}>
-                  <Edit className="mr-2" /> Edit Note
-                </Button>
-              )}
-            </div>
-          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight">Manage Note</CardTitle>
+          <CardDescription className="mt-2">Edit the details for your shared note here. The content itself is managed at the external link.</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          {isEditing ? (
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[50vh] text-base leading-relaxed"
-              autoFocus
-            />
-          ) : (
-            <div className="prose prose-stone dark:prose-invert max-w-none whitespace-pre-wrap text-base leading-relaxed">
-                {note.content}
-            </div>
-          )}
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField control={form.control} name="heading" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Type /> Heading</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2"><FileText /> Description</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="link" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Link2 /> Link URL</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <div className="flex justify-end pt-4">
+                         <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
+                            {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                            Save Changes
+                        </Button>
+                    </div>
+                </form>
+            </Form>
         </CardContent>
         <CardFooter className="bg-muted/50 p-4 border-t flex justify-between items-center">
             <Link href={`/profile/${note.authorId}`} className="flex items-center gap-2 hover:underline">
@@ -173,32 +208,6 @@ export default function NoteViewerPage() {
             </p>
         </CardFooter>
       </Card>
-      
-      <AlertDialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><Lock /> Password Required</AlertDialogTitle>
-            <AlertDialogDescription>
-              This note is password protected. Please enter the password to enable editing.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-2 space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-                id="password" 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePasswordSubmit}>Unlock</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

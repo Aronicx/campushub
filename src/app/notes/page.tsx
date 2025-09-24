@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle, Loader2 } from "lucide-react";
@@ -24,7 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
-  content: z.string().min(1, "Note content cannot be empty."),
+  link: z.string().url("A valid URL to the note is required."),
   password: z.string().optional(),
 });
 
@@ -36,7 +35,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
 
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", content: "", password: "" },
+    defaultValues: { heading: "", description: "", link: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
@@ -64,8 +63,11 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add a New Note</DialogTitle>
-          <DialogDescription>Share your notes with the community. You can optionally add a password to restrict editing.</DialogDescription>
+          <DialogTitle>Share a New Note</DialogTitle>
+          <DialogDescription>
+            Add a link to your note hosted on another service like Google Docs or Notion.
+            You can optionally add a password to restrict editing the note's details.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -91,13 +93,13 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="content"
+              name="link"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Note Content</FormLabel>
-                  <FormControl><Textarea placeholder="Start writing your notes here..." rows={6} {...field} /></FormControl>
+                  <FormLabel>Link to Note</FormLabel>
+                  <FormControl><Input placeholder="https://docs.google.com/..." {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -175,7 +177,7 @@ export default function NotesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="text-center sm:text-left">
             <h1 className="text-4xl font-bold tracking-tight text-primary">Shared Notes</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Find and share useful notes and resources.</p>
+            <p className="mt-2 text-lg text-muted-foreground">A community-curated list of useful notes and resources.</p>
         </div>
         {currentUser && <AddNoteForm onNoteAdded={fetchNotes} />}
       </div>

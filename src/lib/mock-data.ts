@@ -17,6 +17,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -54,21 +55,25 @@ async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
     // to track the last election run to prevent re-running it on the same day.
     if (today.toISOString().split('T')[0] === lastElectionDate) {
         // Election already run for today, just return students as is.
-        return students;
+        return students.map(s => ({
+            ...s,
+            name: s.name,
+        }));
     }
-
+    
+    // Only run on the 1st day of the month
     if (currentDay === 1) {
         lastElectionDate = today.toISOString().split('T')[0];
 
-        // --- ELECTION PROCESS ---
-        // 1. Find candidates with at least 20 likes, then sort to find the top two.
+        // 1. Find candidates (not the moderator) with at least 20 trust likes.
         const candidates = students
             .filter(s => s.rollNo !== moderatorRollNo && (s.trustLikes?.length || 0) >= 20)
             .sort((a, b) => (b.trustLikes?.length || 0) - (a.trustLikes?.length || 0));
 
+        // 2. The top two candidates become the new coordinators.
         const newCoordinatorIds = new Set(candidates.slice(0, 2).map(c => c.id));
         
-        // 2. Reset all trust likes and update coordinator status for everyone
+        // 3. Reset all trust likes and update coordinator status for everyone in a batch write.
         const batch = writeBatch(db);
         students.forEach(student => {
             const studentRef = doc(db, 'students', student.id);
@@ -82,11 +87,21 @@ async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
         
         // Return the freshly updated student data
         const updatedStudentsSnap = await getDocs(studentsCollection);
-        return updatedStudentsSnap.docs.map(d => d.data() as Student);
+        return updatedStudentsSnap.docs.map(d => {
+            const studentData = d.data() as Student;
+            return {
+                ...studentData,
+                name: studentData.name,
+            };
+        });
 
     }
 
-    return students;
+    // On any other day, just return the students with their existing roles.
+    return students.map(s => ({
+        ...s,
+        name: s.name,
+    }));
 }
 
 
@@ -650,7 +665,7 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
     const messagesCollectionRef = collection(doc(privateChatMessagesCollection, chatId), 'messages');
-    const q = query(messagesCollectionRef);
+    const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const allMessages: PrivateChatMessage[] = [];
@@ -673,6 +688,40 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
     });
 
     return unsubscribe;
+}
+
+export async function getChatContacts(userId: string): Promise<ChatContact[]> {
+    const user = await getStudentById(userId);
+    if (!user) return [];
+
+    const followingIds = user.following || [];
+    const followerIds = user.followers || [];
+    const allContactIds = [...new Set([...followingIds, ...followerIds])];
+
+    if (allContactIds.length === 0) return [];
+    
+    const contactChunks: string[][] = [];
+    for (let i = 0; i < allContactIds.length; i += 10) {
+        contactChunks.push(allContactIds.slice(i, i + 10));
+    }
+
+    const allContacts: ChatContact[] = [];
+
+    for (const chunk of contactChunks) {
+        const q = query(studentsCollection, where('id', 'in', chunk));
+        const snapshot = await getDocs(q);
+        const contacts = snapshot.docs.map(doc => {
+            const student = doc.data() as Student;
+            return {
+                ...student,
+                isFollowing: followingIds.includes(student.id),
+                isFollower: followerIds.includes(student.id),
+            };
+        });
+        allContacts.push(...contacts);
+    }
+    
+    return allContacts;
 }
 
 
@@ -700,34 +749,11 @@ export async function removeFollower(currentUserId: string, followerId: string):
     await batch.commit();
 }
 
-export async function getChatContacts(userId: string): Promise<ChatContact[]> {
-    const user = await getStudentById(userId);
-    if (!user) return [];
 
-    const followingIds = user.following || [];
-    const followerIds = user.followers || [];
-    const allContactIds = [...new Set([...followingIds, ...followerIds])];
-
-    if (allContactIds.length === 0) return [];
-    
-    // Firestore 'in' queries are limited to 30 items. We might need to chunk this for larger lists.
-    // For this app's scale, we'll assume it's under 30.
-    const q = query(studentsCollection, where('id', 'in', allContactIds));
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(doc => {
-        const student = doc.data() as Student;
-        return {
-            ...student,
-            isFollowing: followingIds.includes(student.id),
-            isFollower: followerIds.includes(student.id),
-        };
-    });
-}
 
 
 // Notes
-export async function addNote(author: Student, data: { heading: string, description: string, content: string, password?: string }): Promise<Note> {
+export async function addNote(author: Student, data: { heading: string, description: string, link: string, password?: string }): Promise<Note> {
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
         id: newNoteDoc.id,
@@ -736,9 +762,8 @@ export async function addNote(author: Student, data: { heading: string, descript
         authorProfilePicture: author.profilePicture,
         heading: data.heading,
         description: data.description,
-        content: data.content,
+        link: data.link,
         password: data.password,
-        link: `/notes/${newNoteDoc.id}`,
         timestamp: Date.now(),
     };
     await setDoc(newNoteDoc, newNote);
@@ -759,7 +784,7 @@ export async function getNoteById(noteId: string): Promise<Note | undefined> {
 
 export async function updateNote(noteId: string, updates: Partial<Note>): Promise<Note | undefined> {
     const noteRef = doc(db, 'notes', noteId);
-    await updateDoc(noteRef, updates);
+    await updateDoc(noteRef, { ...updates, timestamp: Date.now() });
     return getNoteById(noteId);
 }
 

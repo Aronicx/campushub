@@ -7,9 +7,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "./ui/button";
-import { Trash2, ExternalLink } from "lucide-react";
+import { Trash2, ExternalLink, Settings } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import type { Note, Student } from "@/lib/types";
+import type { Note } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
 
 interface NoteCardProps {
@@ -22,7 +22,6 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
   const { currentUser } = useAuth();
   const initials = (note.authorName || 'NN').split(" ").map((n) => n[0]).join("");
   
-  // A user can delete a note if they are the author, or if they are the special moderator (rollNo: 75)
   const isAuthor = note.authorId === currentUserId;
   const isSpecialCoordinator = currentUser?.rollNo === '75';
   const canDelete = isAuthor || isSpecialCoordinator;
@@ -48,9 +47,9 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete this note listing?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this note.
+                            This action cannot be undone. This will permanently delete the note listing from Campus Hub. It will not delete the note at the source link.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -63,12 +62,19 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
         </div>
         <p className="text-sm text-muted-foreground pt-1 !mt-1 h-10 overflow-hidden">{note.description}</p>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="p-4 pt-0 flex flex-col sm:flex-row gap-2">
         <Button asChild className="w-full">
-            <Link href={note.link}>
+            <a href={note.link} target="_blank" rel="noopener noreferrer">
                 Open Note <ExternalLink className="ml-2 h-4 w-4"/>
-            </Link>
+            </a>
         </Button>
+        {isAuthor && (
+          <Button asChild variant="secondary" className="w-full sm:w-auto">
+            <Link href={`/notes/${note.id}`}>
+              <Settings className="mr-2 h-4 w-4" /> Manage
+            </Link>
+          </Button>
+        )}
       </CardContent>
       <CardFooter className="p-3 bg-muted/50 border-t flex items-center justify-between">
         <Link href={`/profile/${note.authorId}`} className="flex items-center gap-2 hover:underline">
