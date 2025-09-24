@@ -38,12 +38,13 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const fileInputRef =  useState<HTMLInputElement>(null);
-
+  
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
     defaultValues: { heading: "", description: "", password: "" },
   });
+
+  const fileRef = form.register("file");
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
     if (!currentUser) return;
@@ -111,9 +112,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                 <FormItem>
                     <FormLabel>Note File</FormLabel>
                     <FormControl>
-                        <Input type="file" {...fileInputRef} onChange={(event) => {
-                          field.onChange(event.target.files);
-                        }} />
+                        <Input type="file" {...fileRef} />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
