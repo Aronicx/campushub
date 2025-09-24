@@ -9,6 +9,8 @@ import { ThoughtCard } from "@/components/thought-card";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DailyThoughtPoster } from "@/components/daily-thought-poster";
+import { Button } from "@/components/ui/button";
+import { PenSquare } from "lucide-react";
 
 export interface ThoughtWithAuthor extends Thought {
   author: {
@@ -117,16 +119,19 @@ export default function ThoughtBubblesPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">Bubbles</h1>
-        <p className="mt-2 text-lg text-muted-foreground">A live feed of thoughts from around campus.</p>
-      </div>
-      
-      {currentUser && (
-        <div className="mb-6">
-            <DailyThoughtPoster onThoughtPosted={fetchThoughts} />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div className="text-center sm:text-left">
+                <h1 className="text-4xl font-bold tracking-tight text-primary">Bubbles</h1>
+                <p className="mt-2 text-lg text-muted-foreground">A live feed of thoughts from around campus.</p>
+            </div>
+            {currentUser && (
+                <DailyThoughtPoster onThoughtPosted={fetchThoughts}>
+                    <Button>
+                        <PenSquare className="mr-2" /> Share a Thought
+                    </Button>
+                </DailyThoughtPoster>
+            )}
         </div>
-      )}
 
       {isLoading ? (
          <div className="space-y-6">

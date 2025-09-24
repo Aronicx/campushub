@@ -506,7 +506,11 @@ export default function ProfilePage() {
         </TabsContent>
         <TabsContent value="posts" className="mt-6">
              <div className="space-y-6">
-                <DailyThoughtPoster onThoughtPosted={refreshCurrentUser} />
+                 <div className="flex justify-center">
+                    <DailyThoughtPoster onThoughtPosted={refreshCurrentUser}>
+                        <Button>Share a Thought</Button>
+                    </DailyThoughtPoster>
+                </div>
             </div>
         </TabsContent>
       </Tabs>
