@@ -5,33 +5,23 @@ export const Icons = {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
+      viewBox="0 0 24 24"
       fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <circle cx="50" cy="50" r="50" fill="#0D47A1" />
-      <text
-        x="50"
-        y="48"
-        fontFamily="cursive, 'Comic Sans MS', sans-serif"
-        fontSize="24"
-        fill="white"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{ letterSpacing: '0.05em' }}
-      >
-        CAMPUS
-      </text>
-      <text
-        x="50"
-        y="72"
-        fontFamily="cursive, 'Comic Sans MS', sans-serif"
-        fontSize="24"
-        fill="white"
-        textAnchor="middle"
-        dominantBaseline="middle"
-      >
-        HUB
-      </text>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+      <path d="M12 12l4.5 4.5" />
+      <path d="M12 12l-4.5 4.5" />
+      <path d="M12 12l4.5-4.5" />
+      <path d="M12 12l-4.5-4.5" />
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="7.5" cy="7.5" r="1.5" />
+      <circle cx="16.5" cy="7.5" r="1.5" />
+      <circle cx="7.5" cy="16.5" r="1.5" />
+      <circle cx="16.5" cy="16.5" r="1.5" />
     </svg>
   ),
 };
