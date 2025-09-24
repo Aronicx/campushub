@@ -50,7 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
+import { DailyThoughtPoster } from "@/components/daily-thought-poster";
 
 import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, Building, GraduationCap, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus, ShieldCheck } from "lucide-react";
 
@@ -245,80 +245,6 @@ function EducationEditor({ student, onUpdate }: { student: Student; onUpdate: (d
   );
 }
 
-function DailyThoughtPoster() {
-    const { postThought } = useAuth();
-    const [thought, setThought] = useState("");
-    const [isDrafting, startDrafting] = useTransition();
-    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
-
-    const draftForm = useForm({
-        defaultValues: { topic: "", mood: "" },
-    });
-
-    const handleDraftWithAI = async (values: { topic: string, mood: string}) => {
-        startDrafting(async () => {
-            const result = await draftDailyThought(values);
-            setThought(result.thought);
-            setIsAiDialogOpen(false);
-        });
-    };
-
-    const handlePost = () => {
-        if (thought.trim()) {
-            postThought(thought);
-            setThought("");
-        }
-    };
-    
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Share a Daily Thought</CardTitle>
-                <CardDescription>What's on your mind today? This thought will vanish in 24 hours.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Textarea 
-                    value={thought}
-                    onChange={(e) => setThought(e.target.value)}
-                    placeholder="Share an update, an idea, or a question..." 
-                    rows={4}
-                />
-            </CardContent>
-            <CardFooter className="justify-between">
-                <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline"><Wand2 className="mr-2 h-4 w-4"/> Draft with AI</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>AI Thought Draft</DialogTitle>
-                            <DialogDescription>Give the AI a topic and your mood to draft a thought.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={draftForm.handleSubmit(handleDraftWithAI)} className="space-y-4">
-                            <div>
-                                <label htmlFor="topic" className="text-sm font-medium">Topic</label>
-                                <Input id="topic" {...draftForm.register("topic")} placeholder="e.g., upcoming exams" />
-                            </div>
-                            <div>
-                                <label htmlFor="mood" className="text-sm font-medium">Mood</label>
-                                <Input id="mood" {...draftForm.register("mood")} placeholder="e.g., optimistic" />
-                            </div>
-                            <DialogFooter>
-                                <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isDrafting}>
-                                    {isDrafting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Draft
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-                <Button onClick={handlePost} disabled={!thought.trim()}>Post</Button>
-            </CardFooter>
-        </Card>
-    )
-}
-
 const socialFormSchema = z.object({
   instagram: z.string().optional(),
   snapchat: z.string().optional(),
@@ -452,7 +378,7 @@ function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpda
 
 
 export default function ProfilePage() {
-  const { currentUser, isLoading: isAuthLoading, updateProfile } = useAuth();
+  const { currentUser, isLoading: isAuthLoading, updateProfile, refreshCurrentUser } = useAuth();
   const router = useRouter();
   
   useEffect(() => {
@@ -580,7 +506,7 @@ export default function ProfilePage() {
         </TabsContent>
         <TabsContent value="posts" className="mt-6">
              <div className="space-y-6">
-                <DailyThoughtPoster />
+                <DailyThoughtPoster onThoughtPosted={refreshCurrentUser} />
             </div>
         </TabsContent>
       </Tabs>
