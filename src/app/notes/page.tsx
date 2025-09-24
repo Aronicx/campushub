@@ -11,26 +11,19 @@ import type { Note } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, FilePlus, Upload } from "lucide-react";
+import { PlusCircle, Loader2, Link2 } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-
-
-const MAX_FILE_SIZE_MB = 20;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
+  link: z.string().url("Please provide a valid URL for the note."),
   password: z.string().optional(),
-  file: z.any()
-    .refine((files) => files?.length === 1, "File is required.")
-    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES, `Max file size is ${MAX_FILE_SIZE_MB}MB.`)
 });
 
 function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
@@ -41,20 +34,14 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", password: "" },
+    defaultValues: { heading: "", description: "", link: "", password: "" },
   });
-
-  const fileRef = form.register("file");
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
     if (!currentUser) return;
     setIsSubmitting(true);
     try {
-      await addNote(currentUser, values.file[0], {
-        heading: values.heading,
-        description: values.description,
-        password: values.password,
-      });
+      await addNote(currentUser, values);
       toast({ title: "Note Added!", description: "Your note has been shared." });
       form.reset();
       setIsOpen(false);
@@ -78,7 +65,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Upload a file (PDF, DOCX, etc.) up to {MAX_FILE_SIZE_MB}MB. You can optionally add a password to restrict editing the note's details.
+            Link to your note from Google Docs, Notion, or anywhere else. You can optionally add a password to restrict editing the note's details.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -105,16 +92,23 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
-              name="file"
+              name="link"
               render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Note File</FormLabel>
+                  <FormLabel>Link to Note</FormLabel>
+                  <div className="flex gap-2">
                     <FormControl>
-                        <Input type="file" {...fileRef} />
+                        <Input placeholder="https://docs.google.com/..." {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <Button variant="outline" asChild>
+                        <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer">
+                            <Link2 className="mr-2"/> Create
+                        </a>
+                    </Button>
+                  </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />

@@ -21,8 +21,9 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
 import { db, storage } from './firebase';
 
@@ -659,9 +660,9 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
             } as PrivateChatMessage);
         });
 
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
         const recentMessages = allMessages
-            .filter(msg => msg.timestamp >= twentyFourHoursAgo)
+            .filter(msg => msg.timestamp >= oneHourAgo)
             .sort((a, b) => a.timestamp - b.timestamp);
             
         callback(recentMessages);
@@ -733,13 +734,8 @@ export async function removeFollower(currentUserId: string, followerId: string):
 
 
 // Notes
-export async function addNote(author: Student, file: File, data: { heading: string, description: string, password?: string }): Promise<Note> {
-    // 1. Upload file to Firebase Storage
-    const fileRef = ref(storage, `notes/${Date.now()}-${file.name}`);
-    const fileSnapshot = await uploadString(fileRef, await file.text(), 'raw', { contentType: file.type });
-    const downloadURL = await getDownloadURL(fileSnapshot.ref);
-
-    // 2. Create note document in Firestore
+export async function addNote(author: Student, data: { heading: string, description: string, link: string, password?: string }): Promise<Note> {
+    // Create note document in Firestore
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
         id: newNoteDoc.id,
@@ -748,7 +744,7 @@ export async function addNote(author: Student, file: File, data: { heading: stri
         authorProfilePicture: author.profilePicture,
         heading: data.heading,
         description: data.description,
-        link: downloadURL,
+        link: data.link,
         password: data.password,
         timestamp: Date.now(),
     };
@@ -775,7 +771,7 @@ export async function updateNote(noteId: string, updates: Partial<Note>): Promis
 }
 
 export async function deleteNote(noteId: string, fileUrl: string): Promise<void> {
-    // 1. Delete the file from Firebase Storage
+    // Try to delete the file from Firebase Storage if it's a firebase URL
     if (fileUrl.includes('firebasestorage.googleapis.com')) {
         try {
             const fileRef = ref(storage, fileUrl);
@@ -789,7 +785,7 @@ export async function deleteNote(noteId: string, fileUrl: string): Promise<void>
         }
     }
     
-    // 2. Delete the note document from Firestore
+    // Delete the note document from Firestore
     const noteRef = doc(db, 'notes', noteId);
     await deleteDoc(noteRef);
 }
