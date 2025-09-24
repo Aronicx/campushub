@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2 } from "lucide-react";
+import { PlusCircle, Loader2, FilePlus } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 
@@ -98,7 +98,14 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
               name="link"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Link to Note</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Link to Note</FormLabel>
+                    <Button asChild variant="link" size="sm" className="text-xs px-1 h-auto">
+                        <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer">
+                            <FilePlus className="mr-1 h-3 w-3" /> Create File
+                        </a>
+                    </Button>
+                  </div>
                   <FormControl><Input placeholder="https://docs.google.com/..." {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
