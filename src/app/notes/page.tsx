@@ -101,7 +101,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                   <div className="flex justify-between items-center">
                     <FormLabel>Link to Note</FormLabel>
                     <Button asChild variant="link" size="sm" className="text-xs px-1 h-auto">
-                        <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer">
+                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer">
                             <FilePlus className="mr-1 h-3 w-3" /> Create File
                         </a>
                     </Button>
