@@ -16,6 +16,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -637,8 +638,10 @@ export async function markNotificationsAsRead(userId: string, notificationIds: s
 export async function addPrivateChatMessage(chatId: string, authorId: string, content: string): Promise<void> {
     if (!content.trim()) return;
 
-    await addDoc(privateChatMessagesCollection, {
-        chatId,
+    const chatDocRef = doc(privateChatMessagesCollection, chatId);
+    const messagesCollectionRef = collection(chatDocRef, 'messages');
+
+    await addDoc(messagesCollectionRef, {
         authorId,
         content: content.trim(),
         timestamp: serverTimestamp(),
@@ -646,7 +649,8 @@ export async function addPrivateChatMessage(chatId: string, authorId: string, co
 }
 
 export function onNewPrivateMessage(chatId: string, callback: (messages: PrivateChatMessage[]) => void): () => void {
-    const q = query(privateChatMessagesCollection, where('chatId', '==', chatId));
+    const messagesCollectionRef = collection(doc(privateChatMessagesCollection, chatId), 'messages');
+    const q = query(messagesCollectionRef);
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const allMessages: PrivateChatMessage[] = [];
@@ -654,6 +658,7 @@ export function onNewPrivateMessage(chatId: string, callback: (messages: Private
             const data = doc.data();
             allMessages.push({
                 id: doc.id,
+                chatId: chatId,
                 ...data,
                 timestamp: data.timestamp?.toMillis() || Date.now()
             } as PrivateChatMessage);
@@ -722,7 +727,7 @@ export async function getChatContacts(userId: string): Promise<ChatContact[]> {
 
 
 // Notes
-export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {
+export async function addNote(author: Student, data: { heading: string, description: string, content: string, password?: string }): Promise<Note> {
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
         id: newNoteDoc.id,
@@ -731,7 +736,9 @@ export async function addNote(author: Student, data: { heading: string, descript
         authorProfilePicture: author.profilePicture,
         heading: data.heading,
         description: data.description,
-        link: data.link,
+        content: data.content,
+        password: data.password,
+        link: `/notes/${newNoteDoc.id}`,
         timestamp: Date.now(),
     };
     await setDoc(newNoteDoc, newNote);
@@ -742,6 +749,18 @@ export async function getNotes(): Promise<Note[]> {
     const q = query(notesCollection, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => doc.data() as Note);
+}
+
+export async function getNoteById(noteId: string): Promise<Note | undefined> {
+    const docRef = doc(db, 'notes', noteId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() as Note : undefined;
+}
+
+export async function updateNote(noteId: string, updates: Partial<Note>): Promise<Note | undefined> {
+    const noteRef = doc(db, 'notes', noteId);
+    await updateDoc(noteRef, updates);
+    return getNoteById(noteId);
 }
 
 export async function deleteNote(noteId: string): Promise<void> {

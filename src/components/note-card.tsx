@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -64,9 +65,9 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <Button asChild className="w-full">
-            <a href={note.link} target="_blank" rel="noopener noreferrer">
+            <Link href={note.link}>
                 Open Note <ExternalLink className="ml-2 h-4 w-4"/>
-            </a>
+            </Link>
         </Button>
       </CardContent>
       <CardFooter className="p-3 bg-muted/50 border-t flex items-center justify-between">

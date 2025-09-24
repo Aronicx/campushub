@@ -94,6 +94,8 @@ export interface Note {
     authorProfilePicture?: string;
     heading: string;
     description: string;
+    content: string;
+    password?: string;
     link: string;
     timestamp: number;
 }

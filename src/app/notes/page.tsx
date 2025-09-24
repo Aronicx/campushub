@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle, Loader2 } from "lucide-react";
@@ -22,7 +24,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
-  link: z.string().url("Please enter a valid URL"),
+  content: z.string().min(1, "Note content cannot be empty."),
+  password: z.string().optional(),
 });
 
 function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
@@ -33,7 +36,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
 
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", link: "" },
+    defaultValues: { heading: "", description: "", content: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
@@ -59,10 +62,10 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
           <PlusCircle className="mr-2 h-4 w-4" /> Add Note
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add a New Note</DialogTitle>
-          <DialogDescription>Share a link to your notes with a heading and a short description.</DialogDescription>
+          <DialogDescription>Share your notes with the community. You can optionally add a password to restrict editing.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -82,7 +85,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Short Description</FormLabel>
                   <FormControl><Input placeholder="Quick notes for the final exam." {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -90,11 +93,22 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
             />
             <FormField
               control={form.control}
-              name="link"
+              name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Link</FormLabel>
-                  <FormControl><Input type="url" placeholder="https://docs.google.com/..." {...field} /></FormControl>
+                  <FormLabel>Note Content</FormLabel>
+                  <FormControl><Textarea placeholder="Start writing your notes here..." rows={6} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Edit Password (Optional)</FormLabel>
+                  <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
