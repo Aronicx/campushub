@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStudentByEmail, updateStudent, getStudentById, getStudentByRollNo, getStudentByName, addThought, deleteStudent, markNotificationsAsRead as markNotificationsAsReadBackend } from '@/lib/mock-data';
+import { getStudentByEmail, updateStudent, getStudentById, getStudentByUsername, addThought, deleteStudent, markNotificationsAsRead as markNotificationsAsReadBackend } from '@/lib/mock-data';
 import type { Student, Notification } from '@/lib/types';
 import { useToast } from './use-toast';
 
@@ -76,11 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const login = async (identifier: string, password?: string) => {
-    // Try finding user by name first, then by roll number
-    let user = await getStudentByName(identifier);
-    if (!user) {
-      user = await getStudentByRollNo(identifier);
-    }
+    const user = await getStudentByUsername(identifier);
     
     if (user && user.password === password) {
       localStorage.setItem('campus-hub-user', user.id);
@@ -89,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
     
-    toast({ variant: "destructive", title: "Login Failed", description: "Invalid identifier or password." });
+    toast({ variant: "destructive", title: "Login Failed", description: "Invalid username or password." });
     return false;
   };
 
@@ -122,7 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (newThought) {
             const updatedUser = await getStudentById(currentUser.id);
             if (updatedUser) {
-              //Firestore's arrayUnion does not guarantee order, so we need to sort client-side.
               updatedUser.thoughts.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
               setCurrentUser(updatedUser);
             }
@@ -179,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return;
     try {
         await markNotificationsAsReadBackend(currentUser.id, notificationIds);
-        // Optimistically update the user context
         const updatedNotifications = currentUser.notifications.map(n => 
             notificationIds.includes(n.id) ? { ...n, read: true } : n
         );

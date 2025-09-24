@@ -31,7 +31,7 @@ import { Lock, User, Eye, EyeOff } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
-  identifier: z.string().min(1, { message: "Please enter your username, email or roll number." }),
+  identifier: z.string().min(1, { message: "Please enter your username." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -63,12 +63,12 @@ function LoginForm() {
             name="identifier"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username or Roll No.</FormLabel>
+                <FormLabel>Username</FormLabel>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <FormControl>
                     <Input
-                      placeholder="e.g., Aarav Sharma or 1"
+                      placeholder="e.g., aarav_sharma"
                       {...field}
                       className="pl-10"
                     />

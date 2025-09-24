@@ -38,7 +38,7 @@ export default function ThoughtBubblesPage() {
                     comments: thought.comments || [],
                     author: {
                         id: student.id,
-                        name: student.name || `User ${student.rollNo}`,
+                        name: student.name || `User @${student.username}`,
                         profilePicture: student.profilePicture,
                     }
                 }))
@@ -86,17 +86,16 @@ export default function ThoughtBubblesPage() {
   };
   
   const handleThoughtDelete = async (authorId: string, thoughtId: string) => {
-      if (!currentUser || currentUser.id !== authorId) return;
-      const originalThoughts = thoughts;
-      setThoughts(prev => prev.filter(t => t.id !== thoughtId));
-      try {
-          await deleteThought(authorId, thoughtId);
-          toast({ title: "Thought Deleted", description: "Your thought has been removed." });
-      } catch (error) {
-          console.error("Failed to delete thought:", error);
-          setThoughts(originalThoughts);
-          toast({ variant: 'destructive', title: "Error", description: "Failed to delete thought." });
-      }
+    const originalThoughts = thoughts;
+    setThoughts(prev => prev.filter(t => t.id !== thoughtId));
+    try {
+        await deleteThought(authorId, thoughtId);
+        toast({ title: "Thought Deleted", description: "The thought has been removed." });
+    } catch (error) {
+        console.error("Failed to delete thought:", error);
+        setThoughts(originalThoughts);
+        toast({ variant: 'destructive', title: "Error", description: "Failed to delete thought." });
+    }
   }
 
   const handleThoughtUpdate = async (authorId: string, thoughtId: string, newContent: string) => {

@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, BrainCircuit, CalendarDays, User, KeyRound, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock, X, ShieldCheck } from "lucide-react";
+import { BookOpen, BrainCircuit, CalendarDays, User, Building, Instagram, MessageCircle, Phone, Link2, Users, Mail, UserPlus, UserCheck, Heart, UserMinus, Lock, X, ShieldCheck, GraduationCap, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Student, TrustLike } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -362,15 +362,14 @@ export default function ProfilePage() {
                         <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
                         {student.isPrivate && <Lock size={20} className="text-muted-foreground" />}
                         {student.isCoordinator && (
-                            <Badge variant="outline" className={cn("border-green-500 text-green-600", student.rollNo === '75' && "border-blue-500 text-blue-600")}>
+                            <Badge variant="outline" className={cn("border-green-500 text-green-600")}>
                                 <ShieldCheck className="mr-1 h-3 w-3" />
-                                {student.rollNo === '75' ? 'Moderator' : 'Coordinator'}
+                                Coordinator
                             </Badge>
                         )}
                     </div>
-                    <p className="text-lg text-muted-foreground">{student.major}</p>
+                    <p className="text-lg text-muted-foreground">@{student.username}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
-                        <span>Roll No: {student.rollNo}</span>
                          <ConnectionListDialog
                             studentId={student.id}
                             listType="followers"
@@ -398,12 +397,20 @@ export default function ProfilePage() {
           
           <div className="mt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
+                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl"><KeyRound size={24} /> Roll No.</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xl"><Building size={24} /> College</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">{student.rollNo}</p>
+                        <p className="text-muted-foreground">{student.collegeName}</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl"><GraduationCap size={24} /> Education</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{student.degree} in {student.course}, {student.term}</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -414,7 +421,7 @@ export default function ProfilePage() {
                         <p className="text-muted-foreground">{student.bio}</p>
                     </CardContent>
                 </Card>
-                <Card className="md:col-span-2">
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl"><BrainCircuit size={24} /> Interests</CardTitle>
                     </CardHeader>

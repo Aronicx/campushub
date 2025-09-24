@@ -18,6 +18,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -49,59 +50,38 @@ let lastElectionDate: string | null = null;
 async function assignCoordinatorRoles(students: Student[]): Promise<Student[]> {
     const today = new Date();
     const currentDay = today.getDate();
-    const moderatorRollNo = '75';
+    const moderatorUsername = 'moderator'; // Assuming a moderator user exists with this username
 
-    // This is a simple in-memory flag. In a real app, you'd use a persistent store (like a doc in Firestore)
-    // to track the last election run to prevent re-running it on the same day.
     if (today.toISOString().split('T')[0] === lastElectionDate) {
-        // Election already run for today, just return students as is.
-        return students.map(s => ({
-            ...s,
-            name: s.name,
-        }));
+        return students.map(s => ({ ...s }));
     }
     
-    // Only run on the 1st day of the month
     if (currentDay === 1) {
         lastElectionDate = today.toISOString().split('T')[0];
 
-        // 1. Find candidates (not the moderator) with at least 20 trust likes.
         const candidates = students
-            .filter(s => s.rollNo !== moderatorRollNo && (s.trustLikes?.length || 0) >= 20)
+            .filter(s => s.username !== moderatorUsername && (s.trustLikes?.length || 0) >= 20)
             .sort((a, b) => (b.trustLikes?.length || 0) - (a.trustLikes?.length || 0));
 
-        // 2. The top two candidates become the new coordinators.
         const newCoordinatorIds = new Set(candidates.slice(0, 2).map(c => c.id));
         
-        // 3. Reset all trust likes and update coordinator status for everyone in a batch write.
         const batch = writeBatch(db);
         students.forEach(student => {
             const studentRef = doc(db, 'students', student.id);
-            const isNewCoordinator = newCoordinatorIds.has(student.id) || student.rollNo === moderatorRollNo;
+            const isNewCoordinator = newCoordinatorIds.has(student.id) || student.username === moderatorUsername;
             batch.update(studentRef, {
-                trustLikes: [], // Reset likes for everyone
+                trustLikes: [],
                 isCoordinator: isNewCoordinator,
             });
         });
         await batch.commit();
         
-        // Return the freshly updated student data
         const updatedStudentsSnap = await getDocs(studentsCollection);
-        return updatedStudentsSnap.docs.map(d => {
-            const studentData = d.data() as Student;
-            return {
-                ...studentData,
-                name: studentData.name,
-            };
-        });
+        return updatedStudentsSnap.docs.map(d => d.data() as Student);
 
     }
 
-    // On any other day, just return the students with their existing roles.
-    return students.map(s => ({
-        ...s,
-        name: s.name,
-    }));
+    return students.map(s => ({ ...s }));
 }
 
 
@@ -111,15 +91,16 @@ export async function getStudents(filters?: { search?: string }): Promise<Studen
     const snapshot = await getDocs(q);
     let students: Student[] = snapshot.docs.map(doc => doc.data() as Student);
     
-    students = await assignCoordinatorRoles(students);
+    // This logic is simplified; real coordinator logic might be different
+    // students = await assignCoordinatorRoles(students);
     
-    students.sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10));
+    students.sort((a, b) => a.name.localeCompare(b.name));
 
     if (filters?.search) {
         const searchTerm = filters.search.toLowerCase();
         students = students.filter(s => 
             (s.name || '').toLowerCase().includes(searchTerm) ||
-            s.rollNo.toLowerCase().includes(searchTerm)
+            s.username.toLowerCase().includes(searchTerm)
         );
     }
 
@@ -185,6 +166,14 @@ export async function getStudentByEmail(email: string): Promise<Student | undefi
   return snapshot.docs[0].data() as Student;
 }
 
+export async function getStudentByUsername(username: string): Promise<Student | undefined> {
+    if (!username) return undefined;
+    const docRef = doc(db, 'students', username);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return undefined;
+    return docSnap.data() as Student;
+}
+
 export async function getStudentByName(name: string): Promise<Student | undefined> {
     if (!name) return undefined;
     const q = query(studentsCollection, where("name", "==", name));
@@ -193,13 +182,6 @@ export async function getStudentByName(name: string): Promise<Student | undefine
     return snapshot.docs[0].data() as Student;
 }
 
-export async function getStudentByRollNo(rollNo: string): Promise<Student | undefined> {
-    const q = query(studentsCollection, where("rollNo", "==", rollNo));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return undefined;
-    const student = snapshot.docs[0].data() as Student;
-    return student;
-}
 
 export async function updateStudent(id: string, updates: Partial<Student>): Promise<Student | undefined> {
     const docRef = doc(db, 'students', id);
@@ -263,40 +245,39 @@ export async function deleteThought(studentId: string, thoughtId: string): Promi
 }
 
 
-export async function createStudent(data: { rollNo: string; name: string; password?: string; }): Promise<Student> {
-    const { rollNo, name, password } = data;
+export async function createStudent(data: { username: string; name: string; password?: string; collegeName: string; term: string; degree: string; course: string; }): Promise<Student> {
+    const { username, name, password, collegeName, term, degree, course } = data;
 
-    // Check for uniqueness
-    const rollNoExists = await getStudentByRollNo(rollNo);
-    if (rollNoExists) {
-        throw new Error("A user with this roll number already exists.");
-    }
-    const nameExists = await getStudentByName(name);
-    if (nameExists) {
-        throw new Error("A user with this name already exists.");
+    const usernameExists = await getStudentByUsername(username);
+    if (usernameExists) {
+        throw new Error("This username is already taken.");
     }
 
     const newStudent: Student = {
-        id: rollNo, // Use rollNo as the document ID for simplicity
-        rollNo,
+        id: username, // Use username as the document ID
+        username,
         name,
         password,
-        major: "Undeclared",
+        collegeName,
+        term,
+        degree,
+        course,
+        major: "Undeclared", // Can be updated by user later
         interests: [],
-        profilePicture: `https://picsum.photos/seed/${rollNo}/256/256`,
+        profilePicture: `https://picsum.photos/seed/${username}/256/256`,
         bio: `A new member of the Campus Hub community!`,
-        email: `${name.toLowerCase().replace(/\s/g, '.')}@example.com`,
+        email: `${username}@example.com`,
         thoughts: [],
         following: [],
         followers: [],
-        likedBy: [],
+likedBy: [],
         trustLikes: [],
         notifications: [],
         pendingFollowRequests: [],
         sentFollowRequests: [],
         isPrivate: false,
         blockedUsers: [],
-        isCoordinator: rollNo === '75',
+        isCoordinator: false,
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);
@@ -328,7 +309,6 @@ export async function toggleProfileLike(targetUserId: string, currentUserId: str
         await updateDoc(targetUserRef, { likedBy: arrayRemove(currentUserId) });
     } else {
         await updateDoc(targetUserRef, { likedBy: arrayUnion(currentUserId) });
-        // Add notification
         if (targetUserId !== currentUserId) {
             await addNotification(targetUserId, {
                 type: 'profile_like',
@@ -360,12 +340,10 @@ export async function toggleTrustLike(targetUserId: string, currentUserId: strin
     const existingLikeIndex = trustLikes.findIndex(like => like.userId === currentUserId);
 
     if (existingLikeIndex > -1) {
-        // User has already liked, so we remove the like
         await updateDoc(targetUserRef, {
             trustLikes: arrayRemove(trustLikes[existingLikeIndex])
         });
     } else {
-        // New like, add it with a timestamp
         const newTrustLike: TrustLike = { userId: currentUserId, timestamp: Date.now() };
         await updateDoc(targetUserRef, {
             trustLikes: arrayUnion(newTrustLike)

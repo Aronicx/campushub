@@ -23,8 +23,8 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
   const initials = (note.authorName || 'NN').split(" ").map((n) => n[0]).join("");
   
   const isAuthor = note.authorId === currentUserId;
-  const isSpecialCoordinator = currentUser?.rollNo === '75';
-  const canDelete = isAuthor || isSpecialCoordinator;
+  const isCoordinator = currentUser?.isCoordinator;
+  const canDelete = isAuthor || isCoordinator;
 
 
   const handleDelete = (e: React.MouseEvent) => {

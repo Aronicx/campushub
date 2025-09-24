@@ -57,7 +57,7 @@ function CoordinatorInfoDialog() {
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                             <li><span className="font-semibold text-card-foreground">Delete Thoughts:</span> Coordinators can remove any thought bubble that violates community guidelines.</li>
                             <li><span className="font-semibold text-card-foreground">Restrict from Global Chat:</span> They can temporarily restrict a user from participating in the Global Chat for 24 hours if they are being disruptive.</li>
-                            <li><span className="font-semibold text-blue-600">Moderator Power:</span> The special Moderator (Roll No. 75) has the additional power to delete any shared note to maintain content quality.</li>
+                            <li><span className="font-semibold text-blue-600">Note Deletion:</span> Coordinators can delete any shared note to maintain content quality.</li>
                         </ul>
                     </div>
 
@@ -65,9 +65,8 @@ function CoordinatorInfoDialog() {
                         <h3 className="font-semibold text-md">How to Become a Coordinator:</h3>
                          <p className="text-muted-foreground">The coordinator election is a dynamic process based on <span className="font-semibold text-green-600">Trust Likes</span>.</p>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                            <li>A special user, the <span className="font-semibold text-card-foreground">Moderator</span> (Roll No. 75), is always a coordinator.</li>
-                            <li>On the <span className="font-semibold text-card-foreground">1st of every month</span>, the top two users with the most Trust Likes become the new coordinators for that month.</li>
-                            <li>After the election, all Trust Likes across the platform are <span className="font-semibold text-card-foreground">reset to zero</span>, starting a fresh race for the next month.</li>
+                           <li>On the <span className="font-semibold text-card-foreground">1st of every month</span>, the top two users with the most Trust Likes become the new coordinators for that month.</li>
+                           <li>After the election, all Trust Likes across the platform are <span className="font-semibold text-card-foreground">reset to zero</span>, starting a fresh race for the next month.</li>
                         </ul>
                     </div>
                      <p className="text-xs text-center pt-2 text-muted-foreground">This system ensures that the most currently trusted members of the community are empowered to keep it safe.</p>

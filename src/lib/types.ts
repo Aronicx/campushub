@@ -37,9 +37,13 @@ export interface TrustLike {
 }
 
 export interface Student {
-  id: string;
-  rollNo: string;
+  id: string; // This will be the username
+  username: string;
   name:string;
+  collegeName: string;
+  term: string; // e.g., "1st Year", "2nd Year"
+  degree: string; // e.g., "B.Sc.", "B.Eng"
+  course: string; // e.g., "Computer Science"
   major: string;
   interests: string[];
   profilePicture: string;

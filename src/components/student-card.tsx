@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2, ShieldCheck } from "lucide-react";
+import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2, ShieldCheck, Building } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,12 +184,15 @@ export function StudentCard({
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Link>
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <Link href={`/profile/${student.id}`}>
-            <h3 className="font-semibold text-lg leading-tight hover:underline">{displayName}</h3>
+            <h3 className="font-semibold text-lg leading-tight hover:underline truncate">{displayName}</h3>
           </Link>
-          <p className="text-sm text-muted-foreground leading-tight">{student.major}</p>
-          <p className="text-xs text-muted-foreground">Roll No: {student.rollNo}</p>
+          <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
+            <Building size={12}/>
+            <span>{student.collegeName}</span>
+          </div>
         </div>
         <FollowButton />
       </CardHeader>

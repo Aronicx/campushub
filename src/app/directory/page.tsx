@@ -54,7 +54,7 @@ function FilterControls() {
         </svg>
         <Input 
           name="search" 
-          placeholder="Search by name or roll no..." 
+          placeholder="Search by name or username..." 
           className="pl-10" 
           defaultValue={searchParams.get('search') || ''}
           onChange={(e) => handleFilterChange('search', e.target.value)}

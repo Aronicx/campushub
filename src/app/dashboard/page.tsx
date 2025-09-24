@@ -52,17 +52,20 @@ import { Label } from "@/components/ui/label";
 
 import { draftDailyThought } from "@/ai/flows/draft-daily-thought";
 
-import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, KeyRound, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus, ShieldCheck } from "lucide-react";
+import { Wand2, Users, Loader2, User, BrainCircuit, BookOpen, Building, GraduationCap, Instagram, MessageCircle, Phone, Link2, Mail, Camera, Edit, Lock, Trash2, Upload, X, ImagePlus, ShieldCheck } from "lucide-react";
 
 
 const profileFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
   email: z.string().email({ message: "Please enter a valid email." }),
+  collegeName: z.string().min(1, { message: "College name is required." }),
   phoneNumber: z.string().optional(),
 });
 
-const majorFormSchema = z.object({
-    major: z.string().min(2, { message: "Major is required." }),
+const educationFormSchema = z.object({
+    term: z.string().min(1, { message: "Term/Year is required." }),
+    degree: z.string().min(1, { message: "Degree is required." }),
+    course: z.string().min(1, { message: "Course is required." }),
 });
 
 const bioFormSchema = z.object({
@@ -80,6 +83,7 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
     defaultValues: {
       name: student.name || "",
       email: student.email || "",
+      collegeName: student.collegeName || "",
       phoneNumber: student.phoneNumber || "",
     },
   });
@@ -109,6 +113,9 @@ function ProfileEditor({ student, onUpdate }: { student: Student; onUpdate: (dat
                     )} />
                     <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="collegeName" render={({ field }) => (
+                        <FormItem><FormLabel>College Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
@@ -184,6 +191,58 @@ function SingleFieldEditor({ title, description, schema, fieldName, initialValue
             </DialogContent>
         </Dialog>
     );
+}
+
+function EducationEditor({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void; }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const form = useForm<z.infer<typeof educationFormSchema>>({
+    resolver: zodResolver(educationFormSchema),
+    defaultValues: {
+      term: student.term || "",
+      degree: student.degree || "",
+      course: student.course || "",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof educationFormSchema>) {
+    onUpdate(values);
+    setIsOpen(false);
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="flex items-center gap-1">
+            <Edit size={14} /> Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Education</DialogTitle>
+          <DialogDescription>
+            Update your education details.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField control={form.control} name="term" render={({ field }) => (
+                    <FormItem><FormLabel>Term/Year</FormLabel><FormControl><Input {...field} placeholder="e.g. 3rd Year" /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="degree" render={({ field }) => (
+                    <FormItem><FormLabel>Degree</FormLabel><FormControl><Input {...field} placeholder="e.g. B.Eng" /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="course" render={({ field }) => (
+                    <FormItem><FormLabel>Course</FormLabel><FormControl><Input {...field} placeholder="e.g. Software Engineering" /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                    <Button type="submit">Save changes</Button>
+                 </DialogFooter>
+            </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function DailyThoughtPoster() {
@@ -274,7 +333,7 @@ function SocialsEditor({ student, onUpdate }: { student: Student, onUpdate: (dat
       instagram: student.instagram || "",
       snapchat: student.snapchat || "",
       discord: student.discord || "",
-      customLink: student.customLink || "",
+customLink: student.customLink || "",
     },
   });
   
@@ -431,7 +490,7 @@ export default function ProfilePage() {
         </Avatar>
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-bold">{displayName}</h1>
-          <p className="text-muted-foreground">This is your personal profile.</p>
+          <p className="text-muted-foreground">@{currentUser.username}</p>
           <ProfilePictureUpdater student={currentUser} onUpdate={updateProfile} />
         </div>
       </div>
@@ -454,29 +513,22 @@ export default function ProfilePage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between text-xl">
-                                    <span className="flex items-center gap-2"><KeyRound size={24} /> Roll No.</span>
+                                    <span className="flex items-center gap-2"><GraduationCap size={24} /> Education</span>
+                                    <EducationEditor student={currentUser} onUpdate={updateProfile} />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-muted-foreground">{currentUser.rollNo}</p>
+                               <p className="text-muted-foreground break-words">{currentUser.degree} in {currentUser.course}, {currentUser.term}</p>
                             </CardContent>
                         </Card>
                          <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between text-xl">
-                                     <span className="flex items-center gap-2"><BookOpen size={24} /> Major</span>
-                                     <SingleFieldEditor
-                                        title="Edit Major"
-                                        description="Update your major."
-                                        schema={majorFormSchema}
-                                        fieldName="major"
-                                        initialValue={currentUser.major}
-                                        onUpdate={updateProfile}
-                                    />
+                                     <span className="flex items-center gap-2"><Building size={24} /> College</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                               <p className="text-muted-foreground break-words">{currentUser.major}</p>
+                               <p className="text-muted-foreground break-words">{currentUser.collegeName}</p>
                             </CardContent>
                         </Card>
                         <Card>
