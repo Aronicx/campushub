@@ -58,10 +58,21 @@ const passwordFormSchema = z.object({
 });
 
 const profileColors = [
-    "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
-    "bg-lime-500", "bg-green-500", "bg-emerald-500", "bg-teal-500",
-    "bg-cyan-500", "bg-sky-500", "bg-blue-500", "bg-indigo-500",
+    { name: "Red", class: "bg-red-500", locked: false, likes: 0 },
+    { name: "Blue", class: "bg-blue-500", locked: false, likes: 0 },
+    { name: "Green", class: "bg-green-500", locked: false, likes: 0 },
+    { name: "Yellow", class: "bg-yellow-500", locked: false, likes: 0 },
+    { name: "Pink", class: "bg-pink-500", locked: false, likes: 0 },
+    { name: "White", class: "bg-white border border-gray-300", locked: false, likes: 0 },
+    { name: "Black", class: "bg-black", locked: false, likes: 0 },
+    { name: "Grey", class: "bg-gray-500", locked: false, likes: 0 },
+    { name: "Space Purple", class: "bg-purple-800", locked: false, likes: 0 },
+    { name: "Electric Blue", class: "bg-blue-400", locked: false, likes: 0 },
+    { name: "Gold", class: "bg-gradient-to-br from-yellow-300 to-amber-500", locked: true, likes: 10 },
+    { name: "Velvet Red", class: "bg-gradient-to-br from-red-600 to-rose-800", locked: true, likes: 25 },
+    { name: "Chibi Cat", class: "bg-cover bg-center", locked: true, likes: 50, url: "url('/chibi-cat-bg.png')" },
 ];
+
 
 function PasswordEditor() {
     const { changePassword } = useAuth();
@@ -160,25 +171,42 @@ function ProfileThemeDialog() {
         updateProfile({ profileColor: selectedColor });
     };
 
+    const userLikes = currentUser.likedBy?.length || 0;
+
     return (
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Profile Theme</DialogTitle>
-                <DialogDescription>Choose a color for your profile banner. This will be visible to everyone.</DialogDescription>
+                <DialogDescription>Choose a color or theme for your profile banner. Unlock more with likes!</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 py-4">
-                {profileColors.map(color => (
-                    <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={cn(
-                            "w-full h-16 rounded-md transition-all",
-                            color,
-                            selectedColor === color ? "ring-2 ring-offset-2 ring-primary" : "hover:opacity-80"
-                        )}
-                        aria-label={`Select ${color}`}
-                    />
-                ))}
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-4">
+                {profileColors.map(color => {
+                    const isUnlocked = !color.locked || userLikes >= color.likes;
+                    return (
+                        <div key={color.name} className="relative group">
+                            <button
+                                onClick={() => isUnlocked && setSelectedColor(color.url ? color.url : color.class)}
+                                className={cn(
+                                    "w-full h-16 rounded-md transition-all",
+                                    color.class,
+                                    selectedColor === (color.url ? color.url : color.class) && "ring-2 ring-offset-2 ring-primary",
+                                    !isUnlocked && "cursor-not-allowed filter grayscale"
+                                )}
+                                style={{ backgroundImage: color.url }}
+                                aria-label={`Select ${color.name}`}
+                                disabled={!isUnlocked}
+                            />
+                            {!isUnlocked && (
+                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white rounded-md p-1 text-center">
+                                    <Lock size={16} />
+                                    <p className="text-xs font-bold">{color.likes}</p>
+                                    <p className="text-xs">Likes</p>
+                                </div>
+                            )}
+                            <p className="text-xs text-center mt-1 text-muted-foreground">{color.name}</p>
+                        </div>
+                    )
+                })}
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -322,3 +350,5 @@ export function UserAvatar() {
     </>
   );
 }
+
+    

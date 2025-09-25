@@ -330,12 +330,20 @@ export default function ProfilePage() {
   const isFollowing = currentUser ? (student.followers || []).includes(currentUser.id) : false;
   const isOwnProfile = currentUser?.id === student.id;
   const canViewContent = !student.isPrivate || isFollowing || isOwnProfile;
+  
+  const bannerStyle = student.profileColor?.startsWith('url(')
+        ? { backgroundImage: student.profileColor }
+        : {};
+
+  const bannerClass = !student.profileColor?.startsWith('url(')
+        ? student.profileColor || 'bg-muted'
+        : 'bg-cover bg-center';
 
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-lg">
-        <div className={cn("h-32", student.profileColor || 'bg-muted')} />
+        <div className={cn("h-32", bannerClass)} style={bannerStyle} />
         <CardContent className="p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-6 -mt-20">
              <Dialog>
@@ -475,3 +483,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

@@ -33,18 +33,16 @@ import { Building, GraduationCap, Book, CaseSensitive, Lock, User, Eye, EyeOff, 
 import { Separator } from "@/components/ui/separator";
 
 const profileColors = [
-  "bg-red-500",
-  "bg-orange-500",
-  "bg-amber-500",
-  "bg-yellow-500",
-  "bg-lime-500",
-  "bg-green-500",
-  "bg-emerald-500",
-  "bg-teal-500",
-  "bg-cyan-500",
-  "bg-sky-500",
-  "bg-blue-500",
-  "bg-indigo-500",
+    { name: "Red", class: "bg-red-500" },
+    { name: "Blue", class: "bg-blue-500" },
+    { name: "Green", class: "bg-green-500" },
+    { name: "Yellow", class: "bg-yellow-500" },
+    { name: "Pink", class: "bg-pink-500" },
+    { name: "White", class: "bg-white border border-gray-300" },
+    { name: "Black", class: "bg-black" },
+    { name: "Grey", class: "bg-gray-500" },
+    { name: "Space Purple", class: "bg-purple-800" },
+    { name: "Electric Blue", class: "bg-blue-400" },
 ];
 
 const formSchema = z.object({
@@ -250,13 +248,13 @@ function SignupForm() {
                             control={form.control}
                             name="profileColor"
                             render={({ field: { onChange, value } }) => (
-                                <div className="grid grid-cols-6 gap-2">
+                                <div className="grid grid-cols-5 gap-2">
                                     {profileColors.map(color => (
                                         <button
-                                            key={color}
+                                            key={color.name}
                                             type="button"
-                                            onClick={() => onChange(color)}
-                                            className={cn("w-full h-10 rounded-md transition-all", color, value === color ? "ring-2 ring-offset-2 ring-primary" : "hover:opacity-80")}
+                                            onClick={() => onChange(color.class)}
+                                            className={cn("w-full h-10 rounded-md transition-all", color.class, value === color.class ? "ring-2 ring-offset-2 ring-primary" : "hover:opacity-80")}
                                         />
                                     ))}
                                 </div>
@@ -312,3 +310,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
