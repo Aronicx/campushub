@@ -12,59 +12,8 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Users, RefreshCw } from "lucide-react";
+import { Users, RefreshCw, Search as SearchIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-function FilterControls() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const handleFilterChange = (type: 'search', value: string) => {
-      const current = new URLSearchParams(Array.from(searchParams.entries()));
-      
-      if (!value) {
-        current.delete(type);
-      } else {
-        current.set(type, value);
-      }
-      
-      const search = current.toString();
-      const query = search ? `?${search}` : "";
-      
-      // We are not using router.push to prevent re-fetching from server on filter change
-      // The filtering will happen on the client side.
-  }
-
-  return (
-    <div className="flex flex-col sm:flex-row gap-4 items-center">
-      <div className="relative w-full sm:flex-1">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        <Input 
-          name="search" 
-          placeholder="Search by name or username..." 
-          className="pl-10" 
-          defaultValue={searchParams.get('search') || ''}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
-        />
-      </div>
-    </div>
-  );
-}
 
 function StudentList({ students, currentUserId, onFollowToggle, onLikeToggle, onTrustLikeToggle, onCancelRequest }: { students: Student[], currentUserId?: string, onFollowToggle: (studentId: string) => void, onLikeToggle: (studentId: string) => void, onTrustLikeToggle: (studentId: string) => void, onCancelRequest: (studentId: string) => void }) {
   if (students.length === 0) {
@@ -119,12 +68,15 @@ function StudentDirectoryContent() {
     setDisplayedStudents(shuffleAndPick(studentsData, 20));
     setIsRefreshing(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setSearchTerm('');
   };
   
-  const filteredStudents = displayedStudents.filter(s =>
+  const filteredStudents = allStudents.filter(s =>
     (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const studentsToDisplay = searchTerm ? filteredStudents : displayedStudents;
 
   const handleFollowToggle = async (studentId: string) => {
       if (!currentUser) return;
@@ -155,28 +107,37 @@ function StudentDirectoryContent() {
         if (!currentUser) return;
         await toggleProfileLike(studentId, currentUser.id);
         const updatedStudents = await getStudents();
-        setAllStudents(updatedStudents);
-        setDisplayedStudents(prev => {
-            const newDisplayed = prev.map(ds => {
-                const updated = updatedStudents.find(us => us.id === ds.id);
-                return updated || ds;
-            });
-            return newDisplayed;
-        });
+        const filteredUpdated = currentUser ? updatedStudents.filter(s => s.id !== currentUser.id) : updatedStudents;
+        setAllStudents(filteredUpdated);
+
+        // Update displayed students with new data, preserving their order if not searching
+        if(!searchTerm) {
+          setDisplayedStudents(prev => {
+              const newDisplayed = prev.map(ds => {
+                  const updated = filteredUpdated.find(us => us.id === ds.id);
+                  return updated || ds;
+              });
+              return newDisplayed;
+          });
+        }
     };
 
     const handleTrustLikeToggle = async (studentId: string) => {
         if (!currentUser) return;
         await toggleTrustLike(studentId, currentUser.id);
         const updatedStudents = await getStudents();
-        setAllStudents(updatedStudents);
-        setDisplayedStudents(prev => {
-            const newDisplayed = prev.map(ds => {
-                const updated = updatedStudents.find(us => us.id === ds.id);
-                return updated || ds;
+         const filteredUpdated = currentUser ? updatedStudents.filter(s => s.id !== currentUser.id) : updatedStudents;
+        setAllStudents(filteredUpdated);
+
+         if(!searchTerm) {
+            setDisplayedStudents(prev => {
+                const newDisplayed = prev.map(ds => {
+                    const updated = filteredUpdated.find(us => us.id === ds.id);
+                    return updated || ds;
+                });
+                return newDisplayed;
             });
-            return newDisplayed;
-        });
+        }
     };
 
 
@@ -188,24 +149,12 @@ function StudentDirectoryContent() {
       </div>
       <div className="mb-8 p-6 bg-card rounded-lg shadow-sm border">
         <div className="relative w-full sm:flex-1">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
+          <SearchIcon
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
+          />
           <Input 
             name="search" 
-            placeholder="Search displayed students..." 
+            placeholder="Search all students..." 
             className="pl-10" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -218,13 +167,15 @@ function StudentDirectoryContent() {
         </div>
       ) : (
         <>
-            <StudentList students={filteredStudents} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onTrustLikeToggle={handleTrustLikeToggle} onCancelRequest={handleCancelRequest} />
-            <div className="mt-12 text-center">
-                <Button onClick={handleRefresh} disabled={isRefreshing}>
-                    <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    {isRefreshing ? 'Loading...' : 'Load More Students'}
-                </Button>
-            </div>
+            <StudentList students={studentsToDisplay} currentUserId={currentUser?.id} onFollowToggle={handleFollowToggle} onLikeToggle={handleLikeToggle} onTrustLikeToggle={handleTrustLikeToggle} onCancelRequest={handleCancelRequest} />
+            {!searchTerm && (
+                <div className="mt-12 text-center">
+                    <Button onClick={handleRefresh} disabled={isRefreshing}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        {isRefreshing ? 'Loading...' : 'Load More Students'}
+                    </Button>
+                </div>
+            )}
         </>
       )}
     </div>
