@@ -747,8 +747,6 @@ export async function updateNote(noteId: string, updates: Partial<Note>): Promis
 }
 
 export async function deleteNote(noteId: string, fileUrl: string): Promise<void> {
-    // Since we are not storing files in Firebase Storage anymore,
-    // we only need to delete the note document.
     const noteRef = doc(db, 'notes', noteId);
     await deleteDoc(noteRef);
 }

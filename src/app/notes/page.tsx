@@ -9,22 +9,26 @@ import { useAuth } from "@/hooks/use-auth";
 import { addNote, getNotes, deleteNote } from "@/lib/mock-data";
 import type { Note } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { uploadNoteToDrive } from "@/ai/flows/upload-note-to-drive";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, Link2 } from "lucide-react";
+import { PlusCircle, Loader2, Link2, Upload } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
-  link: z.string().url("Please provide a valid URL for the note."),
+  file: z.instanceof(File).optional(),
   password: z.string().optional(),
 });
+
+const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   const { currentUser } = useAuth();
@@ -34,21 +38,49 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", link: "", password: "" },
+    defaultValues: { heading: "", description: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
-    if (!currentUser) return;
+    if (!currentUser || !values.file) {
+      toast({ variant: "destructive", title: "File missing", description: "Please select a file to upload." });
+      return;
+    }
+
+    if (values.file.size > MAX_FILE_SIZE_BYTES) {
+        toast({ variant: "destructive", title: "File too large", description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.` });
+        return;
+    }
+
     setIsSubmitting(true);
     try {
-      await addNote(currentUser, values);
-      toast({ title: "Note Added!", description: "Your note has been shared." });
-      form.reset();
-      setIsOpen(false);
-      onNoteAdded();
+      const reader = new FileReader();
+      reader.readAsDataURL(values.file);
+      reader.onloadend = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        
+        const driveResponse = await uploadNoteToDrive({
+          fileName: values.file!.name,
+          fileContent: base64String,
+          mimeType: values.file!.type,
+        });
+
+        await addNote(currentUser, {
+          heading: values.heading,
+          description: values.description,
+          link: driveResponse.webViewLink,
+          password: values.password,
+        });
+        
+        toast({ title: "Note Added!", description: "Your note has been shared." });
+        form.reset();
+        setIsOpen(false);
+        onNoteAdded();
+      };
+
     } catch (error) {
       console.error(error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to add note." });
+      toast({ variant: "destructive", title: "Error", description: "Failed to add note. Ensure your Google Drive folder ID is set." });
     } finally {
       setIsSubmitting(false);
     }
@@ -65,7 +97,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Link to your note from Google Docs, Notion, or anywhere else. You can optionally add a password to restrict editing the note's details.
+            Upload your note file. It will be stored securely in a central Google Drive. You can optionally add a password to restrict editing the note's details.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -92,25 +124,26 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="link"
-              render={({ field }) => (
+             <FormField
+                control={form.control}
+                name="file"
+                render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
-                  <FormLabel>Link to Note</FormLabel>
-                  <div className="flex gap-2">
+                    <FormLabel>Note File</FormLabel>
                     <FormControl>
-                        <Input placeholder="https://docs.google.com/..." {...field} />
+                    <div className="relative">
+                        <Input
+                        type="file"
+                        className="pl-12"
+                        onChange={(e) => onChange(e.target.files?.[0])}
+                        {...rest}
+                        />
+                        <Upload className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    </div>
                     </FormControl>
-                    <Button variant="outline" asChild>
-                        <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer">
-                            <Link2 className="mr-2"/> Create
-                        </a>
-                    </Button>
-                  </div>
-                  <FormMessage />
+                    <FormMessage />
                 </FormItem>
-              )}
+                )}
             />
              <FormField
               control={form.control}
