@@ -3,12 +3,17 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Icons } from "@/components/icons";
-import { Droplets, MessageSquareText, BookCopy, Users, Info } from "lucide-react";
+import { Droplets, MessageSquareText, BookCopy, Users, ShieldCheck, Trophy, Info } from "lucide-react";
 import Link from "next/link";
 
 const features = [
+  {
+    icon: <Users className="h-8 w-8 text-green-500" />,
+    title: "Campus Connect",
+    description: "Discover and connect with students. Profiles are suggested to you, and a direct chat option makes it easy to break the ice.",
+    link: "/directory"
+  },
   {
     icon: <Droplets className="h-8 w-8 text-primary" />,
     title: "Thought Bubbles",
@@ -18,20 +23,27 @@ const features = [
   {
     icon: <BookCopy className="h-8 w-8 text-orange-500" />,
     title: "Notes Sharing",
-    description: "Share and discover useful study notes, links, and resources with your peers. A collaborative space for academic success.",
+    description: "Share and discover useful study notes and resources. All notes are stored on Google Drive and are publicly accessible to anyone with the link.",
     link: "/notes"
   },
   {
     icon: <MessageSquareText className="h-8 w-8 text-blue-500" />,
     title: "Global & Private Chat",
-    description: "Jump into the ephemeral Global Chat that vanishes every few minutes, or have private, expiring conversations with your connections.",
+    description: "Jump into the ephemeral Global Chat that vanishes every few minutes, or have private, expiring one-on-one conversations.",
     link: "/chat"
   },
+];
+
+const uniqueSystems = [
   {
-    icon: <Users className="h-8 w-8 text-green-500" />,
-    title: "Manage Your Connections",
-    description: "See who follows you, who you're following, and who has liked your profile. A central hub to manage your campus network.",
-    link: "/connections",
+    icon: <ShieldCheck className="h-8 w-8 text-emerald-500" />,
+    title: "Trust Likes",
+    description: "Show your genuine appreciation for a profile with a 'Trust Like'. These special likes are a key factor in the monthly Coordinator elections."
+  },
+  {
+    icon: <Trophy className="h-8 w-8 text-amber-500" />,
+    title: "Coordinator Elections",
+    description: "Each month, the two students with the most Trust Likes are elected as Coordinators, gaining moderation abilities to help keep the community safe and welcoming."
   }
 ];
 
@@ -50,7 +62,7 @@ export default function HomePage() {
         </p>
         <div className="mt-8 flex justify-center gap-4">
             <Button asChild size="lg">
-                <Link href="/directory">Campus Connect</Link>
+                <Link href="/directory">Explore Campus Connect</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
                 <Link href="/login">Get Started</Link>
@@ -59,7 +71,7 @@ export default function HomePage() {
       </section>
 
       <section>
-        <h2 className="text-3xl font-bold text-center mb-8">Features</h2>
+        <h2 className="text-3xl font-bold text-center mb-8">Core Features</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature) => (
             <Card key={feature.title} className="flex flex-col relative">
@@ -70,11 +82,28 @@ export default function HomePage() {
               <CardContent className="text-center flex-grow">
                 <p className="text-muted-foreground">{feature.description}</p>
               </CardContent>
-              <CardFooter className="justify-center">
+               <CardFooter className="justify-center">
                   <Button asChild variant="outline">
-                      <Link href={feature.link}>Learn More</Link>
+                      <Link href={feature.link}>Check it out</Link>
                   </Button>
               </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-16">
+        <h2 className="text-3xl font-bold text-center mb-8">What Makes Us Unique</h2>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {uniqueSystems.map((system) => (
+            <Card key={system.title} className="flex flex-col relative bg-muted/50">
+              <CardHeader className="items-center">
+                {system.icon}
+                <CardTitle className="mt-4 text-2xl">{system.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex-grow">
+                <p className="text-muted-foreground">{system.description}</p>
+              </CardContent>
             </Card>
           ))}
         </div>

@@ -4,13 +4,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { getFollowers, getFollowing, getProfileLikers, toggleFollow, removeFollower, getSuggestedConnections, toggleProfileLike } from '@/lib/mock-data';
+import { getFollowers, getFollowing, getProfileLikers, toggleFollow, removeFollower, toggleProfileLike } from '@/lib/mock-data';
 import type { Student } from '@/lib/types';
 import { StudentCard } from '@/components/student-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Users, Heart, Lightbulb } from 'lucide-react';
+import { Users, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 function ConnectionList({ 
@@ -30,12 +30,12 @@ function ConnectionList({
     onLikeToggle?: (studentId: string) => void,
     emptyState: React.ReactNode,
     isLoading: boolean,
-    listType: 'followers' | 'following' | 'likes' | 'suggestions'
+    listType: 'followers' | 'following' | 'likes'
 }) {
     if (isLoading) {
         return (
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
             </div>
         )
     }
@@ -73,12 +73,10 @@ export default function ConnectionsPage() {
     const [followers, setFollowers] = useState<Student[]>([]);
     const [following, setFollowing] = useState<Student[]>([]);
     const [likers, setLikers] = useState<Student[]>([]);
-    const [suggestions, setSuggestions] = useState<Student[]>([]);
 
     const [isLoadingFollowers, setIsLoadingFollowers] = useState(true);
     const [isLoadingFollowing, setIsLoadingFollowing] = useState(true);
     const [isLoadingLikers, setIsLoadingLikers] = useState(true);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
 
     useEffect(() => {
         if (!isAuthLoading && !currentUser) {
@@ -96,9 +94,6 @@ export default function ConnectionsPage() {
 
             setIsLoadingLikers(true);
             getProfileLikers(currentUser.id).then(setLikers).finally(() => setIsLoadingLikers(false));
-
-            setIsLoadingSuggestions(true);
-            getSuggestedConnections(currentUser.id).then(setSuggestions).finally(() => setIsLoadingSuggestions(false));
         }
     }
 
@@ -112,8 +107,8 @@ export default function ConnectionsPage() {
             await toggleFollow(currentUser.id, studentId);
             toast({ title: "Updated", description: `Follow status changed.` });
             await refreshCurrentUser();
-            // Refetch suggestions as they might change
-            getSuggestedConnections(currentUser.id).then(setSuggestions);
+            // Refetch followers/following after an action
+            await fetchAllConnections();
         } catch (error) {
             console.error("Failed to toggle follow", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not toggle follow status.' });
@@ -187,7 +182,6 @@ export default function ConnectionsPage() {
                         <TabsTrigger value="followers">Followers ({followers.length})</TabsTrigger>
                         <TabsTrigger value="following">Following ({following.length})</TabsTrigger>
                         <TabsTrigger value="likes">Likes ({likers.length})</TabsTrigger>
-                        <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -220,7 +214,7 @@ export default function ConnectionsPage() {
                             <>
                                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
                                 <h3 className="text-xl font-semibold">You are not following anyone.</h3>
-                                <p className="text-muted-foreground">Browse the directory to find and follow friends.</p>
+                                <p className="text-muted-foreground">Browse Campus Connect to find and follow friends.</p>
                             </>
                         }
                     />
@@ -238,23 +232,6 @@ export default function ConnectionsPage() {
                                 <Heart className="h-12 w-12 text-muted-foreground mb-4" />
                                 <h3 className="text-xl font-semibold">Your profile has no likes yet.</h3>
                                 <p className="text-muted-foreground">Keep your profile updated and engage with others!</p>
-                            </>
-                        }
-                    />
-                </TabsContent>
-                <TabsContent value="suggestions">
-                     <ConnectionList 
-                        students={suggestions}
-                        currentUserId={currentUser?.id}
-                        onFollowToggle={handleFollowToggle}
-                        onLikeToggle={handleLikeToggle}
-                        isLoading={isLoadingSuggestions}
-                        listType="suggestions"
-                        emptyState={
-                            <>
-                                <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-                                <h3 className="text-xl font-semibold">No suggestions right now.</h3>
-                                <p className="text-muted-foreground">We'll find some new people for you to connect with soon!</p>
                             </>
                         }
                     />

@@ -2,13 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import type { Student } from "@/lib/types";
 import { Button } from "./ui/button";
-import { ArrowRight, UserPlus, UserCheck, Heart, Users, UserMinus, UserX, MoreVertical, Trash2, ShieldCheck, Building } from "lucide-react";
+import { Heart, UserCheck, UserPlus, UserMinus, ShieldCheck, Building, MessageSquare } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,14 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -51,6 +43,7 @@ export function StudentCard({
   onRemoveFollower
 }: StudentCardProps) {
   const { currentUser } = useAuth();
+  const router = useRouter();
   const initials = (student.name || 'NN').split(" ").map((n) => n[0]).join("");
   const displayName = student.name || '(no name)';
   
@@ -59,7 +52,7 @@ export function StudentCard({
   const isLiked = currentUserId ? (student.likedBy || []).includes(currentUserId) : false;
   const hasTrustLiked = (student.trustLikes || []).some(like => like.userId === currentUserId);
   const trustLikeCount = (student.trustLikes || []).length;
-
+  const isOwnProfile = currentUserId === student.id;
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -92,17 +85,17 @@ export function StudentCard({
       onTrustLikeToggle(student.id);
     }
   };
-  
-  const handleRemoveFollowerClick = (e: React.MouseEvent) => {
+
+  const handleChatClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (currentUserId && onRemoveFollower) {
-      onRemoveFollower(student.id);
-    }
+    if (!currentUser) return;
+    const chatId = [currentUser.id, student.id].sort().join('--');
+    router.push(`/chat/${chatId}`);
   }
-
+  
   const FollowButton = () => {
-    if (!onFollowToggle || !currentUserId || currentUserId === student.id || listType !== 'directory') return null;
+    if (!onFollowToggle || !currentUserId || isOwnProfile) return null;
 
     if (isFollowing) {
         return (
@@ -126,7 +119,7 @@ export function StudentCard({
   }
   
   const ActionMenu = () => {
-    if (currentUserId === student.id) return null;
+    if (isOwnProfile) return null;
     
     if (listType === 'following' && onFollowToggle) {
       return (
@@ -176,7 +169,7 @@ export function StudentCard({
   }
 
   return (
-    <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
+    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 border border-transparent hover:border-primary/30">
         <Link href={`/profile/${student.id}`} className="flex-grow">
             <CardHeader className="flex-row gap-4 items-center p-4">
                 <Avatar>
@@ -192,36 +185,29 @@ export function StudentCard({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="px-4 pb-4 flex-grow">
-                <div className="flex flex-wrap gap-2 h-12">
-                    {student.interests.slice(0, 3).map((interest) => (
-                    <Badge key={interest} variant="secondary">
-                        {interest}
-                    </Badge>
-                    ))}
-                    {student.interests.length > 3 && <Badge variant="secondary">...</Badge>}
-                </div>
-            </CardContent>
         </Link>
-      <CardFooter className="p-4 flex justify-between items-center border-t">
-          <div className="flex items-center gap-2 sm:gap-4 text-muted-foreground">
-             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || currentUserId === student.id}>
+      <CardFooter className="p-2 flex justify-between items-center border-t">
+          <div className="flex items-center gap-1 text-muted-foreground">
+             <div className="flex items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || isOwnProfile}>
                    <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
                 </Button>
-                <span className="text-sm">{trustLikeCount}</span>
+                <span className="text-sm -ml-1">{trustLikeCount}</span>
             </div>
-             <div className="flex items-center gap-1">
+             <div className="flex items-center">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
                     <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
                 </Button>
-                <span className="text-sm">{(student.likedBy || []).length}</span>
+                <span className="text-sm -ml-1">{(student.likedBy || []).length}</span>
             </div>
           </div>
-          <ActionMenu />
+          <div className="flex items-center gap-1">
+            {!isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleChatClick}><MessageSquare /></Button>}
             { (listType === 'directory' || listType === 'suggestions') && (
                 <FollowButton />
             )}
+            <ActionMenu />
+          </div>
       </CardFooter>
     </Card>
   );
