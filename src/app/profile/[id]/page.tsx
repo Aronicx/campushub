@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { getStudentById, toggleFollow, toggleProfileLike, cancelFollowRequest, getFollowers, getFollowing, toggleTrustLike } from "@/lib/mock-data";
@@ -235,6 +236,26 @@ export default function ProfilePage() {
       fetchStudent();
   }, [id]);
 
+    const bannerStyle = useMemo(() => {
+        if (!student?.profileColor) return {};
+        try {
+            // If it's a JSON string (for styles with url), parse it
+            if (student.profileColor.startsWith('{')) {
+                return JSON.parse(student.profileColor);
+            }
+        } catch (e) { /* Fallback below */ }
+        // If it's a simple class, it will be handled by cn
+        return {};
+    }, [student?.profileColor]);
+
+  const bannerClass = useMemo(() => {
+    if (!student?.profileColor) return 'bg-muted';
+    // If it's a style object, don't return a class
+    if (student.profileColor.startsWith('{')) return '';
+    // Otherwise, it's a class name
+    return student.profileColor;
+  }, [student?.profileColor]);
+
   const handleFollowToggle = async () => {
         if (!currentUser || !student) return;
         try {
@@ -331,25 +352,6 @@ export default function ProfilePage() {
   const isOwnProfile = currentUser?.id === student.id;
   const canViewContent = !student.isPrivate || isFollowing || isOwnProfile;
   
-    const bannerStyle = useMemo(() => {
-        if (!student.profileColor) return {};
-        try {
-            // If it's a JSON string (for styles with url), parse it
-            if (student.profileColor.startsWith('{')) {
-                return JSON.parse(student.profileColor);
-            }
-        } catch (e) { /* Fallback below */ }
-        // If it's a simple class, it will be handled by cn
-        return {};
-    }, [student.profileColor]);
-
-  const bannerClass = useMemo(() => {
-    if (!student.profileColor) return 'bg-muted';
-    // If it's a style object, don't return a class
-    if (student.profileColor.startsWith('{')) return '';
-    // Otherwise, it's a class name
-    return student.profileColor;
-  }, [student.profileColor]);
 
 
   return (
@@ -499,3 +501,4 @@ export default function ProfilePage() {
     
 
     
+
