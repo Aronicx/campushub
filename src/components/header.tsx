@@ -21,8 +21,8 @@ import { useEffect, useState } from "react";
 
 
 const navLinks = [
-    { href: "/notes", icon: BookCopy, label: "Notes" },
     { href: "/chat", icon: MessageSquareText, label: "Chat" },
+    { href: "/notes", icon: BookCopy, label: "Notes" },
 ];
 
 export function Header() {
@@ -46,6 +46,32 @@ export function Header() {
             <TooltipProvider>
                 <div className="flex-1 min-w-0">
                     <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
+                        {currentUser && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button 
+                                    variant={pathname.startsWith('/directory') || pathname.startsWith('/thought-bubbles') || pathname.startsWith('/connections') ? "default" : "ghost"}
+                                    size="icon"
+                                    className={cn("rounded-full",
+                                        !pathname.startsWith('/directory') && !pathname.startsWith('/thought-bubbles') && !pathname.startsWith('/connections') && "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Users className="h-5 w-5" />
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/directory"><BookUser className="mr-2"/>Campus Connect</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/connections"><Users className="mr-2"/>Connections</Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                         )}
                         {navLinks.map((link) => (
                             <Tooltip key={link.href}>
                                 <TooltipTrigger asChild>
@@ -69,29 +95,6 @@ export function Header() {
                                 </TooltipContent>
                             </Tooltip>
                         ))}
-                         {currentUser && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button 
-                                    variant={pathname.startsWith('/directory') || pathname.startsWith('/thought-bubbles') || pathname.startsWith('/connections') ? "secondary" : "ghost"}
-                                    className="rounded-full px-4"
-                                >
-                                    <Users className="h-5 w-5 mr-2" /> Social
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/directory"><BookUser className="mr-2"/>Campus Connect</Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/connections"><Users className="mr-2"/>Connections</Link>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                         )}
                     </nav>
                 </div>
 
