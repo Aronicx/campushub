@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, Link2, Upload } from "lucide-react";
+import { PlusCircle, Loader2, Link2, Upload, Search } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 
@@ -160,6 +160,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -173,6 +174,13 @@ export default function NotesPage() {
   useEffect(() => {
     fetchNotes();
   }, []);
+
+  const filteredNotes = useMemo(() => {
+    return notes.filter(note =>
+        note.heading.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        note.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [notes, searchTerm]);
 
   const handleNoteDelete = async (noteId: string) => {
     const noteToDelete = notes.find(n => n.id === noteId);
@@ -205,17 +213,28 @@ export default function NotesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div className="text-center sm:text-left">
-            <h1 className="text-4xl font-bold tracking-tight text-primary">Shared Notes</h1>
-            <p className="mt-2 text-lg text-muted-foreground">A community-curated list of useful notes and resources.</p>
+      <div className="space-y-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="text-center sm:text-left">
+              <h1 className="text-4xl font-bold tracking-tight text-primary">Shared Notes</h1>
+              <p className="mt-2 text-lg text-muted-foreground">A community-curated list of useful notes and resources.</p>
+          </div>
+          {currentUser && <AddNoteForm onNoteAdded={fetchNotes} />}
         </div>
-        {currentUser && <AddNoteForm onNoteAdded={fetchNotes} />}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search by heading or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full md:max-w-md"
+          />
+        </div>
       </div>
 
-      {notes.length > 0 ? (
+      {filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {notes.map(note => (
+          {filteredNotes.map(note => (
             <NoteCard 
               key={note.id} 
               note={note} 
@@ -226,8 +245,10 @@ export default function NotesPage() {
         </div>
       ) : (
         <Card className="text-center p-10 border-dashed col-span-full">
-          <h3 className="text-xl font-semibold">No Notes Yet</h3>
-          <p className="text-muted-foreground">Be the first one to share a note!</p>
+          <h3 className="text-xl font-semibold">No Notes Found</h3>
+          <p className="text-muted-foreground">
+            {searchTerm ? `Your search for "${searchTerm}" did not return any results.` : "Be the first one to share a note!"}
+            </p>
         </Card>
       )}
     </div>
