@@ -33,25 +33,10 @@ export function Header() {
       <div className="container flex h-16 items-center">
         <TooltipProvider>
             <div className="mr-6 flex items-center space-x-2">
-                <Link href="/">
+                <Link href="/" className="flex items-center space-x-2">
                     <Icons.logo className="h-8 w-8 text-primary" />
-                    <span className="sr-only">Campus Hub Home</span>
+                    <span className="font-bold hidden sm:inline-block text-lg">Campus Hub</span>
                 </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="hidden font-bold sm:inline-block text-lg p-0 h-auto">
-                            Campus Hub
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem asChild>
-                            <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/friends"><Users className="mr-2"/>Friends</Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
         
           <div className="flex-1 min-w-0">
@@ -87,24 +72,27 @@ export function Header() {
               <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
             ) : currentUser ? (
               <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                         <Button 
-                            asChild
-                            variant={pathname.startsWith('/directory') ? "secondary" : "ghost"}
-                            size="icon"
-                            className={cn("rounded-full")}
-                        >
-                            <Link href="/directory">
-                                <BookUser className="h-5 w-5" />
-                                <span className="sr-only">Directory</span>
-                            </Link>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Directory</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant={pathname.startsWith('/directory') || pathname.startsWith('/thought-bubbles') || pathname.startsWith('/friends') ? "secondary" : "ghost"}
+                        className="rounded-full px-4"
+                      >
+                        <Users className="h-5 w-5 mr-2" /> Social
+                      </Button>
+                    </DropdownMenuTrigger>
+                     <DropdownMenuContent>
+                        <DropdownMenuItem asChild>
+                            <Link href="/directory"><BookUser className="mr-2"/>Directory</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/friends"><Users className="mr-2"/>Friends</Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Notifications />
                   <UserAvatar />
               </>
