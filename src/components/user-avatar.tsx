@@ -38,7 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Trash2, Users, Loader2, Lock, ShieldCheck, Palette } from "lucide-react";
+import { LayoutDashboard, LogOut, Trash2, Users, Loader2, Lock, ShieldCheck, Palette, Eye } from "lucide-react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useForm } from "react-hook-form";
@@ -166,8 +166,18 @@ function SecurityDialog() {
 function ProfileThemeDialog() {
     const { currentUser, updateProfile } = useAuth();
     const [selectedColor, setSelectedColor] = useState(currentUser?.profileColor || "");
+    const [previewColor, setPreviewColor] = useState(currentUser?.profileColor || "");
 
     if (!currentUser) return null;
+    
+    const bannerStyle = previewColor.startsWith('url(')
+        ? { backgroundImage: previewColor }
+        : {};
+
+    const bannerClass = !previewColor.startsWith('url(')
+        ? previewColor
+        : 'bg-cover bg-center';
+
 
     const handleSave = () => {
         updateProfile({ profileColor: selectedColor });
@@ -176,22 +186,46 @@ function ProfileThemeDialog() {
     const userLikes = currentUser.likedBy?.length || 0;
 
     return (
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>Profile Theme</DialogTitle>
-                <DialogDescription>Choose a color or theme for your profile banner. Unlock more with likes!</DialogDescription>
+                <DialogDescription>Choose a color or theme for your profile banner. Hover to preview, click to select. Unlock more with likes!</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
+
+            <div className="my-4">
+                <p className="text-sm font-medium mb-2">Preview</p>
+                <div className="rounded-lg overflow-hidden border">
+                    <div className={cn("h-24 w-full transition-all", bannerClass)} style={bannerStyle} />
+                    <div className="p-4 bg-card flex items-end gap-4 -mt-12">
+                        <Avatar className="h-24 w-24 border-4 border-background">
+                             <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
+                            <AvatarFallback className="text-3xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                             <h1 className="text-2xl font-bold">{currentUser.name}</h1>
+                             <p className="text-md text-muted-foreground">@{currentUser.username}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 py-4">
                 {profileColors.map(color => {
                     const isUnlocked = !color.locked || userLikes >= color.likes;
+                    const colorValue = color.url ? color.url : color.class;
                     return (
-                        <div key={color.name} className="relative group">
+                        <div 
+                            key={color.name} 
+                            className="relative group flex flex-col items-center"
+                            onMouseEnter={() => setPreviewColor(colorValue)}
+                            onMouseLeave={() => setPreviewColor(selectedColor)}
+                        >
                             <button
-                                onClick={() => isUnlocked && setSelectedColor(color.url ? color.url : color.class)}
+                                onClick={() => isUnlocked && setSelectedColor(colorValue)}
                                 className={cn(
                                     "w-full h-16 rounded-md transition-all",
                                     color.class,
-                                    selectedColor === (color.url ? color.url : color.class) && "ring-2 ring-offset-2 ring-primary",
+                                    selectedColor === colorValue && "ring-2 ring-offset-2 ring-primary",
                                     !isUnlocked && "cursor-not-allowed filter grayscale"
                                 )}
                                 style={{ backgroundImage: color.url }}
@@ -352,6 +386,8 @@ export function UserAvatar() {
     </>
   );
 }
+
+    
 
     
 
