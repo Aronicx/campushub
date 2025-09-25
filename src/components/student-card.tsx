@@ -99,21 +99,21 @@ export function StudentCard({
 
     if (isFollowing) {
         return (
-            <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" aria-label="Unfollow">
-                <UserCheck className="text-primary"/>
+            <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8 text-primary hover:bg-accent/20" aria-label="Unfollow">
+                <UserCheck />
             </Button>
         )
     }
     if (hasSentRequest) {
         return (
-            <Button variant="ghost" size="icon" onClick={handleCancelRequestClick} disabled={!currentUserId || !onCancelRequest} className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" aria-label="Cancel follow request">
-                <UserMinus className="text-muted-foreground"/>
+            <Button variant="ghost" size="icon" onClick={handleCancelRequestClick} disabled={!currentUserId || !onCancelRequest} className="h-8 w-8 text-muted-foreground hover:bg-accent/20" aria-label="Cancel follow request">
+                <UserMinus />
             </Button>
         )
     }
     return (
-        <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" aria-label="Follow">
-            <UserPlus className="text-muted-foreground"/>
+        <Button variant="ghost" size="icon" onClick={handleFollowClick} disabled={!currentUserId} className="h-8 w-8 text-muted-foreground hover:bg-accent/20" aria-label="Follow">
+            <UserPlus />
         </Button>
     )
   }
@@ -169,7 +169,7 @@ export function StudentCard({
   }
 
   return (
-    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-[hsl(220,40%,10%)] text-gray-200 border-gray-700/50 hover:border-primary/50">
+    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-card">
         <Link href={`/profile/${student.id}`} className="flex-grow">
             <CardHeader className="flex-row gap-4 items-center p-4">
                 <Avatar>
@@ -177,32 +177,32 @@ export function StudentCard({
                     <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
-                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate text-white">{displayName}</h3>
-                    <p className="text-sm text-gray-400 leading-tight truncate">{student.course}</p>
-                    <div className="text-xs text-gray-400 flex items-center gap-1.5 mt-1 truncate">
+                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate text-card-foreground">{displayName}</h3>
+                    <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
                         <Building size={12}/>
                         <span>{student.collegeName}</span>
                     </div>
                 </div>
             </CardHeader>
         </Link>
-      <CardFooter className="p-2 flex justify-between items-center border-t border-t-gray-700">
-          <div className="flex items-center gap-1 text-gray-400">
+      <CardFooter className="p-2 flex justify-between items-center border-t">
+          <div className="flex items-center gap-1 text-muted-foreground">
              <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" onClick={handleTrustLikeClick} disabled={!currentUserId || isOwnProfile}>
-                   <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-gray-400")} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/20" onClick={handleTrustLikeClick} disabled={!currentUserId || isOwnProfile}>
+                   <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
                 </Button>
                 <span className="text-sm -ml-1">{trustLikeCount}</span>
             </div>
              <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" onClick={handleLikeClick} disabled={!currentUserId}>
-                    <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-gray-400")} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/20" onClick={handleLikeClick} disabled={!currentUserId}>
+                    <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
                 </Button>
                 <span className="text-sm -ml-1">{(student.likedBy || []).length}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {!isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" onClick={handleChatClick}><MessageSquare className="text-gray-400"/></Button>}
+            {!isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/20" onClick={handleChatClick}><MessageSquare className="text-muted-foreground"/></Button>}
             { (listType === 'directory' || listType === 'suggestions') && (
                 <FollowButton />
             )}
