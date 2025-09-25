@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,17 +71,24 @@ body {
     @apply bg-background text-foreground;
   }
 
-  .shimmer-gold {
-    background: linear-gradient(110deg, #d4af37, #f0e68c, #d4af37);
+  .shimmer-silver {
+    background: linear-gradient(110deg, #c0c0c0, #f0f0f0, #c0c0c0);
     background-size: 200% 100%;
     animation: shimmer 5s linear infinite;
   }
 
-  .shimmer-red {
-    background: linear-gradient(110deg, #8b0000, #ff4500, #8b0000);
+  .shimmer-platinum-blue {
+    background: linear-gradient(110deg, #e5e4e2, #a7d8e8, #e5e4e2);
     background-size: 200% 100%;
     animation: shimmer 5s linear infinite;
   }
+  
+  .shimmer-gold-white {
+    background: linear-gradient(110deg, #ffd700, #ffffff, #ffd700);
+    background-size: 200% 100%;
+    animation: shimmer 5s linear infinite;
+  }
+  
 
   @keyframes shimmer {
     0% {
@@ -91,3 +99,5 @@ body {
     }
   }
 }
+
+    

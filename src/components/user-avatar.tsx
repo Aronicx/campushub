@@ -68,11 +68,9 @@ const profileColors = [
     { name: "Grey", class: "bg-gray-500", locked: false, likes: 0 },
     { name: "Space Purple", class: "bg-purple-800", locked: false, likes: 0 },
     { name: "Electric Blue", class: "bg-blue-400", locked: false, likes: 0 },
-    { name: "Chibi Cat", class: "bg-cover", style: { backgroundImage: "url('/chibi-cat-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 5 },
-    { name: "Gold", class: "shimmer-gold", locked: true, likes: 10 },
-    { name: "Velvet Red", class: "shimmer-red", locked: true, likes: 25 },
-    { name: "Spider-Man", class: "bg-cover", style: { backgroundImage: "url('/spider-man-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 35 },
-    { name: "Iron Man", class: "bg-cover", style: { backgroundImage: "url('/iron-man-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 50 },
+    { name: "Silver", class: "shimmer-silver", locked: true, likes: 5 },
+    { name: "Platinum Blue", class: "shimmer-platinum-blue", locked: true, likes: 35 },
+    { name: "Gold & White", class: "shimmer-gold-white", locked: true, likes: 50 },
 ];
 
 
@@ -229,7 +227,7 @@ function ProfileThemeDialog() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 py-4">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
                 {profileColors.map(color => {
                     const isUnlocked = !color.locked || userLikes >= color.likes;
                     const colorValue = color.style ? JSON.stringify(color.style) : color.class;
@@ -409,9 +407,5 @@ export function UserAvatar() {
     </>
   );
 }
-
-    
-
-    
 
     
