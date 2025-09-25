@@ -1,27 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -771,21 +747,8 @@ export async function updateNote(noteId: string, updates: Partial<Note>): Promis
 }
 
 export async function deleteNote(noteId: string, fileUrl: string): Promise<void> {
-    // Try to delete the file from Firebase Storage if it's a firebase URL
-    if (fileUrl.includes('firebasestorage.googleapis.com')) {
-        try {
-            const fileRef = ref(storage, fileUrl);
-            await deleteObject(fileRef);
-        } catch (error: any) {
-            // It's okay if the file doesn't exist, we can still delete the DB entry
-            if (error.code !== 'storage/object-not-found') {
-                console.error("Error deleting file from storage:", error);
-                throw error; // Re-throw if it's another error
-            }
-        }
-    }
-    
-    // Delete the note document from Firestore
+    // Since we are not storing files in Firebase Storage anymore,
+    // we only need to delete the note document.
     const noteRef = doc(db, 'notes', noteId);
     await deleteDoc(noteRef);
 }
