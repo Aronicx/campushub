@@ -108,20 +108,6 @@ body {
 
   .shimmer-platinum-blue {
     background: 
-      repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(173, 216, 230, 0.4) 10px,
-        rgba(173, 216, 230, 0.4) 12px
-      ),
-      repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 10px,
-        rgba(173, 216, 230, 0.4) 10px,
-        rgba(173, 216, 230, 0.4) 12px
-      ),
       linear-gradient(110deg, #00008B, #4169E1, #00008B);
     background-size: 200% 100%;
     animation: shimmer 3s linear infinite;
