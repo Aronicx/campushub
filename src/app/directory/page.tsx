@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { getStudents, toggleFollow, toggleProfileLike, cancelFollowRequest, toggleTrustLike } from "@/lib/mock-data";
@@ -95,7 +96,10 @@ function StudentDirectoryContent() {
   
   const fetchData = async () => {
     setIsLoading(true);
-    const studentsData = await getStudents();
+    let studentsData = await getStudents();
+    if(currentUser) {
+      studentsData = studentsData.filter(s => s.id !== currentUser.id);
+    }
     setAllStudents(studentsData);
     setDisplayedStudents(shuffleAndPick(studentsData, 20));
     setIsLoading(false);
@@ -103,11 +107,14 @@ function StudentDirectoryContent() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    const studentsData = await getStudents();
+    let studentsData = await getStudents();
+    if(currentUser) {
+      studentsData = studentsData.filter(s => s.id !== currentUser.id);
+    }
     setAllStudents(studentsData);
     setDisplayedStudents(shuffleAndPick(studentsData, 20));
     setIsRefreshing(false);
