@@ -68,9 +68,11 @@ const profileColors = [
     { name: "Grey", class: "bg-gray-500", locked: false, likes: 0 },
     { name: "Space Purple", class: "bg-purple-800", locked: false, likes: 0 },
     { name: "Electric Blue", class: "bg-blue-400", locked: false, likes: 0 },
-    { name: "Gold", class: "bg-gradient-to-br from-yellow-300 to-amber-500", locked: true, likes: 10 },
-    { name: "Velvet Red", class: "bg-gradient-to-br from-red-600 to-rose-800", locked: true, likes: 25 },
-    { name: "Chibi Cat", class: "bg-cover bg-center", locked: true, likes: 50, url: "url('/chibi-cat-bg.png')" },
+    { name: "Chibi Cat", class: "bg-cover bg-center", locked: true, likes: 5, url: "url('/chibi-cat-bg.png')" },
+    { name: "Gold", class: "bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-300", locked: true, likes: 10 },
+    { name: "Velvet Red", class: "bg-gradient-to-br from-red-500 via-rose-700 to-red-500", locked: true, likes: 25 },
+    { name: "Spider-Man", class: "bg-cover bg-center", locked: true, likes: 35, url: "url('/spider-man-bg.png')" },
+    { name: "Iron Man", class: "bg-cover bg-center", locked: true, likes: 50, url: "url('/iron-man-bg.png')" },
 ];
 
 
@@ -179,7 +181,7 @@ function ProfileThemeDialog() {
                 <DialogTitle>Profile Theme</DialogTitle>
                 <DialogDescription>Choose a color or theme for your profile banner. Unlock more with likes!</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-4">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
                 {profileColors.map(color => {
                     const isUnlocked = !color.locked || userLikes >= color.likes;
                     return (
@@ -350,5 +352,7 @@ export function UserAvatar() {
     </>
   );
 }
+
+    
 
     
