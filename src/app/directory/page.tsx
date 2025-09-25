@@ -176,7 +176,7 @@ function StudentDirectoryContent() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">Student Directory</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-primary">Campus Connect</h1>
         <p className="mt-2 text-lg text-muted-foreground">Find and connect with students across campus.</p>
       </div>
       <div className="mb-8 p-6 bg-card rounded-lg shadow-sm border">
