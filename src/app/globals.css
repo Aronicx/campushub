@@ -69,4 +69,25 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  .shimmer-gold {
+    background: linear-gradient(110deg, #d4af37, #f0e68c, #d4af37);
+    background-size: 200% 100%;
+    animation: shimmer 5s linear infinite;
+  }
+
+  .shimmer-red {
+    background: linear-gradient(110deg, #8b0000, #ff4500, #8b0000);
+    background-size: 200% 100%;
+    animation: shimmer 5s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 }

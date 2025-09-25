@@ -68,11 +68,11 @@ const profileColors = [
     { name: "Grey", class: "bg-gray-500", locked: false, likes: 0 },
     { name: "Space Purple", class: "bg-purple-800", locked: false, likes: 0 },
     { name: "Electric Blue", class: "bg-blue-400", locked: false, likes: 0 },
-    { name: "Chibi Cat", class: "bg-cover bg-center", locked: true, likes: 5, url: "url('/chibi-cat-bg.png')" },
-    { name: "Gold", class: "bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-300", locked: true, likes: 10 },
-    { name: "Velvet Red", class: "bg-gradient-to-br from-red-500 via-rose-700 to-red-500", locked: true, likes: 25 },
-    { name: "Spider-Man", class: "bg-cover bg-center", locked: true, likes: 35, url: "url('/spider-man-bg.png')" },
-    { name: "Iron Man", class: "bg-cover bg-center", locked: true, likes: 50, url: "url('/iron-man-bg.png')" },
+    { name: "Chibi Cat", class: "bg-cover", style: { backgroundImage: "url('/chibi-cat-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 5 },
+    { name: "Gold", class: "shimmer-gold", locked: true, likes: 10 },
+    { name: "Velvet Red", class: "shimmer-red", locked: true, likes: 25 },
+    { name: "Spider-Man", class: "bg-cover", style: { backgroundImage: "url('/spider-man-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 35 },
+    { name: "Iron Man", class: "bg-cover", style: { backgroundImage: "url('/iron-man-bg.png')", backgroundSize: '150px', backgroundRepeat: 'repeat' }, locked: true, likes: 50 },
 ];
 
 
@@ -166,21 +166,41 @@ function SecurityDialog() {
 function ProfileThemeDialog() {
     const { currentUser, updateProfile } = useAuth();
     const [selectedColor, setSelectedColor] = useState(currentUser?.profileColor || "");
-    const [previewColor, setPreviewColor] = useState(currentUser?.profileColor || "");
+    const [previewStyle, setPreviewStyle] = useState<React.CSSProperties>({});
+    const [previewClass, setPreviewClass] = useState(currentUser?.profileColor || "");
+
 
     if (!currentUser) return null;
     
-    const bannerStyle = previewColor.startsWith('url(')
-        ? { backgroundImage: previewColor }
-        : {};
+    const getInitialStyle = (colorValue: string) => {
+        const theme = profileColors.find(c => c.class === colorValue || (c.style && JSON.stringify(c.style) === colorValue));
+        return theme?.style || {};
+    }
 
-    const bannerClass = !previewColor.startsWith('url(')
-        ? previewColor
-        : 'bg-cover bg-center';
-
+    const getInitialClass = (colorValue: string) => {
+        const theme = profileColors.find(c => c.class === colorValue || (c.style && JSON.stringify(c.style) === colorValue));
+        return theme?.class || "";
+    }
+    
+    useState(() => {
+        setPreviewStyle(getInitialStyle(currentUser?.profileColor || ""));
+        setPreviewClass(getInitialClass(currentUser?.profileColor || ""));
+        return null;
+    });
 
     const handleSave = () => {
         updateProfile({ profileColor: selectedColor });
+    };
+
+    const handlePreview = (theme: typeof profileColors[0]) => {
+        setPreviewClass(theme.class || "");
+        setPreviewStyle(theme.style || {});
+    };
+
+    const handleSelect = (theme: typeof profileColors[0]) => {
+        const value = theme.style ? JSON.stringify(theme.style) : theme.class;
+        setSelectedColor(value);
+        handlePreview(theme);
     };
 
     const userLikes = currentUser.likedBy?.length || 0;
@@ -189,13 +209,13 @@ function ProfileThemeDialog() {
         <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>Profile Theme</DialogTitle>
-                <DialogDescription>Choose a color or theme for your profile banner. Hover to preview, click to select. Unlock more with likes!</DialogDescription>
+                <DialogDescription>Hover to preview a theme, click to select. Unlock more with likes!</DialogDescription>
             </DialogHeader>
 
             <div className="my-4">
                 <p className="text-sm font-medium mb-2">Preview</p>
                 <div className="rounded-lg overflow-hidden border">
-                    <div className={cn("h-24 w-full transition-all", bannerClass)} style={bannerStyle} />
+                    <div className={cn("h-24 w-full transition-all", previewClass)} style={previewStyle} />
                     <div className="p-4 bg-card flex items-end gap-4 -mt-12">
                         <Avatar className="h-24 w-24 border-4 border-background">
                              <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
@@ -212,23 +232,26 @@ function ProfileThemeDialog() {
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 py-4">
                 {profileColors.map(color => {
                     const isUnlocked = !color.locked || userLikes >= color.likes;
-                    const colorValue = color.url ? color.url : color.class;
+                    const colorValue = color.style ? JSON.stringify(color.style) : color.class;
                     return (
                         <div 
                             key={color.name} 
                             className="relative group flex flex-col items-center"
-                            onMouseEnter={() => setPreviewColor(colorValue)}
-                            onMouseLeave={() => setPreviewColor(selectedColor)}
+                            onMouseEnter={() => handlePreview(color)}
+                            onMouseLeave={() => {
+                                const currentTheme = profileColors.find(c => (c.style ? JSON.stringify(c.style) : c.class) === selectedColor);
+                                if(currentTheme) handlePreview(currentTheme);
+                            }}
                         >
                             <button
-                                onClick={() => isUnlocked && setSelectedColor(colorValue)}
+                                onClick={() => isUnlocked && handleSelect(color)}
                                 className={cn(
-                                    "w-full h-16 rounded-md transition-all",
+                                    "w-full h-16 rounded-md transition-all border",
                                     color.class,
                                     selectedColor === colorValue && "ring-2 ring-offset-2 ring-primary",
                                     !isUnlocked && "cursor-not-allowed filter grayscale"
                                 )}
-                                style={{ backgroundImage: color.url }}
+                                style={color.style}
                                 aria-label={`Select ${color.name}`}
                                 disabled={!isUnlocked}
                             />
@@ -288,7 +311,7 @@ export function UserAvatar() {
 
   return (
     <>
-        <Dialog onOpenChange={(open) => !open && setDialogOpen(null)}>
+        <Dialog open={!!dialogOpen} onOpenChange={(open) => !open && setDialogOpen(null)}>
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
