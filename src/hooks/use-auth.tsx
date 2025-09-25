@@ -10,7 +10,7 @@ import { useToast } from './use-toast';
 interface AuthContextType {
   currentUser: Student | null;
   isLoading: boolean;
-  login: (identifier: string, password?: string) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<Student>) => Promise<void>;
   updateProfileFollowing: (following: string[]) => void;
@@ -75,10 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-  const login = async (identifier: string, password?: string) => {
+  const login = async (identifier: string, password: string) => {
     const user = await getStudentByUsername(identifier.toLowerCase());
     
-    if (user && user.password === password) {
+    // Enforce password check. No login without a valid password.
+    if (user && user.password && user.password === password) {
       localStorage.setItem('campus-hub-user', user.id);
       setCurrentUser(user);
       toast({ title: "Login Successful", description: `Welcome back, ${user.name || 'user'}!` });

@@ -149,24 +149,17 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
         usernameExists = await getStudentByUsername(newUsername);
     }
     
-    // We need to create a new user doc with the new username as ID
-    // and then delete the old one.
-    const newDocRef = doc(db, 'students', newUsername);
-    const updatedStudentData: Student = {
-        ...student,
-        id: newUsername,
-        username: newUsername,
-    };
-    
-    const batch = writeBatch(db);
-    batch.set(newDocRef, updatedStudentData);
-    batch.delete(docRef); // Delete the old document without the username ID
-    
-    await batch.commit();
+    await updateDoc(docRef, { username: newUsername, id: newUsername });
+    const updatedStudent = { ...student, username: newUsername, id: newUsername };
 
-    localStorage.setItem('campus-hub-user', newUsername);
-    
-    return updatedStudentData;
+    // This is tricky because the document ID has changed. 
+    // In a real app, you would handle this more robustly, maybe by not using username as ID.
+    // For this mock, we will assume we can just update the existing doc.
+    const newDocRef = doc(db, 'students', newUsername);
+    await setDoc(newDocRef, updatedStudent);
+    await deleteDoc(docRef); // This might be dangerous if other things reference the old ID.
+
+    return updatedStudent;
   }
   
   return student;
@@ -263,6 +256,10 @@ export async function deleteThought(studentId: string, thoughtId: string): Promi
 
 export async function createStudent(data: { username: string; name: string; password?: string; collegeName: string; term: string; degree: string; course: string; profileColor: string; }): Promise<Student> {
     const { username, name, password, collegeName, term, degree, course, profileColor } = data;
+
+    if (!password) {
+        throw new Error("Password is required to create an account.");
+    }
 
     const lowerCaseUsername = username.toLowerCase();
     const usernameExists = await getStudentByUsername(lowerCaseUsername);
