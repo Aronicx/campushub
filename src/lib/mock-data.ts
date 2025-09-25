@@ -135,8 +135,41 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
   const docRef = doc(db, 'students', id);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return undefined;
+
+  const student = docSnap.data() as Student;
+
+  // If a user is fetched and has no username, generate one and save it.
+  if (!student.username && student.name) {
+    let newUsername = student.name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.floor(100 + Math.random() * 900);
+    let usernameExists = await getStudentByUsername(newUsername);
+    
+    // Ensure username is unique
+    while (usernameExists) {
+        newUsername = student.name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.floor(100 + Math.random() * 900);
+        usernameExists = await getStudentByUsername(newUsername);
+    }
+    
+    // We need to create a new user doc with the new username as ID
+    // and then delete the old one.
+    const newDocRef = doc(db, 'students', newUsername);
+    const updatedStudentData: Student = {
+        ...student,
+        id: newUsername,
+        username: newUsername,
+    };
+    
+    const batch = writeBatch(db);
+    batch.set(newDocRef, updatedStudentData);
+    batch.delete(docRef); // Delete the old document without the username ID
+    
+    await batch.commit();
+
+    localStorage.setItem('campus-hub-user', newUsername);
+    
+    return updatedStudentData;
+  }
   
-  return docSnap.data() as Student;
+  return student;
 }
 
 
@@ -791,4 +824,5 @@ export async function restrictFromGlobalChat(userId: string): Promise<void> {
         globalChatRestrictedUntil: restrictionEndDate.toISOString()
     });
 }
+
 
