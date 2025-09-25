@@ -231,7 +231,7 @@ export async function createStudent(data: { username: string; name: string; pass
 
     const usernameExists = await getStudentByUsername(username);
     if (usernameExists) {
-        throw new Error("This username is already taken.");
+        throw new Error("This username is already taken. This is unlikely, please try again.");
     }
 
     const newStudent: Student = {
@@ -788,3 +788,5 @@ export async function restrictFromGlobalChat(userId: string): Promise<void> {
         globalChatRestrictedUntil: restrictionEndDate.toISOString()
     });
 }
+
+    

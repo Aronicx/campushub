@@ -46,7 +46,6 @@ const profileColors = [
 ];
 
 const formSchema = z.object({
-  username: z.string().min(3, { message: "Username must be at least 3 characters." }).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
   name: z.string().min(3, { message: "Full name must be at least 3 characters." }),
   collegeName: z.string().min(3, { message: "College name is required." }),
   term: z.string().min(1, { message: "Term/Year is required." }),
@@ -64,7 +63,6 @@ function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
       name: "",
       collegeName: "",
       term: "",
@@ -77,8 +75,10 @@ function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
+      const username = `${values.name.toLowerCase().replace(/\s/g, '_')}_${Math.floor(100 + Math.random() * 900)}`;
+
       await createStudent({
-        username: values.username.toLowerCase(),
+        username: username,
         name: values.name,
         password: values.password,
         collegeName: values.collegeName,
@@ -89,7 +89,7 @@ function SignupForm() {
       });
       toast({
         title: "Account Created!",
-        description: "You can now log in with your new credentials.",
+        description: `Your username is ${username}. You can now log in.`,
       });
       router.push("/login");
     } catch (error: any) {
@@ -104,26 +104,6 @@ function SignupForm() {
   return (
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., aisha_khan"
-                      {...field}
-                      className="pl-10"
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
            <FormField
             control={form.control}
             name="name"
@@ -289,7 +269,7 @@ export default function SignupPage() {
             Create an Account
           </CardTitle>
           <CardDescription>
-            Join the Campus Hub community today!
+            Join the Campus Hub community today! Your username will be auto-generated.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -310,5 +290,6 @@ export default function SignupPage() {
     </div>
   );
 }
+    
 
     
