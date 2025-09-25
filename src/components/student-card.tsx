@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useMemo } from "react";
 
 interface StudentCardProps {
   student: Student;
@@ -53,6 +54,23 @@ export function StudentCard({
   const hasTrustLiked = (student.trustLikes || []).some(like => like.userId === currentUserId);
   const trustLikeCount = (student.trustLikes || []).length;
   const isOwnProfile = currentUserId === student.id;
+
+  const bannerStyle = useMemo(() => {
+    if (!student?.profileColor) return {};
+    try {
+        if (student.profileColor.startsWith('{')) {
+            return JSON.parse(student.profileColor);
+        }
+    } catch (e) { /* Fallback below */ }
+    return {};
+  }, [student?.profileColor]);
+
+  const bannerClass = useMemo(() => {
+    if (!student?.profileColor) return 'bg-muted';
+    if (student.profileColor.startsWith('{')) return '';
+    return student.profileColor;
+  }, [student?.profileColor]);
+
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -169,8 +187,9 @@ export function StudentCard({
   }
 
   return (
-    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-card">
-        <Link href={`/profile/${student.id}`} className="flex-grow">
+    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-card overflow-hidden">
+        <Link href={`/profile/${student.id}`} className="flex-grow flex flex-col">
+            <div className={cn("h-16 w-full", bannerClass)} style={bannerStyle} />
             <CardHeader className="flex-row gap-4 items-center p-4">
                 <Avatar>
                     <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
@@ -186,7 +205,7 @@ export function StudentCard({
                 </div>
             </CardHeader>
         </Link>
-      <CardFooter className="p-2 flex justify-between items-center border-t">
+      <CardFooter className="p-2 flex justify-between items-center border-t mt-auto">
           <div className="flex items-center gap-1 text-muted-foreground">
              <div className="flex items-center">
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/20" onClick={handleTrustLikeClick} disabled={!currentUserId || isOwnProfile}>

@@ -173,16 +173,24 @@ function ProfileThemeDialog() {
     if (!currentUser) return null;
     
     const getInitialStyle = (colorValue: string) => {
-        return colorValue.startsWith('{') ? JSON.parse(colorValue) : {};
+        if (!colorValue) return {};
+        try {
+            if (colorValue.startsWith('{')) {
+                return JSON.parse(colorValue);
+            }
+        } catch (e) { /* Fallback below */ }
+        return {};
     }
 
     const getInitialClass = (colorValue: string) => {
-        return colorValue.startsWith('{') ? '' : colorValue;
+        if (!colorValue || colorValue.startsWith('{')) return '';
+        return colorValue;
     }
     
     useState(() => {
-        setPreviewStyle(getInitialStyle(currentUser?.profileColor || ""));
-        setPreviewClass(getInitialClass(currentUser?.profileColor || ""));
+        const initialColor = currentUser?.profileColor || "";
+        setPreviewStyle(getInitialStyle(initialColor));
+        setPreviewClass(getInitialClass(initialColor));
         return null;
     });
 
@@ -206,23 +214,35 @@ function ProfileThemeDialog() {
 
     return (
         <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>Profile Theme</DialogTitle>
-                <DialogDescription>Hover to preview a theme, click to select. Unlock more with likes!</DialogDescription>
+             <DialogHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <DialogTitle>Profile Theme</DialogTitle>
+                        <DialogDescription>Hover to preview, click to select. Unlock more with likes!</DialogDescription>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                         <DialogClose asChild>
+                            <Button variant="ghost">Cancel</Button>
+                        </DialogClose>
+                        <DialogClose asChild>
+                            <Button onClick={handleSave} disabled={selectedColor === currentUser.profileColor}>Save</Button>
+                        </DialogClose>
+                    </div>
+                </div>
             </DialogHeader>
 
-            <div className="my-4">
+            <div className="my-2">
                 <p className="text-sm font-medium mb-2">Preview</p>
                 <div className="rounded-lg overflow-hidden border">
-                    <div className={cn("h-24 w-full transition-all", previewClass)} style={previewStyle} />
-                    <div className="p-4 bg-card flex items-end gap-4 -mt-12">
-                        <Avatar className="h-24 w-24 border-4 border-background">
+                    <div className={cn("h-20 w-full transition-all", previewClass)} style={previewStyle} />
+                    <div className="p-4 bg-card flex items-end gap-4 -mt-10">
+                        <Avatar className="h-20 w-20 border-4 border-background">
                              <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
                             <AvatarFallback className="text-3xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
-                             <h1 className="text-2xl font-bold">{currentUser.name}</h1>
-                             <p className="text-md text-muted-foreground">@{currentUser.username}</p>
+                             <h1 className="text-xl font-bold">{currentUser.name}</h1>
+                             <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
                         </div>
                     </div>
                 </div>
@@ -236,7 +256,7 @@ function ProfileThemeDialog() {
                         <div 
                             key={color.name} 
                             className="relative group flex flex-col items-center"
-                            onMouseEnter={() => handlePreview(color)}
+                            onMouseEnter={() => isUnlocked && handlePreview(color)}
                             onMouseLeave={() => {
                                 const currentTheme = profileColors.find(c => (c.style ? JSON.stringify(c.style) : c.class) === selectedColor);
                                 if(currentTheme) handlePreview(currentTheme);
@@ -261,19 +281,14 @@ function ProfileThemeDialog() {
                                     <p className="text-xs">Likes</p>
                                 </div>
                             )}
-                            <p className="text-xs text-center mt-1 text-muted-foreground">{color.name}</p>
+                            <div className="w-full flex items-center justify-center mt-1">
+                                <p className="text-xs text-center text-muted-foreground truncate">{color.name}</p>
+                                {isUnlocked && <button onClick={() => handlePreview(color)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Eye size={12} /></button>}
+                            </div>
                         </div>
                     )
                 })}
             </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button variant="ghost">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                    <Button onClick={handleSave} disabled={selectedColor === currentUser.profileColor}>Save</Button>
-                </DialogClose>
-            </DialogFooter>
         </DialogContent>
     )
 }
@@ -408,7 +423,3 @@ export function UserAvatar() {
     </>
   );
 }
-
-    
-
-    

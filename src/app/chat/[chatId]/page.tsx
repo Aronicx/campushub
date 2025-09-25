@@ -202,7 +202,7 @@ export default function PrivateChatPage() {
             </Avatar>
             <div className="flex-1">
                 <p className="font-semibold">{otherUser.name}</p>
-                <p className="text-xs text-muted-foreground">{ canChat ? "Online" : "Not following"}</p>
+                {!canChat && <p className="text-xs text-muted-foreground">Not following</p>}
             </div>
           </Link>
           <DropdownMenu>
