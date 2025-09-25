@@ -78,7 +78,7 @@ body {
   }
 
   .shimmer-platinum-blue {
-    background: linear-gradient(110deg, #60a5fa, #e0f2ff, #60a5fa);
+    background: linear-gradient(110deg, #00008B, #4169E1, #00008B);
     background-size: 200% 100%;
     animation: shimmer 5s linear infinite;
   }
@@ -86,7 +86,7 @@ body {
   .shimmer-gold-white {
     background: linear-gradient(110deg, #B8860B, #DAA520, #B8860B);
     background-size: 200% 100%;
-    animation: shimmer 5s linear infinite;
+    animation: shimmer 3s linear infinite;
   }
   
   .shimmer-red-velvet {
@@ -116,9 +116,3 @@ body {
     }
   }
 }
-
-    
-
-    
-
-
