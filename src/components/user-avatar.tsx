@@ -69,7 +69,9 @@ const profileColors = [
     { name: "Space Purple", class: "bg-purple-800", locked: false, likes: 0 },
     { name: "Electric Blue", class: "bg-blue-400", locked: false, likes: 0 },
     { name: "Silver", class: "shimmer-silver", locked: true, likes: 5 },
-    { name: "Platinum Blue", class: "shimmer-platinum-blue", locked: true, likes: 35 },
+    { name: "Red Velvet", class: "shimmer-red-velvet", locked: true, likes: 10 },
+    { name: "Royal", class: "shimmer-royal-pink", locked: true, likes: 25 },
+    { name: "Platinum Blue", class: "shimmer-dark-blue", locked: true, likes: 35 },
     { name: "Gold & White", class: "shimmer-gold-white", locked: true, likes: 50 },
 ];
 
@@ -171,13 +173,11 @@ function ProfileThemeDialog() {
     if (!currentUser) return null;
     
     const getInitialStyle = (colorValue: string) => {
-        const theme = profileColors.find(c => c.class === colorValue || (c.style && JSON.stringify(c.style) === colorValue));
-        return theme?.style || {};
+        return colorValue.startsWith('{') ? JSON.parse(colorValue) : {};
     }
 
     const getInitialClass = (colorValue: string) => {
-        const theme = profileColors.find(c => c.class === colorValue || (c.style && JSON.stringify(c.style) === colorValue));
-        return theme?.class || "";
+        return colorValue.startsWith('{') ? '' : colorValue;
     }
     
     useState(() => {
@@ -191,8 +191,9 @@ function ProfileThemeDialog() {
     };
 
     const handlePreview = (theme: typeof profileColors[0]) => {
-        setPreviewClass(theme.class || "");
-        setPreviewStyle(theme.style || {});
+        const value = theme.style ? JSON.stringify(theme.style) : theme.class;
+        setPreviewClass(getInitialClass(value));
+        setPreviewStyle(getInitialStyle(value));
     };
 
     const handleSelect = (theme: typeof profileColors[0]) => {
@@ -407,5 +408,7 @@ export function UserAvatar() {
     </>
   );
 }
+
+    
 
     

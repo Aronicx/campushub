@@ -78,7 +78,7 @@ body {
   }
 
   .shimmer-platinum-blue {
-    background: linear-gradient(110deg, #e5e4e2, #a7d8e8, #e5e4e2);
+    background: linear-gradient(110deg, #00008b, #add8e6, #00008b);
     background-size: 200% 100%;
     animation: shimmer 5s linear infinite;
   }
@@ -89,6 +89,23 @@ body {
     animation: shimmer 5s linear infinite;
   }
   
+  .shimmer-red-velvet {
+    background: linear-gradient(110deg, #8b0000, #ffcccb, #8b0000);
+    background-size: 200% 100%;
+    animation: shimmer 5s linear infinite;
+  }
+  
+  .shimmer-royal-pink {
+    background: linear-gradient(110deg, #c71585, #ffc0cb, #c71585);
+    background-size: 200% 100%;
+    animation: shimmer 5s linear infinite;
+  }
+
+  .shimmer-dark-blue {
+      background: linear-gradient(110deg, #00008B, #4169E1, #00008B);
+      background-size: 200% 100%;
+      animation: shimmer 5s linear infinite;
+  }
 
   @keyframes shimmer {
     0% {
@@ -99,5 +116,7 @@ body {
     }
   }
 }
+
+    
 
     
