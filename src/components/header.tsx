@@ -73,7 +73,7 @@ export function Header() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                 <Button 
-                                    variant={pathname.startsWith('/directory') || pathname.startsWith('/thought-bubbles') || pathname.startsWith('/friends') ? "secondary" : "ghost"}
+                                    variant={pathname.startsWith('/directory') || pathname.startsWith('/thought-bubbles') || pathname.startsWith('/friends') || pathname.startsWith('/connections') ? "secondary" : "ghost"}
                                     className="rounded-full px-4"
                                 >
                                     <Users className="h-5 w-5 mr-2" /> Social
@@ -87,7 +87,7 @@ export function Header() {
                                         <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                                        <Link href="/friends"><Users className="mr-2"/>Friends</Link>
+                                        <Link href="/connections"><Users className="mr-2"/>Connections</Link>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
