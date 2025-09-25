@@ -73,7 +73,7 @@ const profileColors = [
     { name: "Red Velvet", class: "shimmer-red-velvet", locked: true, likes: 10 },
     { name: "Royal", class: "shimmer-royal-pink", locked: true, likes: 25 },
     { name: "Platinum Blue", class: "shimmer-dark-blue", locked: true, likes: 35 },
-    { name: "Gold & White", class: "shimmer-gold-white", locked: true, likes: 50 },
+    { name: "Golden", class: "shimmer-gold-white", locked: true, likes: 50 },
 ];
 
 
@@ -214,31 +214,29 @@ function ProfileThemeDialog() {
     const userLikes = currentUser.likedBy?.length || 0;
 
     return (
-        <DialogContent className="max-w-2xl flex flex-col h-[90vh] sm:h-auto">
+        <DialogContent className="max-w-xl">
              <DialogHeader>
                 <DialogTitle>Profile Theme</DialogTitle>
                 <DialogDescription>Hover to preview, click to select. Unlock more with likes!</DialogDescription>
             </DialogHeader>
-
-            <ScrollArea className="pr-4 -mr-6">
-                 <div className="my-2">
-                    <p className="text-sm font-medium mb-2">Preview</p>
-                    <div className="rounded-lg overflow-hidden border">
-                        <div className={cn("h-16 w-full transition-all", previewClass)} style={previewStyle} />
-                        <div className="p-4 bg-card flex items-end gap-4 -mt-10">
-                            <Avatar className="h-16 w-16 border-4 border-background">
-                                <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
-                                <AvatarFallback className="text-2xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <h1 className="text-lg font-bold">{currentUser.name}</h1>
-                                <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
-                            </div>
+            <div className="my-2">
+                <p className="text-sm font-medium mb-2">Preview</p>
+                <div className="rounded-lg overflow-hidden border">
+                    <div className={cn("h-16 w-full transition-all", previewClass)} style={previewStyle} />
+                    <div className="p-4 bg-card flex items-end gap-4 -mt-10">
+                        <Avatar className="h-16 w-16 border-4 border-background">
+                            <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
+                            <AvatarFallback className="text-2xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h1 className="text-lg font-bold">{currentUser.name}</h1>
+                            <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
                         </div>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 py-4">
+            </div>
+            <ScrollArea className="h-60 pr-4 -mr-4">
+                <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 py-4">
                     {profileColors.map(color => {
                         const isUnlocked = !color.locked || userLikes >= color.likes;
                         const colorValue = color.style ? JSON.stringify(color.style) : color.class;
@@ -253,7 +251,7 @@ function ProfileThemeDialog() {
                                 }}
                             >
                                 <button
-                                    onClick={() => isUnlocked && handleSelect(color)}
+                                    onClick={() => handleSelect(color)}
                                     className={cn(
                                         "w-full h-10 rounded-md transition-all border",
                                         color.class,
