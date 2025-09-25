@@ -1,3 +1,4 @@
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -737,7 +738,7 @@ export async function getSuggestedConnections(currentUserId: string): Promise<St
 
 
 // Notes
-export async function addNote(author: Student, data: { heading: string, description: string, link: string, password?: string }): Promise<Note> {
+export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {
     // Create note document in Firestore
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
@@ -748,7 +749,6 @@ export async function addNote(author: Student, data: { heading: string, descript
         heading: data.heading,
         description: data.description,
         link: data.link,
-        password: data.password,
         timestamp: Date.now(),
     };
     await setDoc(newNoteDoc, newNote);

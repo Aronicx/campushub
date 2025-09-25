@@ -99,6 +99,5 @@ export interface Note {
     heading: string;
     description: string;
     link: string;
-    password?: string;
     timestamp: number;
 }

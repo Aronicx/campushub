@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Save, Lock, Loader2, User, Key, Link2, FileText, Type } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Loader2, User, Key, Link2, FileText, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -39,8 +39,6 @@ export default function NoteEditorPage() {
   const [note, setNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [password, setPassword] = useState('');
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<z.infer<typeof editNoteSchema>>({
@@ -55,8 +53,11 @@ export default function NoteEditorPage() {
       const noteData = await getNoteById(noteId);
       if (noteData) {
         setNote(noteData);
-        if (!noteData.password || noteData.authorId === currentUser?.id) {
+        if (noteData.authorId === currentUser?.id) {
             setIsAuthorized(true);
+        } else {
+             toast({ variant: 'destructive', title: 'Unauthorized', description: "You don't have permission to edit this note." });
+             router.push('/notes');
         }
         form.reset({
             heading: noteData.heading,
@@ -69,21 +70,11 @@ export default function NoteEditorPage() {
       }
       setIsLoading(false);
     }
-
-    fetchNote();
-  }, [noteId, router, toast, currentUser?.id, form]);
-
-
-  const handlePasswordSubmit = () => {
-    setIsSubmittingPassword(true);
-    if (password === note?.password) {
-      setIsAuthorized(true);
-      toast({ title: 'Access Granted', description: 'You can now edit the note details.' });
-    } else {
-      toast({ variant: 'destructive', title: 'Incorrect Password' });
+    
+    if (currentUser) {
+        fetchNote();
     }
-    setIsSubmittingPassword(false);
-  };
+  }, [noteId, router, toast, currentUser, form]);
 
   async function onSubmit(values: z.infer<typeof editNoteSchema>) {
     if (!note) return;
@@ -102,47 +93,12 @@ export default function NoteEditorPage() {
     }
   };
   
-  if (isLoading || !note) {
+  if (isLoading || !note || !isAuthorized) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-8">
         <Skeleton className="h-[calc(100vh-12rem)] w-full" />
       </div>
     );
-  }
-  
-  if (!isAuthorized) {
-    return (
-        <div className="container mx-auto max-w-md px-4 py-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Lock size={24}/> Password Required</CardTitle>
-                    <CardDescription>This note's details are password protected. Please enter the password to manage it.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input 
-                            id="password" 
-                            type="password" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            autoFocus
-                            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                        />
-                    </div>
-                    <Button onClick={handlePasswordSubmit} disabled={isSubmittingPassword || !password} className="w-full">
-                        {isSubmittingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Unlock
-                    </Button>
-                </CardContent>
-                 <CardFooter>
-                    <Button variant="link" onClick={() => router.back()} className="w-full">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-    )
   }
 
   const initials = (note.authorName || 'NN').split(' ').map((n) => n[0]).join('');

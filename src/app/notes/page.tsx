@@ -24,7 +24,6 @@ const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
   file: z.instanceof(File).optional(),
-  password: z.string().optional(),
 });
 
 const MAX_FILE_SIZE_MB = 20;
@@ -38,7 +37,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { heading: "", description: "", password: "" },
+    defaultValues: { heading: "", description: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
@@ -69,7 +68,6 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
           heading: values.heading,
           description: values.description,
           link: driveResponse.webViewLink,
-          password: values.password,
         });
         
         toast({ title: "Note Added!", description: "Your note has been shared." });
@@ -144,17 +142,6 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                     <FormMessage />
                 </FormItem>
                 )}
-            />
-             <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Edit Password (Optional)</FormLabel>
-                  <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
             />
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>

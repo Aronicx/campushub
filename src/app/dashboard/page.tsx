@@ -33,6 +33,17 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -322,59 +333,78 @@ customLink: student.customLink || "",
 }
 
 function ProfilePictureUpdater({ student, onUpdate }: { student: Student; onUpdate: (data: Partial<Student>) => void }) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsUpdating(true);
-      try {
-        // You would typically upload to a service and get a URL
-        // For this mock, we'll just simulate it with a local object URL
-        const objectUrl = URL.createObjectURL(file);
-        onUpdate({ profilePicture: objectUrl });
-        toast({ title: "Picture Updated", description: "Your new profile picture is set." });
-
-      } catch (error) {
-        console.error("Failed to process image:", error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to update profile picture." });
-      } finally {
-        setIsUpdating(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const { toast } = useToast();
+  
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        setIsUpdating(true);
+        try {
+          // You would typically upload to a service and get a URL
+          // For this mock, we'll just simulate it with a local object URL
+          const objectUrl = URL.createObjectURL(file);
+          onUpdate({ profilePicture: objectUrl });
+          toast({ title: "Picture Updated", description: "Your new profile picture is set." });
+  
+        } catch (error) {
+          console.error("Failed to process image:", error);
+          toast({ variant: "destructive", title: "Error", description: "Failed to update profile picture." });
+        } finally {
+          setIsUpdating(false);
+        }
       }
+    };
+  
+    const handleRemovePicture = () => {
+      onUpdate({ profilePicture: "" });
+      toast({ title: "Picture Removed", description: "Your profile picture has been removed." });
     }
-  };
-
-  const handleRemovePicture = () => {
-    onUpdate({ profilePicture: "" });
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="relative">
-        <Button asChild variant="outline" size="sm">
-          <label htmlFor="profile-picture-upload" className="cursor-pointer flex items-center">
-            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4"/>}
-            Change Picture
-          </label>
-        </Button>
-        <Input
-          id="profile-picture-upload"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          onChange={handleFileChange}
-          disabled={isUpdating}
-        />
+  
+    return (
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <Button asChild variant="outline" size="sm">
+            <label htmlFor="profile-picture-upload" className="cursor-pointer flex items-center">
+              {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4"/>}
+              Change Picture
+            </label>
+          </Button>
+          <Input
+            id="profile-picture-upload"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            onChange={handleFileChange}
+            disabled={isUpdating}
+          />
+        </div>
+         {student.profilePicture && !student.profilePicture.includes('picsum.photos') && (
+           <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" /> Remove
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove Profile Picture?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. Are you sure you want to remove your profile picture?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleRemovePicture} className="bg-destructive hover:bg-destructive/90">
+                    Remove
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+           </AlertDialog>
+        )}
       </div>
-       {student.profilePicture && !student.profilePicture.includes('picsum.photos') && (
-         <Button onClick={handleRemovePicture} variant="destructive" size="sm">
-          <Trash2 className="mr-2 h-4 w-4" /> Remove
-        </Button>
-      )}
-    </div>
-  );
-}
+    );
+  }
 
 
 export default function ProfilePage() {
