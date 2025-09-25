@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const login = async (identifier: string, password?: string) => {
-    const user = await getStudentByUsername(identifier);
+    const user = await getStudentByUsername(identifier.toLowerCase());
     
     if (user && user.password === password) {
       localStorage.setItem('campus-hub-user', user.id);
