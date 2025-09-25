@@ -169,7 +169,7 @@ export function StudentCard({
   }
 
   return (
-    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-black text-white border-blue-500/30 hover:border-blue-500">
+    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-[hsl(220,40%,10%)] text-gray-200 border-gray-700/50 hover:border-primary/50">
         <Link href={`/profile/${student.id}`} className="flex-grow">
             <CardHeader className="flex-row gap-4 items-center p-4">
                 <Avatar>
@@ -177,9 +177,9 @@ export function StudentCard({
                     <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
-                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate">{displayName}</h3>
-                    <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
+                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate text-white">{displayName}</h3>
+                    <p className="text-sm text-gray-400 leading-tight truncate">{student.course}</p>
+                    <div className="text-xs text-gray-400 flex items-center gap-1.5 mt-1 truncate">
                         <Building size={12}/>
                         <span>{student.collegeName}</span>
                     </div>
@@ -202,7 +202,7 @@ export function StudentCard({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {!isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" onClick={handleChatClick}><MessageSquare /></Button>}
+            {!isOwnProfile && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:text-primary-foreground" onClick={handleChatClick}><MessageSquare className="text-gray-400"/></Button>}
             { (listType === 'directory' || listType === 'suggestions') && (
                 <FollowButton />
             )}
