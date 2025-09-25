@@ -11,11 +11,16 @@ import { Droplets, Users, BookUser, MessageSquareText, User, Bell, BookCopy } fr
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Notifications } from "./notifications";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 const navLinks = [
-    { href: "/thought-bubbles", icon: Droplets, label: "Bubbles" },
     { href: "/notes", icon: BookCopy, label: "Notes" },
-    { href: "/friends", icon: Users, label: "Friends" },
     { href: "/chat", icon: MessageSquareText, label: "Chat" },
 ];
 
@@ -27,33 +32,37 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Link href="/" className="mr-6 flex items-center space-x-2">
-                        <Icons.logo className="h-8 w-8 text-primary" />
-                        <span className="hidden font-bold sm:inline-block text-lg">
-                            Campus Hub
-                        </span>
-                    </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p className="font-semibold">Campus Hub</p>
-                    <p className="text-sm text-muted-foreground">Connect, share, and chat with your college community.</p>
-                </TooltipContent>
-            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                 <button className="mr-6 flex items-center space-x-2">
+                    <Icons.logo className="h-8 w-8 text-primary" />
+                    <span className="hidden font-bold sm:inline-block text-lg">
+                        Campus Hub
+                    </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                    <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href="/friends"><Users className="mr-2"/>Friends</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         
           <div className="flex-1 min-w-0">
-            <nav className="flex items-center space-x-6 sm:space-x-6 overflow-x-auto">
+            <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
                 {navLinks.map((link) => (
                      <Tooltip key={link.href}>
                         <TooltipTrigger asChild>
                             <Button 
                                 asChild
-                                variant="ghost"
+                                variant={pathname.startsWith(link.href) ? "default" : "ghost"}
                                 size="icon"
                                 className={cn(
-                                    "text-muted-foreground hover:text-foreground",
-                                    pathname.startsWith(link.href) && "text-primary"
+                                    "rounded-full",
+                                    !pathname.startsWith(link.href) && "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <Link href={link.href}>
@@ -79,12 +88,9 @@ export function Header() {
                     <TooltipTrigger asChild>
                          <Button 
                             asChild
-                            variant="ghost"
+                            variant={pathname.startsWith('/directory') ? "secondary" : "ghost"}
                             size="icon"
-                            className={cn(
-                                "text-muted-foreground hover:text-foreground",
-                                pathname.startsWith('/directory') && "text-primary"
-                            )}
+                            className={cn("rounded-full")}
                         >
                             <Link href="/directory">
                                 <BookUser className="h-5 w-5" />
