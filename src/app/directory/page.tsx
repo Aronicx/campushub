@@ -46,9 +46,6 @@ function StudentDirectoryContent() {
   const fetchData = async () => {
     setIsLoading(true);
     let studentsData = await getStudents();
-    if(currentUser) {
-      studentsData = studentsData.filter(s => s.id !== currentUser.id);
-    }
     setAllStudents(studentsData);
     setDisplayedStudents(shuffleAndPick(studentsData, 20));
     setIsLoading(false);
@@ -61,9 +58,6 @@ function StudentDirectoryContent() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     let studentsData = await getStudents();
-    if(currentUser) {
-      studentsData = studentsData.filter(s => s.id !== currentUser.id);
-    }
     setAllStudents(studentsData);
     setDisplayedStudents(shuffleAndPick(studentsData, 20));
     setIsRefreshing(false);
@@ -107,14 +101,13 @@ function StudentDirectoryContent() {
         if (!currentUser) return;
         await toggleProfileLike(studentId, currentUser.id);
         const updatedStudents = await getStudents();
-        const filteredUpdated = currentUser ? updatedStudents.filter(s => s.id !== currentUser.id) : updatedStudents;
-        setAllStudents(filteredUpdated);
+        setAllStudents(updatedStudents);
 
         // Update displayed students with new data, preserving their order if not searching
         if(!searchTerm) {
           setDisplayedStudents(prev => {
               const newDisplayed = prev.map(ds => {
-                  const updated = filteredUpdated.find(us => us.id === ds.id);
+                  const updated = updatedStudents.find(us => us.id === ds.id);
                   return updated || ds;
               });
               return newDisplayed;
@@ -126,13 +119,12 @@ function StudentDirectoryContent() {
         if (!currentUser) return;
         await toggleTrustLike(studentId, currentUser.id);
         const updatedStudents = await getStudents();
-         const filteredUpdated = currentUser ? updatedStudents.filter(s => s.id !== currentUser.id) : updatedStudents;
-        setAllStudents(filteredUpdated);
+        setAllStudents(updatedStudents);
 
          if(!searchTerm) {
             setDisplayedStudents(prev => {
                 const newDisplayed = prev.map(ds => {
-                    const updated = filteredUpdated.find(us => us.id === ds.id);
+                    const updated = updatedStudents.find(us => us.id === ds.id);
                     return updated || ds;
                 });
                 return newDisplayed;
