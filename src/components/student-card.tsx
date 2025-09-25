@@ -71,6 +71,26 @@ export function StudentCard({
     return student.profileColor;
   }, [student?.profileColor]);
 
+  const borderColorStyle = useMemo(() => {
+    if (!student?.profileColor || student.profileColor.startsWith('{')) {
+      return {};
+    }
+    const colorMapping: Record<string, string> = {
+        'bg-red-500': '#ef4444',
+        'bg-blue-500': '#3b82f6',
+        'bg-green-500': '#22c55e',
+        'bg-yellow-500': '#eab308',
+        'bg-pink-500': '#ec4899',
+        'bg-white': '#ffffff',
+        'bg-black': '#000000',
+        'bg-gray-500': '#6b7280',
+        'bg-purple-800': '#6b21a8',
+        'bg-blue-400': '#60a5fa',
+    };
+    const color = colorMapping[student.profileColor];
+    return color ? { borderColor: color } : {};
+  }, [student.profileColor]);
+
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -187,7 +207,10 @@ export function StudentCard({
   }
 
   return (
-    <Card className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-card overflow-hidden">
+    <Card 
+        className="flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 bg-card overflow-hidden border-2"
+        style={borderColorStyle}
+    >
         <Link href={`/profile/${student.id}`} className="flex-grow flex flex-col">
             <div className={cn("h-16 w-full", bannerClass)} style={bannerStyle} />
             <CardHeader className="flex-row gap-4 items-center p-4">
