@@ -32,24 +32,27 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <TooltipProvider>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <button className="mr-6 flex items-center space-x-2">
+            <div className="mr-6 flex items-center space-x-2">
+                <Link href="/">
                     <Icons.logo className="h-8 w-8 text-primary" />
-                    <span className="hidden font-bold sm:inline-block text-lg">
-                        Campus Hub
-                    </span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                    <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
-                </DropdownMenuItem>
-                 <DropdownMenuItem asChild>
-                    <Link href="/friends"><Users className="mr-2"/>Friends</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <span className="sr-only">Campus Hub Home</span>
+                </Link>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="hidden font-bold sm:inline-block text-lg p-0 h-auto">
+                            Campus Hub
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem asChild>
+                            <Link href="/thought-bubbles"><Droplets className="mr-2"/>Bubbles</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/friends"><Users className="mr-2"/>Friends</Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         
           <div className="flex-1 min-w-0">
             <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
