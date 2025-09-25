@@ -47,6 +47,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Switch } from "./ui/switch";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "./ui/scroll-area";
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, { message: "Current password is required." }),
@@ -213,82 +214,80 @@ function ProfileThemeDialog() {
     const userLikes = currentUser.likedBy?.length || 0;
 
     return (
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl flex flex-col h-full sm:h-auto">
              <DialogHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <DialogTitle>Profile Theme</DialogTitle>
-                        <DialogDescription>Hover to preview, click to select. Unlock more with likes!</DialogDescription>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                         <DialogClose asChild>
-                            <Button variant="ghost">Cancel</Button>
-                        </DialogClose>
-                        <DialogClose asChild>
-                            <Button onClick={handleSave} disabled={selectedColor === currentUser.profileColor}>Save</Button>
-                        </DialogClose>
-                    </div>
-                </div>
+                <DialogTitle>Profile Theme</DialogTitle>
+                <DialogDescription>Hover to preview, click to select. Unlock more with likes!</DialogDescription>
             </DialogHeader>
 
-            <div className="my-2">
-                <p className="text-sm font-medium mb-2">Preview</p>
-                <div className="rounded-lg overflow-hidden border">
-                    <div className={cn("h-20 w-full transition-all", previewClass)} style={previewStyle} />
-                    <div className="p-4 bg-card flex items-end gap-4 -mt-10">
-                        <Avatar className="h-20 w-20 border-4 border-background">
-                             <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
-                            <AvatarFallback className="text-3xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                             <h1 className="text-xl font-bold">{currentUser.name}</h1>
-                             <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+            <ScrollArea className="pr-4 -mr-6">
+                 <div className="my-2">
+                    <p className="text-sm font-medium mb-2">Preview</p>
+                    <div className="rounded-lg overflow-hidden border">
+                        <div className={cn("h-20 w-full transition-all", previewClass)} style={previewStyle} />
+                        <div className="p-4 bg-card flex items-end gap-4 -mt-10">
+                            <Avatar className="h-20 w-20 border-4 border-background">
+                                <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
+                                <AvatarFallback className="text-3xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <h1 className="text-xl font-bold">{currentUser.name}</h1>
+                                <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
-                {profileColors.map(color => {
-                    const isUnlocked = !color.locked || userLikes >= color.likes;
-                    const colorValue = color.style ? JSON.stringify(color.style) : color.class;
-                    return (
-                        <div 
-                            key={color.name} 
-                            className="relative group flex flex-col items-center"
-                            onMouseEnter={() => isUnlocked && handlePreview(color)}
-                            onMouseLeave={() => {
-                                const currentTheme = profileColors.find(c => (c.style ? JSON.stringify(c.style) : c.class) === selectedColor);
-                                if(currentTheme) handlePreview(currentTheme);
-                            }}
-                        >
-                            <button
-                                onClick={() => isUnlocked && handleSelect(color)}
-                                className={cn(
-                                    "w-full h-16 rounded-md transition-all border",
-                                    color.class,
-                                    selectedColor === colorValue && "ring-2 ring-offset-2 ring-primary",
-                                    !isUnlocked && "cursor-not-allowed filter grayscale"
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
+                    {profileColors.map(color => {
+                        const isUnlocked = !color.locked || userLikes >= color.likes;
+                        const colorValue = color.style ? JSON.stringify(color.style) : color.class;
+                        return (
+                            <div 
+                                key={color.name} 
+                                className="relative group flex flex-col items-center"
+                                onMouseEnter={() => isUnlocked && handlePreview(color)}
+                                onMouseLeave={() => {
+                                    const currentTheme = profileColors.find(c => (c.style ? JSON.stringify(c.style) : c.class) === selectedColor);
+                                    if(currentTheme) handlePreview(currentTheme);
+                                }}
+                            >
+                                <button
+                                    onClick={() => isUnlocked && handleSelect(color)}
+                                    className={cn(
+                                        "w-full h-12 rounded-md transition-all border",
+                                        color.class,
+                                        selectedColor === colorValue && "ring-2 ring-offset-2 ring-primary",
+                                        !isUnlocked && "cursor-not-allowed filter grayscale"
+                                    )}
+                                    style={color.style}
+                                    aria-label={`Select ${color.name}`}
+                                    disabled={!isUnlocked}
+                                />
+                                {!isUnlocked && (
+                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white rounded-md p-1 text-center">
+                                        <Lock size={16} />
+                                        <p className="text-xs font-bold">{color.likes}</p>
+                                        <p className="text-xs">Likes</p>
+                                    </div>
                                 )}
-                                style={color.style}
-                                aria-label={`Select ${color.name}`}
-                                disabled={!isUnlocked}
-                            />
-                            {!isUnlocked && (
-                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white rounded-md p-1 text-center">
-                                    <Lock size={16} />
-                                    <p className="text-xs font-bold">{color.likes}</p>
-                                    <p className="text-xs">Likes</p>
+                                <div className="w-full flex items-center justify-center mt-1">
+                                    <p className="text-xs text-center text-muted-foreground truncate">{color.name}</p>
+                                    {isUnlocked && <button onClick={() => handlePreview(color)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Eye size={12} /></button>}
                                 </div>
-                            )}
-                            <div className="w-full flex items-center justify-center mt-1">
-                                <p className="text-xs text-center text-muted-foreground truncate">{color.name}</p>
-                                {isUnlocked && <button onClick={() => handlePreview(color)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Eye size={12} /></button>}
                             </div>
-                        </div>
-                    )
-                })}
-            </div>
+                        )
+                    })}
+                </div>
+            </ScrollArea>
+             <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={handleSave} disabled={selectedColor === currentUser.profileColor}>Save</Button>
+                </DialogClose>
+            </DialogFooter>
         </DialogContent>
     )
 }
@@ -423,3 +422,5 @@ export function UserAvatar() {
     </>
   );
 }
+
+    
