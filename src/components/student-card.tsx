@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/use-auth";
 interface StudentCardProps {
   student: Student;
   currentUserId?: string;
-  listType?: 'followers' | 'following' | 'likes' | 'directory';
+  listType?: 'followers' | 'following' | 'likes' | 'directory' | 'suggestions';
   onFollowToggle?: (studentId: string) => void;
   onLikeToggle?: (studentId: string) => void;
   onTrustLikeToggle?: (studentId: string) => void;
@@ -177,66 +177,51 @@ export function StudentCard({
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
-      <CardHeader className="flex-row gap-4 items-center p-4">
-        <Link href={`/profile/${student.id}`} className="flex-shrink-0">
-          <Avatar>
-            <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+        <Link href={`/profile/${student.id}`} className="flex-grow">
+            <CardHeader className="flex-row gap-4 items-center p-4">
+                <Avatar>
+                    <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate">{displayName}</h3>
+                    <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
+                        <Building size={12}/>
+                        <span>{student.collegeName}</span>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 flex-grow">
+                <div className="flex flex-wrap gap-2 h-12">
+                    {student.interests.slice(0, 3).map((interest) => (
+                    <Badge key={interest} variant="secondary">
+                        {interest}
+                    </Badge>
+                    ))}
+                    {student.interests.length > 3 && <Badge variant="secondary">...</Badge>}
+                </div>
+            </CardContent>
         </Link>
-        <div className="flex-1 overflow-hidden">
-          <Link href={`/profile/${student.id}`}>
-            <h3 className="font-semibold text-lg leading-tight hover:underline truncate">{displayName}</h3>
-          </Link>
-          <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
-          <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
-            <Building size={12}/>
-            <span>{student.collegeName}</span>
-          </div>
-        </div>
-        <FollowButton />
-      </CardHeader>
-      <CardContent className="px-4 pb-4 flex-grow">
-          <div className="flex flex-wrap gap-2">
-            {student.interests.slice(0, 3).map((interest) => (
-              <Badge key={interest} variant="secondary">
-                {interest}
-              </Badge>
-            ))}
-            {student.interests.length > 3 && <Badge variant="secondary">...</Badge>}
-          </div>
-        </CardContent>
       <CardFooter className="p-4 flex justify-between items-center border-t">
           <div className="flex items-center gap-2 sm:gap-4 text-muted-foreground">
-             {onTrustLikeToggle && (
-                <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || currentUserId === student.id}>
-                       <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
-                    </Button>
-                    <span className="text-sm">{trustLikeCount}</span>
-                </div>
-            )}
-            {onLikeToggle && (
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
-                        <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
-                  </Button>
-                  <span className="text-sm">{(student.likedBy || []).length}</span>
-              </div>
-            )}
-          <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span className="text-sm">{(student.followers || []).length}</span>
-          </div>
+             <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleTrustLikeClick} disabled={!currentUserId || currentUserId === student.id}>
+                   <ShieldCheck className={cn("h-5 w-5", hasTrustLiked ? "text-green-500 fill-current" : "text-muted-foreground")} />
+                </Button>
+                <span className="text-sm">{trustLikeCount}</span>
+            </div>
+             <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLikeClick} disabled={!currentUserId}>
+                    <Heart className={cn("h-5 w-5", isLiked ? "text-red-500 fill-current" : "text-muted-foreground")} />
+                </Button>
+                <span className="text-sm">{(student.likedBy || []).length}</span>
+            </div>
           </div>
           <ActionMenu />
-          {(listType === 'directory' || listType === 'likes') && (
-            <Button variant="outline" size="sm" asChild>
-                <Link href={`/profile/${student.id}`}>
-                    View <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-            </Button>
-          )}
+            { (listType === 'directory' || listType === 'suggestions') && (
+                <FollowButton />
+            )}
       </CardFooter>
     </Card>
   );

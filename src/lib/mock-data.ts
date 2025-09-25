@@ -707,6 +707,33 @@ export async function removeFollower(currentUserId: string, followerId: string):
 }
 
 
+export async function getSuggestedConnections(currentUserId: string): Promise<Student[]> {
+    const currentUser = await getStudentById(currentUserId);
+    if (!currentUser) return [];
+
+    const allStudents = await getStudents();
+    const friends = currentUser.following || [];
+    const friendsOfFriends = new Set<string>();
+
+    if (friends.length > 0) {
+        const friendsData = await Promise.all(friends.map(id => getStudentById(id)));
+        friendsData.forEach(friend => {
+            if (friend) {
+                (friend.following || []).forEach(fofId => friendsOfFriends.add(fofId));
+                (friend.followers || []).forEach(fofId => friendsOfFriends.add(fofId));
+            }
+        });
+    }
+    
+    const suggestions = allStudents.filter(student => {
+        return student.id !== currentUserId &&
+               !currentUser.following.includes(student.id) &&
+               (friendsOfFriends.has(student.id) || Math.random() < 0.2); // Add some randomness
+    });
+    
+    // Shuffle and take 6
+    return suggestions.sort(() => 0.5 - Math.random()).slice(0, 6);
+}
 
 
 // Notes
