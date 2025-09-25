@@ -374,13 +374,13 @@ export default function ProfilePage() {
                             studentId={student.id}
                             listType="followers"
                             canViewContent={canViewContent}
-                            trigger={<button className="hover:underline disabled:no-underline" disabled={!canViewContent}>{(student.followers?.length || 0)} Followers</button>}
+                            trigger={<button className="hover:underline disabled:no-underline disabled:cursor-not-allowed" disabled={!canViewContent}>{(student.followers?.length || 0)} Followers</button>}
                         />
                         <ConnectionListDialog
                             studentId={student.id}
                             listType="following"
                             canViewContent={canViewContent}
-                            trigger={<button className="hover:underline disabled:no-underline" disabled={!canViewContent}>{(student.following?.length || 0)} Following</button>}
+                            trigger={<button className="hover:underline disabled:no-underline disabled:cursor-not-allowed" disabled={!canViewContent}>{(student.following?.length || 0)} Following</button>}
                         />
                         <span>{(student.likedBy?.length || 0)} Likes</span>
                          <span className="flex items-center gap-1 text-green-600 font-medium">
