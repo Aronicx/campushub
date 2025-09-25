@@ -236,17 +236,17 @@ export default function ProfilePage() {
       fetchStudent();
   }, [id]);
 
-    const bannerStyle = useMemo(() => {
-        if (!student?.profileColor) return {};
-        try {
-            // If it's a JSON string (for styles with url), parse it
-            if (student.profileColor.startsWith('{')) {
-                return JSON.parse(student.profileColor);
-            }
-        } catch (e) { /* Fallback below */ }
-        // If it's a simple class, it will be handled by cn
-        return {};
-    }, [student?.profileColor]);
+  const bannerStyle = useMemo(() => {
+    if (!student?.profileColor) return {};
+    try {
+        // If it's a JSON string (for styles with url), parse it
+        if (student.profileColor.startsWith('{')) {
+            return JSON.parse(student.profileColor);
+        }
+    } catch (e) { /* Fallback below */ }
+    // If it's a simple class, it will be handled by cn
+    return {};
+  }, [student?.profileColor]);
 
   const bannerClass = useMemo(() => {
     if (!student?.profileColor) return 'bg-muted';
@@ -501,4 +501,5 @@ export default function ProfilePage() {
     
 
     
+
 
