@@ -199,7 +199,7 @@ function ProfileThemeDialog() {
         updateProfile({ profileColor: selectedColor });
     };
 
-    const handlePreview = (theme: typeof profileColors[0]) => {
+    const handlePreview = (theme: any) => {
         const value = theme.style ? JSON.stringify(theme.style) : theme.class;
         setPreviewClass(getInitialClass(value));
         setPreviewStyle(getInitialStyle(value));
@@ -214,7 +214,7 @@ function ProfileThemeDialog() {
     const userLikes = currentUser.likedBy?.length || 0;
 
     return (
-        <DialogContent className="max-w-2xl flex flex-col h-full sm:h-auto">
+        <DialogContent className="max-w-2xl flex flex-col h-[90vh] sm:h-auto">
              <DialogHeader>
                 <DialogTitle>Profile Theme</DialogTitle>
                 <DialogDescription>Hover to preview, click to select. Unlock more with likes!</DialogDescription>
@@ -224,21 +224,21 @@ function ProfileThemeDialog() {
                  <div className="my-2">
                     <p className="text-sm font-medium mb-2">Preview</p>
                     <div className="rounded-lg overflow-hidden border">
-                        <div className={cn("h-20 w-full transition-all", previewClass)} style={previewStyle} />
+                        <div className={cn("h-16 w-full transition-all", previewClass)} style={previewStyle} />
                         <div className="p-4 bg-card flex items-end gap-4 -mt-10">
-                            <Avatar className="h-20 w-20 border-4 border-background">
+                            <Avatar className="h-16 w-16 border-4 border-background">
                                 <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
-                                <AvatarFallback className="text-3xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
+                                <AvatarFallback className="text-2xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <h1 className="text-xl font-bold">{currentUser.name}</h1>
+                                <h1 className="text-lg font-bold">{currentUser.name}</h1>
                                 <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 py-4">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 py-4">
                     {profileColors.map(color => {
                         const isUnlocked = !color.locked || userLikes >= color.likes;
                         const colorValue = color.style ? JSON.stringify(color.style) : color.class;
@@ -246,7 +246,7 @@ function ProfileThemeDialog() {
                             <div 
                                 key={color.name} 
                                 className="relative group flex flex-col items-center"
-                                onMouseEnter={() => isUnlocked && handlePreview(color)}
+                                onMouseEnter={() => handlePreview(color)}
                                 onMouseLeave={() => {
                                     const currentTheme = profileColors.find(c => (c.style ? JSON.stringify(c.style) : c.class) === selectedColor);
                                     if(currentTheme) handlePreview(currentTheme);
@@ -255,7 +255,7 @@ function ProfileThemeDialog() {
                                 <button
                                     onClick={() => isUnlocked && handleSelect(color)}
                                     className={cn(
-                                        "w-full h-12 rounded-md transition-all border",
+                                        "w-full h-10 rounded-md transition-all border",
                                         color.class,
                                         selectedColor === colorValue && "ring-2 ring-offset-2 ring-primary",
                                         !isUnlocked && "cursor-not-allowed filter grayscale"
@@ -273,7 +273,7 @@ function ProfileThemeDialog() {
                                 )}
                                 <div className="w-full flex items-center justify-center mt-1">
                                     <p className="text-xs text-center text-muted-foreground truncate">{color.name}</p>
-                                    {isUnlocked && <button onClick={() => handlePreview(color)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Eye size={12} /></button>}
+                                    <button onClick={() => handlePreview(color)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Eye size={12} /></button>
                                 </div>
                             </div>
                         )
@@ -422,5 +422,3 @@ export function UserAvatar() {
     </>
   );
 }
-
-    
