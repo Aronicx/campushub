@@ -72,7 +72,7 @@ const profileColors = [
     { name: "Silver", class: "shimmer-silver", locked: true, likes: 5 },
     { name: "Red Velvet", class: "shimmer-red-velvet", locked: true, likes: 10 },
     { name: "Royal", class: "shimmer-royal-pink", locked: true, likes: 25 },
-    { name: "Platinum Blue", class: "shimmer-dark-blue", locked: true, likes: 35 },
+    { name: "Platinum Blue", class: "shimmer-platinum-blue", locked: true, likes: 35 },
     { name: "Golden", class: "shimmer-gold-white", locked: true, likes: 50 },
 ];
 
@@ -222,15 +222,17 @@ function ProfileThemeDialog() {
             <div className="my-2">
                 <p className="text-sm font-medium mb-2">Preview</p>
                 <div className="rounded-lg overflow-hidden border">
-                    <div className={cn("h-16 w-full transition-all", previewClass)} style={previewStyle} />
-                    <div className="p-4 bg-card flex items-end gap-4 -mt-10">
-                        <Avatar className="h-16 w-16 border-4 border-background">
-                            <AvatarImage src={currentUser.profilePicture} alt={currentUser.name || 'User'} />
-                            <AvatarFallback className="text-2xl">{(currentUser.name || 'U').charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <h1 className="text-lg font-bold">{currentUser.name}</h1>
-                            <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+                    <div className="relative">
+                        <div className={cn("h-20 w-full", previewClass)} style={previewStyle} />
+                        <div className="p-4 pt-0">
+                            <Avatar className="h-16 w-16 -mt-8 border-4 border-card">
+                                <AvatarImage src={currentUser.profilePicture || undefined} alt={currentUser.name || 'User'} />
+                                <AvatarFallback className="text-2xl">{(currentUser.name || "NN").split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                            </Avatar>
+                            <div className="mt-2">
+                                <h1 className="text-lg font-bold">{currentUser.name}</h1>
+                                <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -251,7 +253,7 @@ function ProfileThemeDialog() {
                                 }}
                             >
                                 <button
-                                    onClick={() => handleSelect(color)}
+                                    onClick={() => isUnlocked && handleSelect(color)}
                                     className={cn(
                                         "w-full h-10 rounded-md transition-all border",
                                         color.class,

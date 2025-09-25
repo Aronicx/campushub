@@ -87,6 +87,11 @@ export function StudentCard({
         'bg-gray-500': '#6b7280',
         'bg-purple-800': '#6b21a8',
         'bg-blue-400': '#60a5fa',
+        'shimmer-silver': '#c0c0c0',
+        'shimmer-red-velvet': '#8b0000',
+        'shimmer-royal-pink': '#c71585',
+        'shimmer-dark-blue': '#00008B',
+        'shimmer-gold-white': '#DAA520',
     };
     const color = colorMapping[student.profileColor];
     return color ? { borderColor: color } : {};
@@ -213,21 +218,23 @@ export function StudentCard({
         style={borderColorStyle}
     >
         <Link href={`/profile/${student.id}`} className="flex-grow flex flex-col">
-            <div className={cn("h-16 w-full", bannerClass)} style={bannerStyle} />
-            <CardHeader className="flex-row gap-4 items-center p-4">
-                <Avatar>
-                    <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                    <h3 className="font-semibold text-lg leading-tight hover:underline truncate text-card-foreground">{displayName}</h3>
-                    <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
-                        <Building size={12}/>
-                        <span>{student.collegeName}</span>
+            <div className="relative">
+                <div className={cn("h-20 w-full", bannerClass)} style={bannerStyle} />
+                <div className="p-4 pt-0">
+                    <Avatar className="h-16 w-16 -mt-8 border-4 border-card">
+                        <AvatarImage src={student.profilePicture || undefined} alt={displayName} />
+                        <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="mt-2">
+                        <h3 className="font-semibold text-lg leading-tight hover:underline truncate text-card-foreground">{displayName}</h3>
+                        <p className="text-sm text-muted-foreground leading-tight truncate">{student.course}</p>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 truncate">
+                            <Building size={12}/>
+                            <span>{student.collegeName}</span>
+                        </div>
                     </div>
                 </div>
-            </CardHeader>
+            </div>
         </Link>
       <CardFooter className="p-2 flex justify-between items-center border-t mt-auto">
           <div className="flex items-center gap-1 text-muted-foreground">
