@@ -149,7 +149,9 @@ export async function getStudentByEmail(email: string): Promise<Student | undefi
 
 export async function getStudentByUsername(username: string): Promise<Student | undefined> {
     if (!username) return undefined;
-    const docRef = doc(db, 'students', username);
+    // Usernames are stored as document IDs, which are case-sensitive.
+    // We store them in lowercase to avoid issues.
+    const docRef = doc(db, 'students', username.toLowerCase());
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return undefined;
     return docSnap.data() as Student;
@@ -229,14 +231,15 @@ export async function deleteThought(studentId: string, thoughtId: string): Promi
 export async function createStudent(data: { username: string; name: string; password?: string; collegeName: string; term: string; degree: string; course: string; profileColor: string; }): Promise<Student> {
     const { username, name, password, collegeName, term, degree, course, profileColor } = data;
 
-    const usernameExists = await getStudentByUsername(username);
+    const lowerCaseUsername = username.toLowerCase();
+    const usernameExists = await getStudentByUsername(lowerCaseUsername);
     if (usernameExists) {
-        throw new Error("This username is already taken. This is unlikely, please try again.");
+        throw new Error("This username is already taken.");
     }
 
     const newStudent: Student = {
-        id: username, // Use username as the document ID
-        username,
+        id: lowerCaseUsername, // Use username as the document ID
+        username: lowerCaseUsername,
         name,
         password,
         collegeName,
@@ -245,9 +248,9 @@ export async function createStudent(data: { username: string; name: string; pass
         course,
         major: "Undeclared", // Can be updated by user later
         interests: [],
-        profilePicture: `https://picsum.photos/seed/${username}/256/256`,
+        profilePicture: `https://picsum.photos/seed/${lowerCaseUsername}/256/256`,
         bio: `A new member of the Campus Hub community!`,
-        email: `${username}@example.com`,
+        email: `${lowerCaseUsername}@example.com`,
         thoughts: [],
         following: [],
         followers: [],
@@ -789,4 +792,3 @@ export async function restrictFromGlobalChat(userId: string): Promise<void> {
     });
 }
 
-    

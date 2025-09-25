@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { createStudent } from "@/lib/mock-data";
+import { createStudent, getStudentByUsername } from "@/lib/mock-data";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Building, GraduationCap, Book, CaseSensitive, Lock, User, Eye, EyeOff, Palette } from "lucide-react";
+import { Building, GraduationCap, Book, CaseSensitive, Lock, User, Eye, EyeOff, Palette, AtSign } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const profileColors = [
@@ -47,6 +47,7 @@ const profileColors = [
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Full name must be at least 3 characters." }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters." }).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
   collegeName: z.string().min(3, { message: "College name is required." }),
   term: z.string().min(1, { message: "Term/Year is required." }),
   degree: z.string().min(1, { message: "Degree is required." }),
@@ -64,6 +65,7 @@ function SignupForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      username: "",
       collegeName: "",
       term: "",
       degree: "",
@@ -75,10 +77,14 @@ function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const username = `${values.name.toLowerCase().replace(/\s/g, '_')}_${Math.floor(100 + Math.random() * 900)}`;
-
+      const usernameExists = await getStudentByUsername(values.username);
+      if (usernameExists) {
+        form.setError("username", { type: "manual", message: "This username is already taken." });
+        return;
+      }
+      
       await createStudent({
-        username: username,
+        username: values.username,
         name: values.name,
         password: values.password,
         collegeName: values.collegeName,
@@ -89,7 +95,7 @@ function SignupForm() {
       });
       toast({
         title: "Account Created!",
-        description: `Your username is ${username}. You can now log in.`,
+        description: `Welcome to Campus Hub! You can now log in with your username: ${values.username}`,
       });
       router.push("/login");
     } catch (error: any) {
@@ -111,10 +117,30 @@ function SignupForm() {
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <div className="relative">
-                  <CaseSensitive className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <FormControl>
                     <Input
                       placeholder="e.g., Aisha Khan"
+                      {...field}
+                      className="pl-10"
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Username</FormLabel>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., aisha_k"
                       {...field}
                       className="pl-10"
                     />
@@ -269,7 +295,7 @@ export default function SignupPage() {
             Create an Account
           </CardTitle>
           <CardDescription>
-            Join the Campus Hub community today! Your username will be auto-generated.
+            Join the Campus Hub community today! Choose your unique username.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -290,6 +316,3 @@ export default function SignupPage() {
     </div>
   );
 }
-    
-
-    
