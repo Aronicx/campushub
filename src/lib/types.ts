@@ -67,6 +67,7 @@ export interface Student {
   blockedUsers?: string[];
   isCoordinator?: boolean;
   globalChatRestrictedUntil?: string;
+  profileColor?: string;
 }
 
 export interface ChatMessage {

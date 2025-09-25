@@ -1,4 +1,5 @@
 
+
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
@@ -225,8 +226,8 @@ export async function deleteThought(studentId: string, thoughtId: string): Promi
 }
 
 
-export async function createStudent(data: { username: string; name: string; password?: string; collegeName: string; term: string; degree: string; course: string; }): Promise<Student> {
-    const { username, name, password, collegeName, term, degree, course } = data;
+export async function createStudent(data: { username: string; name: string; password?: string; collegeName: string; term: string; degree: string; course: string; profileColor: string; }): Promise<Student> {
+    const { username, name, password, collegeName, term, degree, course, profileColor } = data;
 
     const usernameExists = await getStudentByUsername(username);
     if (usernameExists) {
@@ -250,7 +251,7 @@ export async function createStudent(data: { username: string; name: string; pass
         thoughts: [],
         following: [],
         followers: [],
-likedBy: [],
+        likedBy: [],
         trustLikes: [],
         notifications: [],
         pendingFollowRequests: [],
@@ -258,6 +259,7 @@ likedBy: [],
         isPrivate: false,
         blockedUsers: [],
         isCoordinator: false,
+        profileColor: profileColor || 'bg-muted',
     };
     
     const studentDocRef = doc(db, 'students', newStudent.id);

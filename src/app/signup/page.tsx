@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { createStudent } from "@/lib/mock-data";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,8 +29,23 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Building, GraduationCap, Book, CaseSensitive, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Building, GraduationCap, Book, CaseSensitive, Lock, User, Eye, EyeOff, Palette } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+
+const profileColors = [
+  "bg-red-500",
+  "bg-orange-500",
+  "bg-amber-500",
+  "bg-yellow-500",
+  "bg-lime-500",
+  "bg-green-500",
+  "bg-emerald-500",
+  "bg-teal-500",
+  "bg-cyan-500",
+  "bg-sky-500",
+  "bg-blue-500",
+  "bg-indigo-500",
+];
 
 const formSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters." }).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
@@ -39,6 +55,7 @@ const formSchema = z.object({
   degree: z.string().min(1, { message: "Degree is required." }),
   course: z.string().min(1, { message: "Course is required." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  profileColor: z.string().min(1, { message: "Please select a profile color." }),
 });
 
 function SignupForm() {
@@ -56,6 +73,7 @@ function SignupForm() {
       degree: "",
       course: "",
       password: "",
+      profileColor: "",
     },
   });
 
@@ -69,6 +87,7 @@ function SignupForm() {
         term: values.term,
         degree: values.degree,
         course: values.course,
+        profileColor: values.profileColor,
       });
       toast({
         title: "Account Created!",
@@ -220,6 +239,34 @@ function SignupForm() {
               </FormItem>
             )}
           />
+            <FormField
+                control={form.control}
+                name="profileColor"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Palette/> Profile Color</FormLabel>
+                    <FormControl>
+                        <Controller
+                            control={form.control}
+                            name="profileColor"
+                            render={({ field: { onChange, value } }) => (
+                                <div className="grid grid-cols-6 gap-2">
+                                    {profileColors.map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => onChange(color)}
+                                            className={cn("w-full h-10 rounded-md transition-all", color, value === color ? "ring-2 ring-offset-2 ring-primary" : "hover:opacity-80")}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
           </Button>

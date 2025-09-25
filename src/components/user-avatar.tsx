@@ -32,11 +32,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Trash2, Users, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, LogOut, Trash2, Users, Loader2, Lock, ShieldCheck, Palette } from "lucide-react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useForm } from "react-hook-form";
@@ -44,6 +46,7 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Switch } from "./ui/switch";
+import { cn } from "@/lib/utils";
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, { message: "Current password is required." }),
@@ -54,6 +57,11 @@ const passwordFormSchema = z.object({
     path: ["confirmPassword"],
 });
 
+const profileColors = [
+    "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
+    "bg-lime-500", "bg-green-500", "bg-emerald-500", "bg-teal-500",
+    "bg-cyan-500", "bg-sky-500", "bg-blue-500", "bg-indigo-500",
+];
 
 function PasswordEditor() {
     const { changePassword } = useAuth();
@@ -142,10 +150,52 @@ function SecurityDialog() {
     )
 }
 
+function ProfileThemeDialog() {
+    const { currentUser, updateProfile } = useAuth();
+    const [selectedColor, setSelectedColor] = useState(currentUser?.profileColor || "");
+
+    if (!currentUser) return null;
+
+    const handleSave = () => {
+        updateProfile({ profileColor: selectedColor });
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Profile Theme</DialogTitle>
+                <DialogDescription>Choose a color for your profile banner. This will be visible to everyone.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 py-4">
+                {profileColors.map(color => (
+                    <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={cn(
+                            "w-full h-16 rounded-md transition-all",
+                            color,
+                            selectedColor === color ? "ring-2 ring-offset-2 ring-primary" : "hover:opacity-80"
+                        )}
+                        aria-label={`Select ${color}`}
+                    />
+                ))}
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={handleSave} disabled={selectedColor === currentUser.profileColor}>Save</Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
+
 export function UserAvatar() {
   const { currentUser, logout, deleteProfile } = useAuth();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState<"security" | "theme" | null>(null);
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -159,8 +209,6 @@ export function UserAvatar() {
   const handleDelete = async () => {
     setIsDeleting(true);
     await deleteProfile(password);
-    // If deletion is successful, the user is logged out and redirected.
-    // If it fails, the toast is shown, and we can reset the state here.
     setIsDeleting(false);
     setIsAlertOpen(false);
     setPassword("");
@@ -176,7 +224,7 @@ export function UserAvatar() {
 
   return (
     <>
-        <Dialog open={isSecurityOpen} onOpenChange={setIsSecurityOpen}>
+        <Dialog onOpenChange={(open) => !open && setDialogOpen(null)}>
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -212,7 +260,13 @@ export function UserAvatar() {
                 </Link>
                 </DropdownMenuItem>
                 <DialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem onSelect={() => setDialogOpen("theme")}>
+                        <Palette className="mr-2 h-4 w-4" />
+                        <span>Profile Theme</span>
+                    </DropdownMenuItem>
+                </DialogTrigger>
+                <DialogTrigger asChild>
+                    <DropdownMenuItem onSelect={() => setDialogOpen("security")}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
                         <span>Security &amp; Privacy</span>
                     </DropdownMenuItem>
@@ -229,7 +283,8 @@ export function UserAvatar() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
             </DropdownMenu>
-            <SecurityDialog />
+            {dialogOpen === 'security' && <SecurityDialog />}
+            {dialogOpen === 'theme' && <ProfileThemeDialog />}
         </Dialog>
         <AlertDialog open={isAlertOpen} onOpenChange={onAlertOpenChange}>
             <AlertDialogContent>

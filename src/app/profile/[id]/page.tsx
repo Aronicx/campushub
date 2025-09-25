@@ -335,7 +335,7 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-lg">
-        <div className="bg-muted h-32" />
+        <div className={cn("h-32", student.profileColor || 'bg-muted')} />
         <CardContent className="p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-6 -mt-20">
              <Dialog>
