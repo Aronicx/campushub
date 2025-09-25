@@ -62,7 +62,7 @@ export default function HomePage() {
         </p>
         <div className="mt-8 flex justify-center gap-4">
             <Button asChild size="lg">
-                <Link href="/directory">Explore Campus Connect</Link>
+                <Link href="/directory">Explore Campus</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
                 <Link href="/login">Get Started</Link>
