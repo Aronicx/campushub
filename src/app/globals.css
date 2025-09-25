@@ -84,7 +84,7 @@ body {
   }
   
   .shimmer-gold-white {
-    background: linear-gradient(110deg, #ffd700, #ffffff, #ffd700);
+    background: linear-gradient(110deg, #FFFFE0, #B8860B, #FFFFE0);
     background-size: 200% 100%;
     animation: shimmer 5s linear infinite;
   }
