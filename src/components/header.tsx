@@ -69,14 +69,7 @@ export function Header() {
                                 </TooltipContent>
                             </Tooltip>
                         ))}
-                    </nav>
-                </div>
-
-                <div className="flex items-center space-x-2 pl-4">
-                    {isLoading ? (
-                        <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
-                    ) : currentUser ? (
-                        <>
+                         {currentUser && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                 <Button 
@@ -98,6 +91,15 @@ export function Header() {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                         )}
+                    </nav>
+                </div>
+
+                <div className="flex items-center space-x-2 pl-4">
+                    {isLoading ? (
+                        <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
+                    ) : currentUser ? (
+                        <>
                             <Notifications />
                             <UserAvatar />
                         </>
