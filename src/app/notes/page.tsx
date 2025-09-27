@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -16,23 +17,32 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, Upload, Search, X } from "lucide-react";
+import { PlusCircle, Loader2, Upload, Search, X, Link as LinkIcon } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const noteFormSchema = z.object({
+
+const noteUploadSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
   description: z.string().max(50, "Description must be 50 characters or less"),
-  file: z.instanceof(File).optional(),
+  file: z.instanceof(File, { message: "A file is required for upload." }),
 });
+
+const noteLinkSchema = z.object({
+  heading: z.string().min(1, "Heading is required"),
+  description: z.string().max(50, "Description must be 50 characters or less"),
+  link: z.string().url({ message: "Please enter a valid URL." }),
+});
+
 
 const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type UploadStatus = 'idle' | 'reading' | 'uploading' | 'success' | 'error' | 'cancelled';
 
-function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
+function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
   const { currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -41,13 +51,19 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   
   const uploadAbortController = useRef<AbortController | null>(null);
 
-  const form = useForm<z.infer<typeof noteFormSchema>>({
-    resolver: zodResolver(noteFormSchema),
+  const uploadForm = useForm<z.infer<typeof noteUploadSchema>>({
+    resolver: zodResolver(noteUploadSchema),
     defaultValues: { heading: "", description: "" },
   });
 
-  const resetForm = () => {
-    form.reset();
+  const linkForm = useForm<z.infer<typeof noteLinkSchema>>({
+    resolver: zodResolver(noteLinkSchema),
+    defaultValues: { heading: "", description: "", link: "" },
+  });
+
+  const resetForms = () => {
+    uploadForm.reset();
+    linkForm.reset();
     setUploadStatus('idle');
     setUploadProgress(0);
     if(uploadAbortController.current) {
@@ -60,7 +76,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
     if (uploadStatus === 'reading' || uploadStatus === 'uploading') return;
     setIsOpen(open);
     if (!open) {
-        resetForm();
+        resetForms();
     }
   }
 
@@ -72,7 +88,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
     setUploadProgress(0);
   }
 
-  const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
+  const handleUploadSubmit = async (values: z.infer<typeof noteUploadSchema>) => {
     if (!currentUser || !values.file) {
       toast({ variant: "destructive", title: "File missing", description: "Please select a file to upload." });
       return;
@@ -129,7 +145,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
       
       setTimeout(() => {
           setIsOpen(false);
-          resetForm();
+          resetForms();
           onNoteAdded();
       }, 1000);
 
@@ -143,6 +159,20 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         }
     }
   };
+
+  const handleLinkSubmit = async (values: z.infer<typeof noteLinkSchema>) => {
+    if (!currentUser) return;
+    try {
+        await addNote(currentUser, values);
+        toast({ title: "Note Shared!", description: "Your link has been added." });
+        setIsOpen(false);
+        resetForms();
+        onNoteAdded();
+    } catch(error) {
+        console.error(error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to share link." });
+    }
+  }
   
   const isSubmitting = uploadStatus === 'reading' || uploadStatus === 'uploading';
 
@@ -157,79 +187,74 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Upload your note file. It will be stored securely in a central Google Drive. You can optionally add a password to restrict editing the note's details.
+            Choose to upload a file to be stored securely in a central Google Drive, or share a link to an existing note.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="heading"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Heading</FormLabel>
-                  <FormControl><Input placeholder="e.g., Quantum Physics Summary" {...field} disabled={isSubmitting} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Short Description</FormLabel>
-                  <FormControl><Input placeholder="Quick notes for the final exam." {...field} disabled={isSubmitting} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-                control={form.control}
-                name="file"
-                render={({ field: { onChange, value, ...rest } }) => (
-                <FormItem>
-                    <FormLabel>Note File</FormLabel>
-                    <FormControl>
-                    <div className="relative">
-                        <Input
-                        type="file"
-                        className="pl-12"
-                        onChange={(e) => onChange(e.target.files?.[0])}
-                        disabled={isSubmitting}
-                        {...rest}
-                        />
-                        <Upload className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload"><Upload className="mr-2 h-4 w-4" /> Upload File</TabsTrigger>
+            <TabsTrigger value="link"><LinkIcon className="mr-2 h-4 w-4" /> Share Link</TabsTrigger>
+          </TabsList>
+          <TabsContent value="upload">
+            <Form {...uploadForm}>
+              <form onSubmit={uploadForm.handleSubmit(handleUploadSubmit)} className="space-y-4 py-4">
+                <FormField control={uploadForm.control} name="heading" render={({ field }) => (
+                    <FormItem><FormLabel>Heading</FormLabel><FormControl><Input placeholder="e.g., Quantum Physics Summary" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={uploadForm.control} name="description" render={({ field }) => (
+                    <FormItem><FormLabel>Short Description</FormLabel><FormControl><Input placeholder="Quick notes for the final exam." {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={uploadForm.control} name="file" render={({ field: { onChange, value, ...rest } }) => (
+                    <FormItem><FormLabel>Note File</FormLabel>
+                        <FormControl>
+                        <div className="relative">
+                            <Input type="file" className="pl-12" onChange={(e) => onChange(e.target.files?.[0])} disabled={isSubmitting} {...rest} />
+                            <Upload className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        </div>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )} />
+
+                {uploadStatus !== 'idle' && (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <p className="text-muted-foreground capitalize">{uploadStatus}</p>
+                            {isSubmitting && (<Button variant="ghost" size="sm" onClick={handleCancelUpload} className="text-destructive hover:text-destructive"><X className="mr-2 h-4 w-4" /> Cancel</Button>)}
+                        </div>
+                        <Progress value={uploadProgress} className="w-full" />
                     </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
                 )}
-            />
 
-            {uploadStatus !== 'idle' && (
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                        <p className="text-muted-foreground capitalize">{uploadStatus}</p>
-                        {isSubmitting && (
-                            <Button variant="ghost" size="sm" onClick={handleCancelUpload} className="text-destructive hover:text-destructive">
-                                <X className="mr-2 h-4 w-4" /> Cancel
-                            </Button>
-                        )}
-                    </div>
-                    <Progress value={uploadProgress} className="w-full" />
-                </div>
-            )}
-
-            <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="ghost" disabled={isSubmitting}>Cancel</Button></DialogClose>
-              <Button type="submit" disabled={isSubmitting || uploadStatus === 'success'}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {uploadStatus === 'success' ? 'Shared!' : 'Share'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                <DialogFooter>
+                  <DialogClose asChild><Button type="button" variant="ghost" disabled={isSubmitting}>Cancel</Button></DialogClose>
+                  <Button type="submit" disabled={isSubmitting || uploadStatus === 'success'}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {uploadStatus === 'success' ? 'Shared!' : 'Upload & Share'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </TabsContent>
+          <TabsContent value="link">
+              <Form {...linkForm}>
+                  <form onSubmit={linkForm.handleSubmit(handleLinkSubmit)} className="space-y-4 py-4">
+                     <FormField control={linkForm.control} name="heading" render={({ field }) => (
+                        <FormItem><FormLabel>Heading</FormLabel><FormControl><Input placeholder="e.g., History Lecture Notes" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={linkForm.control} name="description" render={({ field }) => (
+                        <FormItem><FormLabel>Short Description</FormLabel><FormControl><Input placeholder="From Prof. Smith's class." {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={linkForm.control} name="link" render={({ field }) => (
+                        <FormItem><FormLabel>Link URL</FormLabel><FormControl><Input type="url" placeholder="https://docs.google.com/..." {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                        <Button type="submit">Share Link</Button>
+                    </DialogFooter>
+                  </form>
+              </Form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
@@ -297,7 +322,7 @@ export default function NotesPage() {
               <h1 className="text-4xl font-bold tracking-tight text-primary">Shared Notes</h1>
               <p className="mt-2 text-lg text-muted-foreground">A community-curated list of useful notes and resources.</p>
           </div>
-          {currentUser && <AddNoteForm onNoteAdded={fetchNotes} />}
+          {currentUser && <AddNoteDialog onNoteAdded={fetchNotes} />}
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
