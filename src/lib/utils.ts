@@ -10,8 +10,14 @@ export function resizeAndCompressImage(
   maxWidth: number,
   maxHeight: number,
   quality = 0.7
-): Promise<string> {
+): Promise<File> {
   return new Promise((resolve, reject) => {
+    // Check if the file is an image
+    if (!file.type.startsWith('image/')) {
+        resolve(file); // Not an image, return original file
+        return;
+    }
+
     const img = new Image();
     const reader = new FileReader();
 
@@ -52,12 +58,23 @@ export function resizeAndCompressImage(
       
       ctx.drawImage(img, 0, 0, width, height);
       
-      resolve(canvas.toDataURL("image/webp", quality));
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            return reject(new Error("Canvas to Blob conversion failed."));
+          }
+          const newFile = new File([blob], file.name, {
+            type: 'image/webp',
+            lastModified: Date.now(),
+          });
+          resolve(newFile);
+        },
+        'image/webp',
+        quality
+      );
     };
 
     img.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
-
-    

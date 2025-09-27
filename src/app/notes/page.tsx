@@ -21,6 +21,7 @@ import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { resizeAndCompressImage } from "@/lib/utils";
 
 
 const noteUploadSchema = z.object({
@@ -36,10 +37,10 @@ const noteLinkSchema = z.object({
 });
 
 
-const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type UploadStatus = 'idle' | 'reading' | 'uploading' | 'success' | 'error' | 'cancelled';
+type UploadStatus = 'idle' | 'processing' | 'uploading' | 'success' | 'error' | 'cancelled';
 
 function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
   const { currentUser } = useAuth();
@@ -72,7 +73,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
   }
 
   const handleOpenChange = (open: boolean) => {
-    if (uploadStatus === 'reading' || uploadStatus === 'uploading') return;
+    if (uploadStatus === 'processing' || uploadStatus === 'uploading') return;
     setIsOpen(open);
     if (!open) {
         resetForms();
@@ -97,17 +98,21 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
         toast({ variant: "destructive", title: "File too large", description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.` });
         return;
     }
-
+    
     uploadAbortController.current = new AbortController();
     const signal = uploadAbortController.current.signal;
 
-    setUploadStatus('uploading');
-    
+    setUploadStatus('processing');
+
     try {
+      const fileToUpload = await resizeAndCompressImage(values.file, 1920, 1080, 0.7);
+
       if (signal.aborted) throw new Error("cancelled");
 
+      setUploadStatus('uploading');
+      
       const downloadURL = await uploadFileToStorage(
-        values.file,
+        fileToUpload,
         (progress) => {
           if (!signal.aborted) setUploadProgress(progress);
         },
@@ -158,7 +163,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
     }
   }
   
-  const isSubmitting = uploadStatus === 'reading' || uploadStatus === 'uploading';
+  const isSubmitting = uploadStatus === 'processing' || uploadStatus === 'uploading';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -189,7 +194,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
                     <FormItem><FormLabel>Short Description</FormLabel><FormControl><Input placeholder="Quick notes for the final exam." {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={uploadForm.control} name="file" render={({ field: { onChange, value, ...rest } }) => (
-                    <FormItem><FormLabel>Note File</FormLabel>
+                    <FormItem><FormLabel>Note File (Max {MAX_FILE_SIZE_MB}MB)</FormLabel>
                         <FormControl>
                         <div className="relative">
                             <Input type="file" className="pl-12" onChange={(e) => onChange(e.target.files?.[0])} disabled={isSubmitting} {...rest} />
