@@ -131,6 +131,10 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
         mimeType: values.file!.type,
       });
 
+      if (!driveResponse.success || !driveResponse.webViewLink) {
+        throw new Error(driveResponse.error || "An unknown error occurred during upload.");
+      }
+
       if (signal.aborted) throw new Error("cancelled");
 
       await addNote(currentUser, {
@@ -155,7 +159,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
         } else {
             console.error(error);
             setUploadStatus('error');
-            toast({ variant: "destructive", title: "Error", description: "Failed to add note. Ensure your Google Drive folder ID is set." });
+            toast({ variant: "destructive", title: "Upload Failed", description: error.message });
         }
     }
   };

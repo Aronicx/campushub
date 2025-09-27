@@ -21,14 +21,19 @@ const UploadNoteToDriveInputSchema = z.object({
 export type UploadNoteToDriveInput = z.infer<typeof UploadNoteToDriveInputSchema>;
 
 const UploadNoteToDriveOutputSchema = z.object({
-  fileId: z.string().describe('The ID of the uploaded file.'),
-  webViewLink: z.string().describe('A link to view the file in the browser.'),
-  webContentLink: z.string().describe('A link to download the file directly.'),
+  success: z.boolean(),
+  fileId: z.string().optional(),
+  webViewLink: z.string().optional(),
+  webContentLink: z.string().optional(),
+  error: z.string().optional(),
 });
 export type UploadNoteToDriveOutput = z.infer<typeof UploadNoteToDriveOutputSchema>;
 
 async function getGoogleAuth() {
   const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS || '{}');
+  if (!credentials.client_email) {
+      return null;
+  }
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/drive'],
@@ -47,10 +52,14 @@ const uploadNoteToDriveFlow = ai.defineFlow(
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
     
     if (!folderId) {
-        throw new Error("Google Drive Folder ID is not configured in .env file. Please ask the user to provide it from the folder's URL.");
+        return { success: false, error: "Google Drive Folder ID is not configured in .env file. Please ask the administrator to provide it." };
     }
 
     const auth = await getGoogleAuth();
+    if (!auth) {
+        return { success: false, error: "Google Service Account credentials are not configured correctly in .env file." };
+    }
+
     const drive = google.drive({ version: 'v3', auth });
 
     const fileBuffer = Buffer.from(fileContent, 'base64');
@@ -64,26 +73,32 @@ const uploadNoteToDriveFlow = ai.defineFlow(
       parents: [folderId],
     };
 
-    const file = await drive.files.create({
-      media: media,
-      requestBody: fileMetadata,
-      fields: 'id, webViewLink, webContentLink',
-    });
-    
-    // Make the file publicly readable
-    await drive.permissions.create({
-        fileId: file.data.id!,
-        requestBody: {
-            role: 'reader',
-            type: 'anyone'
-        }
-    });
+    try {
+        const file = await drive.files.create({
+            media: media,
+            requestBody: fileMetadata,
+            fields: 'id, webViewLink, webContentLink',
+        });
+        
+        // Make the file publicly readable
+        await drive.permissions.create({
+            fileId: file.data.id!,
+            requestBody: {
+                role: 'reader',
+                type: 'anyone'
+            }
+        });
 
-    return {
-      fileId: file.data.id!,
-      webViewLink: file.data.webViewLink!,
-      webContentLink: file.data.webContentLink!,
-    };
+        return {
+            success: true,
+            fileId: file.data.id!,
+            webViewLink: file.data.webViewLink!,
+            webContentLink: file.data.webContentLink!,
+        };
+    } catch(e: any) {
+        console.error("Google Drive API Error:", e);
+        return { success: false, error: e.message || "An error occurred while uploading to Google Drive."}
+    }
   }
 );
 
