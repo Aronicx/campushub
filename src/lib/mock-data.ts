@@ -1,7 +1,7 @@
 
 
 import { collection, doc, getDoc, getDocs, query, where, updateDoc, arrayUnion, setDoc, writeBatch, deleteDoc, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy, Timestamp, collectionGroup } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Student, Thought, Comment, ChatMessage, Notification, PrivateChatMessage, ChatContact, Note, TrustLike } from './types';
 import { db, storage } from './firebase';
 
@@ -773,6 +773,43 @@ export async function getSuggestedConnections(currentUserId: string): Promise<St
 
 
 // Notes
+export async function uploadFileToStorage(
+  file: File,
+  onProgress: (progress: number) => void,
+  signal: AbortSignal
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fileId = `note-${Date.now()}-${file.name}`;
+    const storageRef = ref(storage, `notes/${fileId}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    const handleAbort = () => {
+      uploadTask.cancel();
+      reject(new DOMException('Upload aborted by user', 'AbortError'));
+    };
+
+    signal.addEventListener('abort', handleAbort);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress(progress);
+      },
+      (error) => {
+        signal.removeEventListener('abort', handleAbort);
+        reject(error);
+      },
+      async () => {
+        signal.removeEventListener('abort', handleAbort);
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        resolve(downloadURL);
+      }
+    );
+  });
+}
+
+
 export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {
     // Create note document in Firestore
     const newNoteDoc = doc(notesCollection);
@@ -811,6 +848,19 @@ export async function updateNote(noteId: string, updates: Partial<Note>): Promis
 export async function deleteNote(noteId: string, fileUrl: string): Promise<void> {
     const noteRef = doc(db, 'notes', noteId);
     await deleteDoc(noteRef);
+
+    // If the link is a Firebase Storage URL, delete the file from storage
+    if (fileUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+            const fileRef = ref(storage, fileUrl);
+            await deleteObject(fileRef);
+        } catch (error: any) {
+            // If file doesn't exist, it's fine. Other errors might be important.
+            if (error.code !== 'storage/object-not-found') {
+                console.error("Error deleting file from Firebase Storage:", error);
+            }
+        }
+    }
 }
 
 // Coordinator functions
@@ -821,6 +871,3 @@ export async function restrictFromGlobalChat(userId: string): Promise<void> {
         globalChatRestrictedUntil: restrictionEndDate.toISOString()
     });
 }
-
-
-

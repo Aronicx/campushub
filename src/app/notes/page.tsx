@@ -7,10 +7,9 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
-import { addNote, getNotes, deleteNote } from "@/lib/mock-data";
+import { addNote, getNotes, deleteNote, uploadFileToStorage } from "@/lib/mock-data";
 import type { Note } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { uploadNoteToDrive } from "@/ai/flows/upload-note-to-drive";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,45 +101,25 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
     uploadAbortController.current = new AbortController();
     const signal = uploadAbortController.current.signal;
 
-    setUploadStatus('reading');
-    setUploadProgress(30);
-
+    setUploadStatus('uploading');
+    
     try {
-      const reader = new FileReader();
-      
-      const fileReadPromise = new Promise<string>((resolve, reject) => {
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = () => reject(new Error("Failed to read file."));
-          reader.onabort = () => reject(new Error("File reading was aborted."));
-          if (signal.aborted) {
-              return reject(new Error("File reading was aborted."));
-          }
-          reader.readAsDataURL(values.file);
-      });
-
-      if (signal.aborted) throw new Error("cancelled");
-      const base64String = await fileReadPromise;
       if (signal.aborted) throw new Error("cancelled");
 
-      setUploadStatus('uploading');
-      setUploadProgress(70);
-      
-      const driveResponse = await uploadNoteToDrive({
-        fileName: values.file!.name,
-        fileContent: base64String,
-        mimeType: values.file!.type,
-      });
-
-      if (!driveResponse.success || !driveResponse.webViewLink) {
-        throw new Error(driveResponse.error || "An unknown error occurred during upload.");
-      }
+      const downloadURL = await uploadFileToStorage(
+        values.file,
+        (progress) => {
+          if (!signal.aborted) setUploadProgress(progress);
+        },
+        signal
+      );
 
       if (signal.aborted) throw new Error("cancelled");
 
       await addNote(currentUser, {
         heading: values.heading,
         description: values.description,
-        link: driveResponse.webViewLink,
+        link: downloadURL,
       });
       
       setUploadStatus('success');
@@ -154,8 +133,9 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
       }, 1000);
 
     } catch (error: any) {
-        if (error.message === 'cancelled') {
+        if (error.name === 'AbortError' || error.message === 'cancelled') {
             setUploadStatus('cancelled');
+            toast({ variant: "default", title: "Upload Cancelled" });
         } else {
             console.error(error);
             setUploadStatus('error');
@@ -191,7 +171,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Choose to upload a file to be stored securely in a central Google Drive, or share a link to an existing note.
+            Choose to upload a file to be stored securely in Firebase Storage, or share a link to an existing note.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="upload" className="w-full">
