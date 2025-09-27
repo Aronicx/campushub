@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,9 +16,10 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Loader2, Link2, Upload, Search } from "lucide-react";
+import { PlusCircle, Loader2, Upload, Search, X } from "lucide-react";
 import { NoteCard } from "@/components/note-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 const noteFormSchema = z.object({
   heading: z.string().min(1, "Heading is required"),
@@ -29,16 +30,47 @@ const noteFormSchema = z.object({
 const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
+type UploadStatus = 'idle' | 'reading' | 'uploading' | 'success' | 'error' | 'cancelled';
+
 function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
   const { currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
   
+  const uploadAbortController = useRef<AbortController | null>(null);
+
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
     defaultValues: { heading: "", description: "" },
   });
+
+  const resetForm = () => {
+    form.reset();
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    if(uploadAbortController.current) {
+        uploadAbortController.current.abort();
+        uploadAbortController.current = null;
+    }
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if (uploadStatus === 'reading' || uploadStatus === 'uploading') return;
+    setIsOpen(open);
+    if (!open) {
+        resetForm();
+    }
+  }
+
+  const handleCancelUpload = () => {
+    if (uploadAbortController.current) {
+        uploadAbortController.current.abort();
+    }
+    setUploadStatus('cancelled');
+    setUploadProgress(0);
+  }
 
   const onSubmit = async (values: z.infer<typeof noteFormSchema>) => {
     if (!currentUser || !values.file) {
@@ -51,41 +83,71 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
         return;
     }
 
-    setIsSubmitting(true);
+    uploadAbortController.current = new AbortController();
+    const signal = uploadAbortController.current.signal;
+
+    setUploadStatus('reading');
+    setUploadProgress(30);
+
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(values.file);
-      reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        
-        const driveResponse = await uploadNoteToDrive({
-          fileName: values.file!.name,
-          fileContent: base64String,
-          mimeType: values.file!.type,
-        });
+      
+      const fileReadPromise = new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = () => reject(new Error("Failed to read file."));
+          reader.onabort = () => reject(new Error("File reading was aborted."));
+          if (signal.aborted) {
+              return reject(new Error("File reading was aborted."));
+          }
+          reader.readAsDataURL(values.file);
+      });
 
-        await addNote(currentUser, {
-          heading: values.heading,
-          description: values.description,
-          link: driveResponse.webViewLink,
-        });
-        
-        toast({ title: "Note Added!", description: "Your note has been shared." });
-        form.reset();
-        setIsOpen(false);
-        onNoteAdded();
-      };
+      if (signal.aborted) throw new Error("cancelled");
+      const base64String = await fileReadPromise;
+      if (signal.aborted) throw new Error("cancelled");
 
-    } catch (error) {
-      console.error(error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to add note. Ensure your Google Drive folder ID is set." });
-    } finally {
-      setIsSubmitting(false);
+      setUploadStatus('uploading');
+      setUploadProgress(70);
+      
+      const driveResponse = await uploadNoteToDrive({
+        fileName: values.file!.name,
+        fileContent: base64String,
+        mimeType: values.file!.type,
+      });
+
+      if (signal.aborted) throw new Error("cancelled");
+
+      await addNote(currentUser, {
+        heading: values.heading,
+        description: values.description,
+        link: driveResponse.webViewLink,
+      });
+      
+      setUploadStatus('success');
+      setUploadProgress(100);
+      toast({ title: "Note Added!", description: "Your note has been shared." });
+      
+      setTimeout(() => {
+          setIsOpen(false);
+          resetForm();
+          onNoteAdded();
+      }, 1000);
+
+    } catch (error: any) {
+        if (error.message === 'cancelled') {
+            setUploadStatus('cancelled');
+        } else {
+            console.error(error);
+            setUploadStatus('error');
+            toast({ variant: "destructive", title: "Error", description: "Failed to add note. Ensure your Google Drive folder ID is set." });
+        }
     }
   };
+  
+  const isSubmitting = uploadStatus === 'reading' || uploadStatus === 'uploading';
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Add Note
@@ -106,7 +168,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Heading</FormLabel>
-                  <FormControl><Input placeholder="e.g., Quantum Physics Summary" {...field} /></FormControl>
+                  <FormControl><Input placeholder="e.g., Quantum Physics Summary" {...field} disabled={isSubmitting} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -117,7 +179,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Short Description</FormLabel>
-                  <FormControl><Input placeholder="Quick notes for the final exam." {...field} /></FormControl>
+                  <FormControl><Input placeholder="Quick notes for the final exam." {...field} disabled={isSubmitting} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -134,6 +196,7 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                         type="file"
                         className="pl-12"
                         onChange={(e) => onChange(e.target.files?.[0])}
+                        disabled={isSubmitting}
                         {...rest}
                         />
                         <Upload className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -143,11 +206,26 @@ function AddNoteForm({ onNoteAdded }: { onNoteAdded: () => void }) {
                 </FormItem>
                 )}
             />
+
+            {uploadStatus !== 'idle' && (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                        <p className="text-muted-foreground capitalize">{uploadStatus}</p>
+                        {isSubmitting && (
+                            <Button variant="ghost" size="sm" onClick={handleCancelUpload} className="text-destructive hover:text-destructive">
+                                <X className="mr-2 h-4 w-4" /> Cancel
+                            </Button>
+                        )}
+                    </div>
+                    <Progress value={uploadProgress} className="w-full" />
+                </div>
+            )}
+
             <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
+              <DialogClose asChild><Button type="button" variant="ghost" disabled={isSubmitting}>Cancel</Button></DialogClose>
+              <Button type="submit" disabled={isSubmitting || uploadStatus === 'success'}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Share
+                {uploadStatus === 'success' ? 'Shared!' : 'Share'}
               </Button>
             </DialogFooter>
           </form>
