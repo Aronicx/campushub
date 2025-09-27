@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -49,7 +48,7 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Delete this note listing?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the note listing from Campus Hub. It will not delete the note at the source link.
+                            This action cannot be undone. This will permanently delete the note listing. If this note was from an uploaded file, the file will be deleted too.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -62,19 +61,21 @@ export function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
         </div>
         <p className="text-sm text-muted-foreground pt-1 !mt-1 h-10 overflow-hidden">{note.description}</p>
       </CardHeader>
-      <CardContent className="p-4 pt-0 flex flex-col sm:flex-row gap-2">
-        <Button asChild className="w-full">
-            <a href={note.link} target="_blank" rel="noopener noreferrer">
-                Open Note <ExternalLink className="ml-2 h-4 w-4"/>
-            </a>
-        </Button>
-        {isAuthor && (
-          <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <Link href={`/notes/${note.id}`}>
-              <Settings className="mr-2 h-4 w-4" /> Manage
-            </Link>
-          </Button>
-        )}
+      <CardContent className="p-4 pt-0 flex-grow flex items-end">
+        <div className="flex flex-col sm:flex-row gap-2 w-full">
+            <Button asChild className="w-full">
+                <a href={note.link} target="_blank" rel="noopener noreferrer">
+                    Open Note <ExternalLink className="ml-2 h-4 w-4"/>
+                </a>
+            </Button>
+            {isAuthor && (
+              <Button asChild variant="secondary" className="w-full sm:w-auto shrink-0">
+                <Link href={`/notes/${note.id}`}>
+                  <Settings className="h-4 w-4 sm:mr-2" /> <span className="sm:inline">Manage</span>
+                </Link>
+              </Button>
+            )}
+        </div>
       </CardContent>
       <CardFooter className="p-3 bg-muted/50 border-t flex items-center justify-between">
         <Link href={`/profile/${note.authorId}`} className="flex items-center gap-2 hover:underline">

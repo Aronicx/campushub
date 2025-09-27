@@ -15,11 +15,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Save, Loader2, User, Key, Link2, FileText, Type } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, User, Link2, FileText, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const editNoteSchema = z.object({
@@ -50,29 +49,37 @@ export default function NoteEditorPage() {
 
     async function fetchNote() {
       setIsLoading(true);
-      const noteData = await getNoteById(noteId);
-      if (noteData) {
-        setNote(noteData);
-        if (noteData.authorId === currentUser?.id) {
+      try {
+        const noteData = await getNoteById(noteId);
+        if (noteData) {
+          if (noteData.authorId === currentUser?.id) {
+            setNote(noteData);
             setIsAuthorized(true);
-        } else {
+            form.reset({
+                heading: noteData.heading,
+                description: noteData.description,
+                link: noteData.link,
+            });
+          } else {
              toast({ variant: 'destructive', title: 'Unauthorized', description: "You don't have permission to edit this note." });
              router.push('/notes');
+          }
+        } else {
+          toast({ variant: 'destructive', title: 'Note not found.' });
+          router.push('/notes');
         }
-        form.reset({
-            heading: noteData.heading,
-            description: noteData.description,
-            link: noteData.link,
-        });
-      } else {
-        toast({ variant: 'destructive', title: 'Note not found.' });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load the note.' });
         router.push('/notes');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     
     if (currentUser) {
         fetchNote();
+    } else if (currentUser === null) {
+        router.push('/login');
     }
   }, [noteId, router, toast, currentUser, form]);
 
@@ -84,7 +91,7 @@ export default function NoteEditorPage() {
       if (updatedNote) {
         setNote(updatedNote);
         toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
-        form.reset(values);
+        form.reset(values); // Re-sync form state with saved data
       }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save changes.' });
@@ -135,7 +142,7 @@ export default function NoteEditorPage() {
                     <FormField control={form.control} name="link" render={({ field }) => (
                         <FormItem>
                             <FormLabel className="flex items-center gap-2"><Link2 /> Link URL</FormLabel>
-                            <FormControl><Input {...field} /></FormControl>
+                            <FormControl><Input {...field} readOnly={note.link.includes('firebasestorage.googleapis.com')} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />

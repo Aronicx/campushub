@@ -811,7 +811,6 @@ export async function uploadFileToStorage(
 
 
 export async function addNote(author: Student, data: { heading: string, description: string, link: string }): Promise<Note> {
-    // Create note document in Firestore
     const newNoteDoc = doc(notesCollection);
     const newNote: Note = {
         id: newNoteDoc.id,
@@ -841,7 +840,18 @@ export async function getNoteById(noteId: string): Promise<Note | undefined> {
 
 export async function updateNote(noteId: string, updates: Partial<Note>): Promise<Note | undefined> {
     const noteRef = doc(db, 'notes', noteId);
-    await updateDoc(noteRef, { ...updates, timestamp: Date.now() });
+    // Do not update the link if it's a file upload, only metadata.
+    const { link, ...otherUpdates } = updates;
+    const finalUpdates = { ...otherUpdates, timestamp: Date.now() };
+
+    const noteSnap = await getDoc(noteRef);
+    const isFileLink = noteSnap.data()?.link.includes('firebasestorage.googleapis.com');
+
+    if (!isFileLink && link) {
+        finalUpdates.link = link;
+    }
+
+    await updateDoc(noteRef, finalUpdates);
     return getNoteById(noteId);
 }
 

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -42,7 +41,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type UploadStatus = 'idle' | 'processing' | 'uploading' | 'success' | 'error' | 'cancelled';
 
-function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
+function AddNoteDialog({ onNoteAdded }: { onNoteAdded: (newNote: Note) => void }) {
   const { currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -86,6 +85,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
     }
     setUploadStatus('cancelled');
     setUploadProgress(0);
+    uploadForm.reset();
   }
 
   const handleUploadSubmit = async (values: z.infer<typeof noteUploadSchema>) => {
@@ -121,7 +121,7 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
 
       if (signal.aborted) throw new Error("cancelled");
 
-      await addNote(currentUser, {
+      const newNote = await addNote(currentUser, {
         heading: values.heading,
         description: values.description,
         link: downloadURL,
@@ -132,10 +132,9 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
       toast({ title: "Note Added!", description: "Your note has been shared." });
       
       setTimeout(() => {
-          setIsOpen(false);
+          onNoteAdded(newNote);
           resetForms();
-          onNoteAdded();
-      }, 1000);
+      }, 500);
 
     } catch (error: any) {
         if (error.name === 'AbortError' || error.message === 'cancelled') {
@@ -146,17 +145,19 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
             setUploadStatus('error');
             toast({ variant: "destructive", title: "Upload Failed", description: error.message });
         }
+        uploadForm.reset();
+        setUploadProgress(0);
     }
   };
 
   const handleLinkSubmit = async (values: z.infer<typeof noteLinkSchema>) => {
     if (!currentUser) return;
     try {
-        await addNote(currentUser, values);
+        const newNote = await addNote(currentUser, values);
         toast({ title: "Note Shared!", description: "Your link has been added." });
         setIsOpen(false);
         resetForms();
-        onNoteAdded();
+        onNoteAdded(newNote);
     } catch(error) {
         console.error(error);
         toast({ variant: "destructive", title: "Error", description: "Failed to share link." });
@@ -176,13 +177,13 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Share a New Note</DialogTitle>
           <DialogDescription>
-            Choose to upload a file to be stored securely in Firebase Storage, or share a link to an existing note.
+            Choose to upload a file to be stored securely, or share a link to an existing note.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload"><Upload className="mr-2 h-4 w-4" /> Upload File</TabsTrigger>
-            <TabsTrigger value="link"><LinkIcon className="mr-2 h-4 w-4" /> Share Link</TabsTrigger>
+            <TabsTrigger value="upload" disabled={isSubmitting}><Upload className="mr-2 h-4 w-4" /> Upload File</TabsTrigger>
+            <TabsTrigger value="link" disabled={isSubmitting}><LinkIcon className="mr-2 h-4 w-4" /> Share Link</TabsTrigger>
           </TabsList>
           <TabsContent value="upload">
             <Form {...uploadForm}>
@@ -204,11 +205,11 @@ function AddNoteDialog({ onNoteAdded }: { onNoteAdded: () => void }) {
                     </FormItem>
                 )} />
 
-                {uploadStatus !== 'idle' && (
+                {(uploadStatus !== 'idle' && uploadStatus !== 'success') && (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                             <p className="text-muted-foreground capitalize">{uploadStatus}</p>
-                            {isSubmitting && (<Button variant="ghost" size="sm" onClick={handleCancelUpload} className="text-destructive hover:text-destructive"><X className="mr-2 h-4 w-4" /> Cancel</Button>)}
+                            {isSubmitting && (<Button type="button" variant="ghost" size="sm" onClick={handleCancelUpload} className="text-destructive hover:text-destructive"><X className="mr-2 h-4 w-4" /> Cancel</Button>)}
                         </div>
                         <Progress value={uploadProgress} className="w-full" />
                     </div>
@@ -256,16 +257,19 @@ export default function NotesPage() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  const fetchNotes = async () => {
-    setIsLoading(true);
-    const notesData = await getNotes();
-    setNotes(notesData);
-    setIsLoading(false);
-  };
-
   useEffect(() => {
+    async function fetchNotes() {
+      setIsLoading(true);
+      const notesData = await getNotes();
+      setNotes(notesData);
+      setIsLoading(false);
+    }
     fetchNotes();
   }, []);
+
+  const handleNoteAdded = (newNote: Note) => {
+    setNotes(prevNotes => [newNote, ...prevNotes]);
+  };
 
   const filteredNotes = useMemo(() => {
     return notes.filter(note =>
@@ -311,7 +315,7 @@ export default function NotesPage() {
               <h1 className="text-4xl font-bold tracking-tight text-primary">Shared Notes</h1>
               <p className="mt-2 text-lg text-muted-foreground">A community-curated list of useful notes and resources.</p>
           </div>
-          {currentUser && <AddNoteDialog onNoteAdded={fetchNotes} />}
+          {currentUser && <AddNoteDialog onNoteAdded={handleNoteAdded} />}
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
